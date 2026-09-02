@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="XpressMarket.Client/XpressMarket.Client.csproj" />
+  <Project Path="XpressMarket.Server/XpressMarket.Server.csproj" />
+  <Project Path="XpressMarket.Shared/XpressMarket.Shared.csproj" />
+</Solution>
