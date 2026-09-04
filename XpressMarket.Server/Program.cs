@@ -12,7 +12,19 @@ builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("PermitirClient", policy =>
+    {
+        policy.WithOrigins("https://localhost:7204", "http://localhost:5217") 
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
+
 var app = builder.Build();
+
+app.UseCors("PermitirClient");
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
