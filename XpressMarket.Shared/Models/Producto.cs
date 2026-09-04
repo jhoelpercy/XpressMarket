@@ -55,5 +55,8 @@ namespace XpressMarket.Shared.Models
         // Propiedad calculada: indica si el stock actual está por debajo o igual al mínimo
         [NotMapped]
         public bool StockBajo => StockActual <= StockMinimo;
+
+        [JsonIgnore]
+        public ICollection<Lote> Lotes { get; set; } = new List<Lote>();
     }
 }
