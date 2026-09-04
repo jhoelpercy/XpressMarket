@@ -10,7 +10,7 @@ builder.RootComponents.Add<HeadOutlet>("head::after");
 // 1. Configuración ÚNICA de HttpClient apuntando a la Web API (Server)
 builder.Services.AddScoped(sp => new HttpClient
 {
-    BaseAddress = new Uri("https://localhost:7100/") 
+    BaseAddress = new Uri("https://localhost:7232/") 
 });
 
 // 2. Registro de Servicios de Negocio
