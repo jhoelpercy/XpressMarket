@@ -1,0 +1,206 @@
+﻿@page "/productos"
+@inject ProductoService ProductoSvc
+@inject CategoriaService CategoriaSvc
+@inject NavigationManager NavManager
+@using XpressMarket.Shared.Models
+
+<PageTitle>Productos</PageTitle>
+
+<h3>Gestión de Productos</h3>
+
+<button class="btn btn-primary mb-3" @onclick="AbrirFormularioNuevo">
+    Nuevo Producto
+</button>
+
+@if (cargando)
+{
+    <p><em>Cargando productos...</em></p>
+}
+else if (productos == null || !productos.Any())
+{
+    <p>No hay productos registrados.</p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Categoría</th>
+                <th>Precio Venta</th>
+                <th>Stock Actual</th>
+                <th>Stock Mínimo</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var producto in productos)
+            {
+                <tr class="@(producto.StockBajo ? "table-warning" : "")">
+                    <td>@producto.Nombre</td>
+                    <td>@producto.Categoria?.Nombre</td>
+                    <td>@producto.PrecioVenta.ToString("C2")</td>
+                    <td>@producto.StockActual</td>
+                    <td>@producto.StockMinimo</td>
+                    <td>
+                        @if (producto.StockBajo)
+                        {
+                            <span class="badge bg-warning text-dark">Stock Bajo</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-success">OK</span>
+                        }
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-secondary" @onclick="() => AbrirFormularioEditar(producto)">
+                            Editar
+                        </button>
+                        <button class="btn btn-sm btn-danger" @onclick="() => EliminarProducto(producto.Id)">
+                            Eliminar
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@if (mostrarFormulario)
+{
+    <div class="card p-3 mt-3">
+        <h4>@(productoEditando.Id == 0 ? "Nuevo Producto" : "Editar Producto")</h4>
+
+        <EditForm Model="productoEditando" OnValidSubmit="GuardarProducto">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
+            <div class="mb-2">
+                <label>Nombre</label>
+                <InputText class="form-control" @bind-Value="productoEditando.Nombre" />
+            </div>
+
+            <div class="mb-2">
+                <label>Descripción</label>
+                <InputTextArea class="form-control" @bind-Value="productoEditando.Descripcion" />
+            </div>
+
+            <div class="mb-2">
+                <label>Categoría</label>
+                <InputSelect class="form-control" @bind-Value="productoEditando.CategoriaId">
+                    <option value="0">-- Seleccione --</option>
+                    @if (categorias != null)
+                    {
+                        @foreach (var cat in categorias)
+                        {
+                            <option value="@cat.Id">@cat.Nombre</option>
+                        }
+                    }
+                </InputSelect>
+            </div>
+
+            <div class="row">
+                <div class="col mb-2">
+                    <label>Precio Costo</label>
+                    <InputNumber class="form-control" @bind-Value="productoEditando.PrecioCosto" />
+                </div>
+                <div class="col mb-2">
+                    <label>Precio Venta</label>
+                    <InputNumber class="form-control" @bind-Value="productoEditando.PrecioVenta" />
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col mb-2">
+                    <label>Stock Actual</label>
+                    <InputNumber class="form-control" @bind-Value="productoEditando.StockActual" />
+                </div>
+                <div class="col mb-2">
+                    <label>Stock Mínimo</label>
+                    <InputNumber class="form-control" @bind-Value="productoEditando.StockMinimo" />
+                </div>
+            </div>
+
+            <div class="mb-2">
+                <label>Código de Barras</label>
+                <InputText class="form-control" @bind-Value="productoEditando.CodigoBarras" />
+            </div>
+
+            <button type="submit" class="btn btn-success mt-2">Guardar</button>
+            <button type="button" class="btn btn-secondary mt-2" @onclick="CerrarFormulario">Cancelar</button>
+        </EditForm>
+    </div>
+}
+
+@code {
+    private List<Producto>? productos;
+    private List<Categoria>? categorias;
+    private bool cargando = true;
+    private bool mostrarFormulario = false;
+    private Producto productoEditando = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarDatos();
+    }
+
+    private async Task CargarDatos()
+    {
+        cargando = true;
+        categorias = await CategoriaSvc.ObtenerTodasAsync();
+        productos = await ProductoSvc.ObtenerTodosAsync();
+        cargando = false;
+    }
+
+    private void AbrirFormularioNuevo()
+    {
+        productoEditando = new Producto { Activo = true };
+        mostrarFormulario = true;
+    }
+
+    private void AbrirFormularioEditar(Producto producto)
+    {
+        // Se clona para no modificar la lista en pantalla hasta guardar
+        productoEditando = new Producto
+        {
+            Id = producto.Id,
+            Nombre = producto.Nombre,
+            Descripcion = producto.Descripcion,
+            PrecioVenta = producto.PrecioVenta,
+            PrecioCosto = producto.PrecioCosto,
+            StockActual = producto.StockActual,
+            StockMinimo = producto.StockMinimo,
+            CodigoBarras = producto.CodigoBarras,
+            Activo = producto.Activo,
+            CategoriaId = producto.CategoriaId
+        };
+        mostrarFormulario = true;
+    }
+
+    private void CerrarFormulario()
+    {
+        mostrarFormulario = false;
+    }
+
+    private async Task GuardarProducto()
+    {
+        if (productoEditando.Id == 0)
+        {
+            await ProductoSvc.CrearAsync(productoEditando);
+        }
+        else
+        {
+            await ProductoSvc.ActualizarAsync(productoEditando.Id, productoEditando);
+        }
+
+        mostrarFormulario = false;
+        await CargarDatos();
+    }
+
+    private async Task EliminarProducto(int id)
+    {
+        await ProductoSvc.EliminarAsync(id);
+        await CargarDatos();
+    }
+}
