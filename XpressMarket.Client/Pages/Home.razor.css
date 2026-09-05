@@ -1,0 +1,141 @@
+﻿
+.hero {
+    background: #1F3D2B;
+    color: #F5F1E8;
+    padding: 2.75rem 2.5rem;
+    font-family: 'Inter', sans-serif;
+}
+
+.hero-brand {
+    font-family: 'Zilla Slab', serif;
+    font-size: 0.95rem;
+    letter-spacing: 0.04em;
+    color: #D9A544;
+    margin-bottom: 1.25rem;
+}
+
+.hero h1 {
+    font-family: 'Zilla Slab', serif;
+    font-weight: 600;
+    font-size: 2.4rem;
+    margin: 0 0 0.4rem 0;
+    color: #FBF8F2;
+}
+
+.hero-sub {
+    margin: 0;
+    color: #C9D4C4;
+    font-size: 1rem;
+}
+
+.resumen {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: #E4E0D6;
+    border: 1px solid #E4E0D6;
+}
+
+.resumen-item {
+    background: #FBF9F5;
+    padding: 1.5rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.resumen-numero {
+    font-family: 'Zilla Slab', serif;
+    font-size: 2.1rem;
+    font-weight: 600;
+    color: #1F3D2B;
+}
+
+.resumen-texto {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.85rem;
+    color: #5C5A52;
+}
+
+.resumen-alerta .resumen-numero {
+    color: #B4791F;
+}
+
+.resumen-critico .resumen-numero {
+    color: #A6392B;
+}
+
+.accesos {
+    margin-top: 2.5rem;
+}
+
+.accesos-titulo {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.9rem;
+    color: #7A776C;
+    margin-bottom: 0.9rem;
+}
+
+.accesos-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+}
+
+.acceso-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    padding: 1.4rem;
+    border: 1px solid #E4E0D6;
+    text-decoration: none;
+    background: #FFFFFF;
+    transition: border-color 0.15s ease;
+}
+
+    .acceso-card:hover {
+        border-color: #1F3D2B;
+    }
+
+.acceso-nombre {
+    font-family: 'Zilla Slab', serif;
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: #1C1C1C;
+}
+
+.acceso-desc {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.85rem;
+    color: #7A776C;
+}
+
+.acceso-venta {
+    background: #1F3D2B;
+    border-color: #1F3D2B;
+}
+
+    .acceso-venta .acceso-nombre,
+    .acceso-venta .acceso-desc {
+        color: #F5F1E8;
+    }
+
+    .acceso-venta:hover {
+        border-color: #D9A544;
+    }
+
+@media (max-width: 900px) {
+    .resumen, .accesos-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 550px) {
+    .resumen, .accesos-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .hero {
+        padding: 2rem 1.5rem;
+    }
+}

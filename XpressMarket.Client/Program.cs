@@ -18,4 +18,5 @@ builder.Services.AddScoped<ProductoService>();
 builder.Services.AddScoped<ProveedorService>();
 builder.Services.AddScoped<LoteService>();
 builder.Services.AddScoped<CategoriaService>();
+builder.Services.AddScoped<VentaService>();
 await builder.Build().RunAsync();

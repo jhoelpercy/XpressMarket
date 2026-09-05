@@ -1,0 +1,53 @@
+﻿@inject ProductoService ProductoSvc
+@using XpressMarket.Shared.Models
+
+<div class="mb-3 position-relative">
+    <input class="form-control"
+           placeholder="Buscar producto por nombre o código de barras..."
+           @bind="textoBusqueda"
+           @bind:event="oninput"
+           @onfocus="() => mostrarResultados = true" />
+
+    @if (mostrarResultados && resultadosFiltrados.Any())
+    {
+        <div class="list-group position-absolute w-100" style="z-index: 1000; max-height: 250px; overflow-y: auto;">
+            @foreach (var producto in resultadosFiltrados)
+            {
+                <button type="button" class="list-group-item list-group-item-action"
+                        @onclick="() => SeleccionarProducto(producto)">
+                    @producto.Nombre — @producto.PrecioVenta.ToString("C2")
+                    <span class="text-muted small">(Stock: @producto.StockActual)</span>
+                </button>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public EventCallback<Producto> ProductoSeleccionado { get; set; }
+
+    private List<Producto> todosLosProductos = new();
+    private string textoBusqueda = string.Empty;
+    private bool mostrarResultados = false;
+
+    private IEnumerable<Producto> resultadosFiltrados =>
+        string.IsNullOrWhiteSpace(textoBusqueda)
+            ? Enumerable.Empty<Producto>()
+            : todosLosProductos
+                .Where(p => p.Nombre.Contains(textoBusqueda, StringComparison.OrdinalIgnoreCase)
+                         || (p.CodigoBarras != null && p.CodigoBarras.Contains(textoBusqueda)))
+                .Take(10);
+
+    protected override async Task OnInitializedAsync()
+    {
+        todosLosProductos = await ProductoSvc.ObtenerTodosAsync();
+    }
+
+    private async Task SeleccionarProducto(Producto producto)
+    {
+        textoBusqueda = string.Empty;
+        mostrarResultados = false;
+        await ProductoSeleccionado.InvokeAsync(producto);
+    }
+}

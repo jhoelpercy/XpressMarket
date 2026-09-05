@@ -1,7 +1,88 @@
 ﻿@page "/"
+@inject ProductoService ProductoSvc
+@inject LoteService LoteSvc
 
-<PageTitle>Home</PageTitle>
+<PageTitle>Xpress Market</PageTitle>
 
-<h1>Hello, world!</h1>
+<section class="hero">
+    <div class="hero-brand">Xpress Market</div>
+    <h1>@saludo</h1>
+    <p class="hero-sub">@fechaFormateada</p>
+</section>
 
-Welcome to your new app.
+@if (!cargando)
+{
+    <section class="resumen">
+        <div class="resumen-item @(stockBajoCount > 0 ? "resumen-alerta" : "")">
+            <span class="resumen-numero">@stockBajoCount</span>
+            <span class="resumen-texto">producto@(stockBajoCount == 1 ? "" : "s") con stock bajo</span>
+        </div>
+        <div class="resumen-item @(porVencerCount > 0 ? "resumen-alerta" : "")">
+            <span class="resumen-numero">@porVencerCount</span>
+            <span class="resumen-texto">lote@(porVencerCount == 1 ? "" : "s") por vencer pronto</span>
+        </div>
+        <div class="resumen-item @(vencidosCount > 0 ? "resumen-critico" : "")">
+            <span class="resumen-numero">@vencidosCount</span>
+            <span class="resumen-texto">lote@(vencidosCount == 1 ? "" : "s") vencido@(vencidosCount == 1 ? "" : "s")</span>
+        </div>
+        <div class="resumen-item">
+            <span class="resumen-numero">@totalProductos</span>
+            <span class="resumen-texto">producto@(totalProductos == 1 ? "" : "s") en catálogo</span>
+        </div>
+    </section>
+}
+
+<section class="accesos">
+    <p class="accesos-titulo">Ir directo a</p>
+    <div class="accesos-grid">
+        <a class="acceso-card acceso-venta" href="punto-venta">
+            <span class="acceso-nombre">Punto de Venta</span>
+            <span class="acceso-desc">Registrar una nueva venta</span>
+        </a>
+        <a class="acceso-card" href="productos">
+            <span class="acceso-nombre">Productos</span>
+            <span class="acceso-desc">Ver y editar el catálogo</span>
+        </a>
+        <a class="acceso-card" href="lotes">
+            <span class="acceso-nombre">Lotes</span>
+            <span class="acceso-desc">Controlar vencimientos</span>
+        </a>
+        <a class="acceso-card" href="alertas">
+            <span class="acceso-nombre">Alertas</span>
+            <span class="acceso-desc">Revisar pendientes</span>
+        </a>
+    </div>
+</section>
+
+@code {
+    private bool cargando = true;
+    private int stockBajoCount;
+    private int porVencerCount;
+    private int vencidosCount;
+    private int totalProductos;
+    private string saludo = "";
+    private string fechaFormateada = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var hora = DateTime.Now.Hour;
+        saludo = hora < 12 ? "Buenos días" : hora < 19 ? "Buenas tardes" : "Buenas noches";
+
+        fechaFormateada = DateTime.Now.ToString("dddd d 'de' MMMM", new System.Globalization.CultureInfo("es-ES"));
+        fechaFormateada = char.ToUpper(fechaFormateada[0]) + fechaFormateada.Substring(1);
+
+        var productos = await ProductoSvc.ObtenerTodosAsync();
+        totalProductos = productos.Count;
+
+        var stockBajo = await ProductoSvc.ObtenerStockBajoAsync();
+        stockBajoCount = stockBajo.Count;
+
+        var porVencer = await LoteSvc.ObtenerProximosAVencerAsync();
+        porVencerCount = porVencer.Count;
+
+        var vencidos = await LoteSvc.ObtenerVencidosAsync();
+        vencidosCount = vencidos.Count;
+
+        cargando = false;
+    }
+}

@@ -1,0 +1,127 @@
+﻿@page "/punto-venta"
+@inject VentaService VentaSvc
+@using XpressMarket.Shared.Models
+
+<PageTitle>Punto de Venta</PageTitle>
+
+<h3>Punto de Venta</h3>
+
+<BuscadorProducto ProductoSeleccionado="AgregarProductoAlCarrito" />
+
+@if (mensajeError != null)
+{
+    <div class="alert alert-danger">@mensajeError</div>
+}
+
+@if (carrito.Any())
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Producto</th>
+                <th>Precio Unit.</th>
+                <th>Cantidad</th>
+                <th>Subtotal</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in carrito)
+            {
+                <tr>
+                    <td>@item.NombreProducto</td>
+                    <td>@item.PrecioUnitario.ToString("C2")</td>
+                    <td style="width: 100px;">
+                        <input type="number" class="form-control form-control-sm" min="1"
+                               value="@item.Cantidad"
+                               @onchange="(e) => CambiarCantidad(item, e.Value)" />
+                    </td>
+                    <td>@item.Subtotal.ToString("C2")</td>
+                    <td>
+                        <button class="btn btn-sm btn-danger" @onclick="() => QuitarDelCarrito(item)">
+                            Quitar
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <div class="text-end">
+        <h4>Total: @carrito.Sum(i => i.Subtotal).ToString("C2")</h4>
+        <button class="btn btn-success btn-lg" @onclick="ConfirmarVenta" disabled="@procesando">
+            @(procesando ? "Procesando..." : "Confirmar Venta")
+        </button>
+    </div>
+}
+else
+{
+    <p class="text-muted">Busca un producto arriba para agregarlo a la venta.</p>
+}
+
+@code {
+    private List<DetalleVenta> carrito = new();
+    private string? mensajeError;
+    private bool procesando = false;
+
+    private void AgregarProductoAlCarrito(Producto producto)
+    {
+        mensajeError = null;
+        var itemExistente = carrito.FirstOrDefault(i => i.ProductoId == producto.Id);
+
+        if (itemExistente != null)
+        {
+            itemExistente.Cantidad++;
+        }
+        else
+        {
+            carrito.Add(new DetalleVenta
+            {
+                ProductoId = producto.Id,
+                NombreProducto = producto.Nombre,
+                PrecioUnitario = producto.PrecioVenta,
+                Cantidad = 1,
+                Descuento = 0
+            });
+        }
+    }
+
+    private void CambiarCantidad(DetalleVenta item, object? valor)
+    {
+        if (int.TryParse(valor?.ToString(), out int nuevaCantidad) && nuevaCantidad > 0)
+        {
+            item.Cantidad = nuevaCantidad;
+        }
+    }
+
+    private void QuitarDelCarrito(DetalleVenta item)
+    {
+        carrito.Remove(item);
+    }
+
+    private async Task ConfirmarVenta()
+    {
+        mensajeError = null;
+        procesando = true;
+
+        var venta = new Venta
+        {
+            NombreUsuario = "Cajero Temporal", // se reemplaza con usuario real en el Sprint 4 (JWT)
+            UsuarioId = "temp",
+            Detalles = carrito
+        };
+
+        var (exito, error, ventaCreada) = await VentaSvc.RegistrarVentaAsync(venta);
+
+        procesando = false;
+
+        if (exito)
+        {
+            carrito.Clear();
+        }
+        else
+        {
+            mensajeError = error ?? "Ocurrió un error al registrar la venta.";
+        }
+    }
+}
