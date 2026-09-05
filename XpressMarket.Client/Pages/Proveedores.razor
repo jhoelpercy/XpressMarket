@@ -1,0 +1,160 @@
+﻿@page "/proveedores"
+@inject ProveedorService ProveedorSvc
+@using XpressMarket.Shared.Models
+
+<PageTitle>Proveedores</PageTitle>
+
+<h3>Gestión de Proveedores</h3>
+
+<button class="btn btn-primary mb-3" @onclick="AbrirFormularioNuevo">
+    Nuevo Proveedor
+</button>
+
+@if (cargando)
+{
+    <p><em>Cargando proveedores...</em></p>
+}
+else if (proveedores == null || !proveedores.Any())
+{
+    <p>No hay proveedores registrados.</p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Contacto</th>
+                <th>Teléfono</th>
+                <th>Email</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var proveedor in proveedores)
+            {
+                <tr>
+                    <td>@proveedor.Nombre</td>
+                    <td>@proveedor.Contacto</td>
+                    <td>@proveedor.Telefono</td>
+                    <td>@proveedor.Email</td>
+                    <td>
+                        <button class="btn btn-sm btn-secondary" @onclick="() => AbrirFormularioEditar(proveedor)">
+                            Editar
+                        </button>
+                        <button class="btn btn-sm btn-danger" @onclick="() => EliminarProveedor(proveedor.Id)">
+                            Eliminar
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@if (mostrarFormulario)
+{
+    <div class="card p-3 mt-3">
+        <h4>@(proveedorEditando.Id == 0 ? "Nuevo Proveedor" : "Editar Proveedor")</h4>
+
+        <EditForm Model="proveedorEditando" OnValidSubmit="GuardarProveedor">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
+            <div class="mb-2">
+                <label>Nombre</label>
+                <InputText class="form-control" @bind-Value="proveedorEditando.Nombre" />
+            </div>
+
+            <div class="mb-2">
+                <label>Contacto</label>
+                <InputText class="form-control" @bind-Value="proveedorEditando.Contacto" />
+            </div>
+
+            <div class="row">
+                <div class="col mb-2">
+                    <label>Teléfono</label>
+                    <InputText class="form-control" @bind-Value="proveedorEditando.Telefono" />
+                </div>
+                <div class="col mb-2">
+                    <label>Email</label>
+                    <InputText class="form-control" @bind-Value="proveedorEditando.Email" />
+                </div>
+            </div>
+
+            <div class="mb-2">
+                <label>Dirección</label>
+                <InputTextArea class="form-control" @bind-Value="proveedorEditando.Direccion" />
+            </div>
+
+            <button type="submit" class="btn btn-success mt-2">Guardar</button>
+            <button type="button" class="btn btn-secondary mt-2" @onclick="CerrarFormulario">Cancelar</button>
+        </EditForm>
+    </div>
+}
+
+@code {
+    private List<Proveedor>? proveedores;
+    private bool cargando = true;
+    private bool mostrarFormulario = false;
+    private Proveedor proveedorEditando = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarDatos();
+    }
+
+    private async Task CargarDatos()
+    {
+        cargando = true;
+        proveedores = await ProveedorSvc.ObtenerTodosAsync();
+        cargando = false;
+    }
+
+    private void AbrirFormularioNuevo()
+    {
+        proveedorEditando = new Proveedor { Activo = true };
+        mostrarFormulario = true;
+    }
+
+    private void AbrirFormularioEditar(Proveedor proveedor)
+    {
+        proveedorEditando = new Proveedor
+        {
+            Id = proveedor.Id,
+            Nombre = proveedor.Nombre,
+            Contacto = proveedor.Contacto,
+            Telefono = proveedor.Telefono,
+            Email = proveedor.Email,
+            Direccion = proveedor.Direccion,
+            Activo = proveedor.Activo
+        };
+        mostrarFormulario = true;
+    }
+
+    private void CerrarFormulario()
+    {
+        mostrarFormulario = false;
+    }
+
+    private async Task GuardarProveedor()
+    {
+        if (proveedorEditando.Id == 0)
+        {
+            await ProveedorSvc.CrearAsync(proveedorEditando);
+        }
+        else
+        {
+            await ProveedorSvc.ActualizarAsync(proveedorEditando.Id, proveedorEditando);
+        }
+
+        mostrarFormulario = false;
+        await CargarDatos();
+    }
+
+    private async Task EliminarProveedor(int id)
+    {
+        await ProveedorSvc.EliminarAsync(id);
+        await CargarDatos();
+    }
+}
