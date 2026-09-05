@@ -1,0 +1,137 @@
+﻿@page "/categorias"
+@inject CategoriaService CategoriaSvc
+@using XpressMarket.Shared.Models
+
+<PageTitle>Categorías</PageTitle>
+
+<h3>Gestión de Categorías</h3>
+
+<button class="btn btn-primary mb-3" @onclick="AbrirFormularioNuevo">
+    Nueva Categoría
+</button>
+
+@if (cargando)
+{
+    <p><em>Cargando categorías...</em></p>
+}
+else if (categorias == null || !categorias.Any())
+{
+    <p>No hay categorías registradas.</p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Descripción</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var categoria in categorias)
+            {
+                <tr>
+                    <td>@categoria.Nombre</td>
+                    <td>@categoria.Descripcion</td>
+                    <td>
+                        <button class="btn btn-sm btn-secondary" @onclick="() => AbrirFormularioEditar(categoria)">
+                            Editar
+                        </button>
+                        <button class="btn btn-sm btn-danger" @onclick="() => EliminarCategoria(categoria.Id)">
+                            Eliminar
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@if (mostrarFormulario)
+{
+    <div class="card p-3 mt-3">
+        <h4>@(categoriaEditando.Id == 0 ? "Nueva Categoría" : "Editar Categoría")</h4>
+
+        <EditForm Model="categoriaEditando" OnValidSubmit="GuardarCategoria">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
+            <div class="mb-2">
+                <label>Nombre</label>
+                <InputText class="form-control" @bind-Value="categoriaEditando.Nombre" />
+            </div>
+
+            <div class="mb-2">
+                <label>Descripción</label>
+                <InputTextArea class="form-control" @bind-Value="categoriaEditando.Descripcion" />
+            </div>
+
+            <button type="submit" class="btn btn-success mt-2">Guardar</button>
+            <button type="button" class="btn btn-secondary mt-2" @onclick="CerrarFormulario">Cancelar</button>
+        </EditForm>
+    </div>
+}
+
+@code {
+    private List<Categoria>? categorias;
+    private bool cargando = true;
+    private bool mostrarFormulario = false;
+    private Categoria categoriaEditando = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarDatos();
+    }
+
+    private async Task CargarDatos()
+    {
+        cargando = true;
+        categorias = await CategoriaSvc.ObtenerTodasAsync();
+        cargando = false;
+    }
+
+    private void AbrirFormularioNuevo()
+    {
+        categoriaEditando = new Categoria { Activo = true };
+        mostrarFormulario = true;
+    }
+
+    private void AbrirFormularioEditar(Categoria categoria)
+    {
+        categoriaEditando = new Categoria
+        {
+            Id = categoria.Id,
+            Nombre = categoria.Nombre,
+            Descripcion = categoria.Descripcion,
+            Activo = categoria.Activo
+        };
+        mostrarFormulario = true;
+    }
+
+    private void CerrarFormulario()
+    {
+        mostrarFormulario = false;
+    }
+
+    private async Task GuardarCategoria()
+    {
+        if (categoriaEditando.Id == 0)
+        {
+            await CategoriaSvc.CrearAsync(categoriaEditando);
+        }
+        else
+        {
+            await CategoriaSvc.ActualizarAsync(categoriaEditando.Id, categoriaEditando);
+        }
+
+        mostrarFormulario = false;
+        await CargarDatos();
+    }
+
+    private async Task EliminarCategoria(int id)
+    {
+        await CategoriaSvc.EliminarAsync(id);
+        await CargarDatos();
+    }
+}
