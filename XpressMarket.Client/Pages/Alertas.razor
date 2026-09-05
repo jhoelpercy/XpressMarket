@@ -1,0 +1,159 @@
+﻿@page "/alertas"
+@inject LoteService LoteSvc
+@inject ProductoService ProductoSvc
+@using XpressMarket.Shared.Models
+
+<PageTitle>Alertas</PageTitle>
+
+<h3>Panel de Alertas</h3>
+
+@if (cargando)
+{
+    <p><em>Cargando alertas...</em></p>
+}
+else
+{
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card text-white bg-danger">
+                <div class="card-body">
+                    <h5 class="card-title">Lotes Vencidos</h5>
+                    <p class="card-text display-6">@lotesVencidos.Count</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-dark bg-warning">
+                <div class="card-body">
+                    <h5 class="card-title">Próximos a Vencer</h5>
+                    <p class="card-text display-6">@lotesProximosAVencer.Count</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-dark bg-info">
+                <div class="card-body">
+                    <h5 class="card-title">Productos con Stock Bajo</h5>
+                    <p class="card-text display-6">@productosStockBajo.Count</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <h4>Lotes Vencidos</h4>
+    @if (!lotesVencidos.Any())
+    {
+        <p class="text-muted">No hay lotes vencidos.</p>
+    }
+    else
+    {
+        <table class="table table-sm table-danger">
+            <thead>
+                <tr>
+                    <th>N° Lote</th>
+                    <th>Producto</th>
+                    <th>Fecha Vencimiento</th>
+                    <th>Días Vencido</th>
+                    <th>Cantidad</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var lote in lotesVencidos)
+                {
+                    <tr>
+                        <td>@lote.NumeroLote</td>
+                        <td>@lote.Producto?.Nombre</td>
+                        <td>@lote.FechaVencimiento.ToString("dd/MM/yyyy")</td>
+                        <td>@Math.Abs(lote.DiasParaVencer)</td>
+                        <td>@lote.CantidadActual</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+
+    <h4 class="mt-4">Lotes Próximos a Vencer (30 días)</h4>
+    @if (!lotesProximosAVencer.Any())
+    {
+        <p class="text-muted">No hay lotes próximos a vencer.</p>
+    }
+    else
+    {
+        <table class="table table-sm table-warning">
+            <thead>
+                <tr>
+                    <th>N° Lote</th>
+                    <th>Producto</th>
+                    <th>Fecha Vencimiento</th>
+                    <th>Días Restantes</th>
+                    <th>Cantidad</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var lote in lotesProximosAVencer.OrderBy(l => l.DiasParaVencer))
+                {
+                    <tr>
+                        <td>@lote.NumeroLote</td>
+                        <td>@lote.Producto?.Nombre</td>
+                        <td>@lote.FechaVencimiento.ToString("dd/MM/yyyy")</td>
+                        <td>@lote.DiasParaVencer</td>
+                        <td>@lote.CantidadActual</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+
+    <h4 class="mt-4">Productos con Stock Bajo</h4>
+    @if (!productosStockBajo.Any())
+    {
+        <p class="text-muted">No hay productos con stock bajo.</p>
+    }
+    else
+    {
+        <table class="table table-sm table-info">
+            <thead>
+                <tr>
+                    <th>Producto</th>
+                    <th>Categoría</th>
+                    <th>Stock Actual</th>
+                    <th>Stock Mínimo</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var producto in productosStockBajo)
+                {
+                    <tr>
+                        <td>@producto.Nombre</td>
+                        <td>@producto.Categoria?.Nombre</td>
+                        <td>@producto.StockActual</td>
+                        <td>@producto.StockMinimo</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+}
+
+@code {
+    private List<Lote> lotesVencidos = new();
+    private List<Lote> lotesProximosAVencer = new();
+    private List<Producto> productosStockBajo = new();
+    private bool cargando = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarAlertas();
+    }
+
+    private async Task CargarAlertas()
+    {
+        cargando = true;
+
+        lotesVencidos = await LoteSvc.ObtenerVencidosAsync();
+        lotesProximosAVencer = await LoteSvc.ObtenerProximosAVencerAsync();
+        productosStockBajo = await ProductoSvc.ObtenerStockBajoAsync();
+
+        cargando = false;
+    }
+}
