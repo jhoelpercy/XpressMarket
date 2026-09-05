@@ -1,0 +1,239 @@
+﻿@page "/lotes"
+@inject LoteService LoteSvc
+@inject ProductoService ProductoSvc
+@inject ProveedorService ProveedorSvc
+@using XpressMarket.Shared.Models
+
+<PageTitle>Lotes</PageTitle>
+
+<h3>Gestión de Lotes</h3>
+
+<button class="btn btn-primary mb-3" @onclick="AbrirFormularioNuevo">
+    Nuevo Lote
+</button>
+
+@if (cargando)
+{
+    <p><em>Cargando lotes...</em></p>
+}
+else if (lotes == null || !lotes.Any())
+{
+    <p>No hay lotes registrados.</p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>N° Lote</th>
+                <th>Producto</th>
+                <th>Proveedor</th>
+                <th>Fecha Vencimiento</th>
+                <th>Cantidad Actual</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var lote in lotes)
+            {
+                <tr class="@ClaseEstado(lote)">
+                    <td>@lote.NumeroLote</td>
+                    <td>@lote.Producto?.Nombre</td>
+                    <td>@(lote.Proveedor?.Nombre ?? "-")</td>
+                    <td>@lote.FechaVencimiento.ToString("dd/MM/yyyy")</td>
+                    <td>@lote.CantidadActual</td>
+                    <td>
+                        @if (lote.Vencido)
+                        {
+                            <span class="badge bg-danger">Vencido</span>
+                        }
+                        else if (lote.ProximoAVencer)
+                        {
+                            <span class="badge bg-warning text-dark">Vence en @lote.DiasParaVencer días</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-success">OK</span>
+                        }
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-secondary" @onclick="() => AbrirFormularioEditar(lote)">
+                            Editar
+                        </button>
+                        <button class="btn btn-sm btn-danger" @onclick="() => EliminarLote(lote.Id)">
+                            Eliminar
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@if (mostrarFormulario)
+{
+    <div class="card p-3 mt-3">
+        <h4>@(loteEditando.Id == 0 ? "Nuevo Lote" : "Editar Lote")</h4>
+
+        <EditForm Model="loteEditando" OnValidSubmit="GuardarLote">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
+            <div class="mb-2">
+                <label>Número de Lote</label>
+                <InputText class="form-control" @bind-Value="loteEditando.NumeroLote" />
+            </div>
+
+            <div class="mb-2">
+                <label>Producto</label>
+                <InputSelect class="form-control" @bind-Value="loteEditando.ProductoId">
+                    <option value="0">-- Seleccione --</option>
+                    @if (productos != null)
+                    {
+                        @foreach (var prod in productos)
+                        {
+                            <option value="@prod.Id">@prod.Nombre</option>
+                        }
+                    }
+                </InputSelect>
+            </div>
+
+            <div class="mb-2">
+                <label>Proveedor (opcional)</label>
+                <InputSelect class="form-control" @bind-Value="proveedorSeleccionado">
+                    <option value="0">-- Sin proveedor --</option>
+                    @if (proveedores != null)
+                    {
+                        @foreach (var prov in proveedores)
+                        {
+                            <option value="@prov.Id">@prov.Nombre</option>
+                        }
+                    }
+                </InputSelect>
+            </div>
+
+            <div class="row">
+                <div class="col mb-2">
+                    <label>Fecha de Ingreso</label>
+                    <InputDate class="form-control" @bind-Value="loteEditando.FechaIngreso" />
+                </div>
+                <div class="col mb-2">
+                    <label>Fecha de Vencimiento</label>
+                    <InputDate class="form-control" @bind-Value="loteEditando.FechaVencimiento" />
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col mb-2">
+                    <label>Cantidad Inicial</label>
+                    <InputNumber class="form-control" @bind-Value="loteEditando.CantidadInicial" />
+                </div>
+                <div class="col mb-2">
+                    <label>Cantidad Actual</label>
+                    <InputNumber class="form-control" @bind-Value="loteEditando.CantidadActual" />
+                </div>
+            </div>
+
+            <div class="mb-2">
+                <label>Precio Costo</label>
+                <InputNumber class="form-control" @bind-Value="loteEditando.PrecioCosto" />
+            </div>
+
+            <button type="submit" class="btn btn-success mt-2">Guardar</button>
+            <button type="button" class="btn btn-secondary mt-2" @onclick="CerrarFormulario">Cancelar</button>
+        </EditForm>
+    </div>
+}
+
+@code {
+    private List<Lote>? lotes;
+    private List<Producto>? productos;
+    private List<Proveedor>? proveedores;
+    private bool cargando = true;
+    private bool mostrarFormulario = false;
+    private Lote loteEditando = new();
+
+    // Auxiliar porque InputSelect no maneja bien int? directamente con "0" como "sin seleccionar"
+    private int proveedorSeleccionado
+    {
+        get => loteEditando.ProveedorId ?? 0;
+        set => loteEditando.ProveedorId = value == 0 ? null : value;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarDatos();
+    }
+
+    private async Task CargarDatos()
+    {
+        cargando = true;
+        lotes = await LoteSvc.ObtenerTodosAsync();
+        productos = await ProductoSvc.ObtenerTodosAsync();
+        proveedores = await ProveedorSvc.ObtenerTodosAsync();
+        cargando = false;
+    }
+
+    private string ClaseEstado(Lote lote)
+    {
+        if (lote.Vencido) return "table-danger";
+        if (lote.ProximoAVencer) return "table-warning";
+        return "";
+    }
+
+    private void AbrirFormularioNuevo()
+    {
+        loteEditando = new Lote
+        {
+            Activo = true,
+            FechaIngreso = DateTime.Now,
+            FechaVencimiento = DateTime.Now.AddMonths(6)
+        };
+        mostrarFormulario = true;
+    }
+
+    private void AbrirFormularioEditar(Lote lote)
+    {
+        loteEditando = new Lote
+        {
+            Id = lote.Id,
+            NumeroLote = lote.NumeroLote,
+            ProductoId = lote.ProductoId,
+            ProveedorId = lote.ProveedorId,
+            FechaIngreso = lote.FechaIngreso,
+            FechaVencimiento = lote.FechaVencimiento,
+            CantidadInicial = lote.CantidadInicial,
+            CantidadActual = lote.CantidadActual,
+            PrecioCosto = lote.PrecioCosto,
+            Activo = lote.Activo
+        };
+        mostrarFormulario = true;
+    }
+
+    private void CerrarFormulario()
+    {
+        mostrarFormulario = false;
+    }
+
+    private async Task GuardarLote()
+    {
+        if (loteEditando.Id == 0)
+        {
+            await LoteSvc.CrearAsync(loteEditando);
+        }
+        else
+        {
+            await LoteSvc.ActualizarAsync(loteEditando.Id, loteEditando);
+        }
+
+        mostrarFormulario = false;
+        await CargarDatos();
+    }
+
+    private async Task EliminarLote(int id)
+    {
+        await LoteSvc.EliminarAsync(id);
+        await CargarDatos();
+    }
+}
