@@ -1,0 +1,87 @@
+﻿@page "/reporte-mermas"
+@inject LoteService LoteSvc
+@using XpressMarket.Shared.Models
+
+<PageTitle>Reporte de Mermas</PageTitle>
+
+<h3>Reporte de Mermas</h3>
+
+<div class="row mb-3">
+    <div class="col-auto">
+        <label>Desde</label>
+        <input type="date" class="form-control" @bind="fechaDesde" />
+    </div>
+    <div class="col-auto">
+        <label>Hasta</label>
+        <input type="date" class="form-control" @bind="fechaHasta" />
+    </div>
+    <div class="col-auto d-flex align-items-end">
+        <button class="btn btn-primary" @onclick="Filtrar">Filtrar</button>
+    </div>
+</div>
+
+@if (cargando)
+{
+    <p><em>Cargando...</em></p>
+}
+else if (!mermas.Any())
+{
+    <p class="text-muted">No hay mermas registradas en este período.</p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>N° Lote</th>
+                <th>Producto</th>
+                <th>Fecha Vencimiento</th>
+                <th>Fecha Registro Merma</th>
+                <th>Cantidad Perdida</th>
+                <th>Costo Unit.</th>
+                <th>Valor Perdido</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var lote in mermas)
+            {
+                <tr>
+                    <td>@lote.NumeroLote</td>
+                    <td>@lote.Producto?.Nombre</td>
+                    <td>@lote.FechaVencimiento.ToString("dd/MM/yyyy")</td>
+                    <td>@lote.FechaMerma?.ToString("dd/MM/yyyy")</td>
+                    <td>@lote.CantidadActual</td>
+                    <td>@lote.PrecioCosto.ToString("C2")</td>
+                    <td>@((lote.CantidadActual * lote.PrecioCosto).ToString("C2"))</td>
+                </tr>
+            }
+        </tbody>
+        <tfoot>
+            <tr class="table-danger">
+                <td colspan="6" class="text-end"><strong>Valor Total Perdido:</strong></td>
+                <td><strong>@valorTotalPerdido.ToString("C2")</strong></td>
+            </tr>
+        </tfoot>
+    </table>
+}
+
+@code {
+    private List<Lote> mermas = new();
+    private bool cargando = true;
+    private DateTime? fechaDesde;
+    private DateTime? fechaHasta;
+
+    private decimal valorTotalPerdido => mermas.Sum(l => l.CantidadActual * l.PrecioCosto);
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Filtrar();
+    }
+
+    private async Task Filtrar()
+    {
+        cargando = true;
+        mermas = await LoteSvc.ObtenerReporteMermasAsync(fechaDesde, fechaHasta);
+        cargando = false;
+    }
+}

@@ -55,6 +55,7 @@ else
                     <th>Fecha Vencimiento</th>
                     <th>Días Vencido</th>
                     <th>Cantidad</th>
+                    <th></th>
                 </tr>
             </thead>
             <tbody>
@@ -66,6 +67,12 @@ else
                         <td>@lote.FechaVencimiento.ToString("dd/MM/yyyy")</td>
                         <td>@Math.Abs(lote.DiasParaVencer)</td>
                         <td>@lote.CantidadActual</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-danger" @onclick="() => RegistrarMerma(lote.Id)">
+                                Registrar como Merma
+                            </button>
+                        </td>
+
                     </tr>
                 }
             </tbody>
@@ -156,4 +163,10 @@ else
 
         cargando = false;
     }
+    private async Task RegistrarMerma(int loteId)
+    {
+        await LoteSvc.RegistrarMermaAsync(loteId);
+        await CargarAlertas();
+    }
+
 }

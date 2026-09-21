@@ -53,5 +53,20 @@ namespace XpressMarket.Client.Services
             var respuesta = await _http.DeleteAsync($"{RutaBase}/{id}");
             return respuesta.IsSuccessStatusCode;
         }
+        public async Task<bool> RegistrarMermaAsync(int id)
+        {
+            var respuesta = await _http.PutAsync($"{RutaBase}/{id}/registrar-merma", null);
+            return respuesta.IsSuccessStatusCode;
+        }
+
+        public async Task<List<Lote>> ObtenerReporteMermasAsync(DateTime? desde = null, DateTime? hasta = null)
+        {
+            var filtros = new List<string>();
+            if (desde.HasValue) filtros.Add($"desde={desde:yyyy-MM-dd}");
+            if (hasta.HasValue) filtros.Add($"hasta={hasta:yyyy-MM-dd}");
+            var queryString = filtros.Any() ? "?" + string.Join("&", filtros) : "";
+
+            return await _http.GetFromJsonAsync<List<Lote>>($"{RutaBase}/reporte-mermas{queryString}") ?? new List<Lote>();
+        }
     }
 }

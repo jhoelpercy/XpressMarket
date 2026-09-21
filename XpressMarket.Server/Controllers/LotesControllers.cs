@@ -117,5 +117,40 @@ namespace XpressMarket.Server.Controllers
 
             return NoContent();
         }
+        // PUT: api/lotes/5/registrar-merma
+        [HttpPut("{id}/registrar-merma")]
+        public async Task<IActionResult> RegistrarMerma(int id)
+        {
+            var lote = await _context.Lotes.FindAsync(id);
+            if (lote == null)
+                return NotFound();
+
+            if (!lote.Vencido)
+                return BadRequest("Solo se pueden registrar como merma los lotes vencidos.");
+
+            if (lote.EsMerma)
+                return BadRequest("Este lote ya fue registrado como merma.");
+
+            lote.EsMerma = true;
+            lote.FechaMerma = DateTime.Now;
+            lote.Activo = false;
+
+            await _context.SaveChangesAsync();
+            return NoContent();
+        }
+
+        // GET: api/lotes/reporte-mermas?desde=2026-01-01&hasta=2026-12-31
+        [HttpGet("reporte-mermas")]
+        public async Task<ActionResult<IEnumerable<Lote>>> GetReporteMermas([FromQuery] DateTime? desde, [FromQuery] DateTime? hasta)
+        {
+            var query = _context.Lotes.Include(l => l.Producto).Where(l => l.EsMerma);
+
+            if (desde.HasValue)
+                query = query.Where(l => l.FechaMerma >= desde.Value);
+            if (hasta.HasValue)
+                query = query.Where(l => l.FechaMerma <= hasta.Value.Date.AddDays(1).AddTicks(-1));
+
+            return await query.OrderByDescending(l => l.FechaMerma).ToListAsync();
+        }
     }
 }    

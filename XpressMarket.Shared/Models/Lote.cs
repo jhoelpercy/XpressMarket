@@ -54,6 +54,8 @@ namespace XpressMarket.Shared.Models
 
         [Required]
         public bool Activo { get; set; } = true;
+        public bool EsMerma { get; set; } = false;
+        public DateTime? FechaMerma { get; set; }
 
         // Propiedades calculadas para alertas de vencimiento
         [NotMapped]
@@ -64,5 +66,6 @@ namespace XpressMarket.Shared.Models
 
         [NotMapped]
         public bool ProximoAVencer => !Vencido && DiasParaVencer <= 30;
+
     }
 }
