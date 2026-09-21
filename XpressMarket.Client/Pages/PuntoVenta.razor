@@ -1,5 +1,6 @@
 ﻿@page "/punto-venta"
 @inject VentaService VentaSvc
+@inject IJSRuntime JS
 @using XpressMarket.Shared.Models
 
 <PageTitle>Punto de Venta</PageTitle>
@@ -11,6 +12,16 @@
 @if (mensajeError != null)
 {
     <div class="alert alert-danger">@mensajeError</div>
+}
+
+@if (ultimaVentaId != null)
+{
+    <div class="alert alert-success d-flex justify-content-between align-items-center">
+        <span>Venta N° @ultimaVentaId registrada con éxito.</span>
+        <button class="btn btn-sm btn-outline-success" @onclick="DescargarComprobante">
+            Descargar Comprobante PDF
+        </button>
+    </div>
 }
 
 @if (carrito.Any())
@@ -99,6 +110,8 @@ else
         carrito.Remove(item);
     }
 
+    private int? ultimaVentaId;
+
     private async Task ConfirmarVenta()
     {
         mensajeError = null;
@@ -106,7 +119,7 @@ else
 
         var venta = new Venta
         {
-            NombreUsuario = "Cajero Temporal", // se reemplaza con usuario real en el Sprint 4 (JWT)
+            NombreUsuario = "Cajero Temporal",
             UsuarioId = "temp",
             Detalles = carrito
         };
@@ -117,11 +130,21 @@ else
 
         if (exito)
         {
+            ultimaVentaId = ventaCreada?.Id;
             carrito.Clear();
         }
         else
         {
             mensajeError = error ?? "Ocurrió un error al registrar la venta.";
         }
+    }
+
+    private async Task DescargarComprobante()
+    {
+        if (ultimaVentaId == null) return;
+
+        var bytes = await VentaSvc.ObtenerComprobantePdfAsync(ultimaVentaId.Value);
+        var base64 = Convert.ToBase64String(bytes);
+        await JS.InvokeVoidAsync("descargarArchivo", $"Comprobante_Venta_{ultimaVentaId}.pdf", base64);
     }
 }

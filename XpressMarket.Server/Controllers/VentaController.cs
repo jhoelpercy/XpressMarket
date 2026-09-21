@@ -127,5 +127,19 @@ namespace XpressMarket.Server.Controllers
 
             return NoContent();
         }
+        // GET: api/ventas/5/comprobante
+        [HttpGet("{id}/comprobante")]
+        public async Task<IActionResult> GetComprobante(int id)
+        {
+            var venta = await _context.Ventas
+                .Include(v => v.Detalles)
+                .FirstOrDefaultAsync(v => v.Id == id);
+
+            if (venta == null)
+                return NotFound();
+
+            var pdfBytes = XpressMarket.Server.Services.ComprobantePdfService.Generar(venta);
+            return File(pdfBytes, "application/pdf", $"Comprobante_Venta_{venta.Id}.pdf");
+        }
     }
 }

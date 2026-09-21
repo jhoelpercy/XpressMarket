@@ -37,5 +37,9 @@ namespace XpressMarket.Client.Services
             var respuesta = await _http.PutAsync($"{RutaBase}/{id}/anular", null);
             return respuesta.IsSuccessStatusCode;
         }
+        public async Task<byte[]> ObtenerComprobantePdfAsync(int ventaId)
+        {
+            return await _http.GetByteArrayAsync($"{RutaBase}/{ventaId}/comprobante");
+        }
     }
 }
