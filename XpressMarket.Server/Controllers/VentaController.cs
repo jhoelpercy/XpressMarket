@@ -141,5 +141,37 @@ namespace XpressMarket.Server.Controllers
             var pdfBytes = XpressMarket.Server.Services.ComprobantePdfService.Generar(venta);
             return File(pdfBytes, "application/pdf", $"Comprobante_Venta_{venta.Id}.pdf");
         }
+        // GET: api/ventas/reporte-utilidades?desde=2026-01-01&hasta=2026-12-31
+        [HttpGet("reporte-utilidades")]
+        public async Task<ActionResult<IEnumerable<ResumenUtilidad>>> GetReporteUtilidades(
+            [FromQuery] DateTime? desde, [FromQuery] DateTime? hasta)
+        {
+            var query = _context.Ventas
+                .Include(v => v.Detalles)
+                    .ThenInclude(d => d.Producto)
+                .Where(v => v.Estado == EstadoVenta.Completada);
+
+            if (desde.HasValue)
+                query = query.Where(v => v.FechaVenta >= desde.Value);
+            if (hasta.HasValue)
+                query = query.Where(v => v.FechaVenta <= hasta.Value.Date.AddDays(1).AddTicks(-1));
+
+            var ventas = await query.OrderByDescending(v => v.FechaVenta).ToListAsync();
+
+            var resumen = ventas.Select(v =>
+            {
+                var costoTotal = v.Detalles.Sum(d => d.Cantidad * (d.Producto?.PrecioCosto ?? 0));
+                return new ResumenUtilidad
+                {
+                    VentaId = v.Id,
+                    FechaVenta = v.FechaVenta,
+                    TotalVenta = v.Total,
+                    CostoTotal = costoTotal,
+                    Utilidad = v.Total - costoTotal
+                };
+            }).ToList();
+
+            return resumen;
+        }
     }
 }

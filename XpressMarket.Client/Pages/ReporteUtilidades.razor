@@ -1,0 +1,85 @@
+﻿@page "/reporte-utilidades"
+@inject VentaService VentaSvc
+@using XpressMarket.Shared.Models
+
+<PageTitle>Reporte de Utilidades</PageTitle>
+
+<h3>Reporte de Utilidades</h3>
+
+<div class="row mb-3">
+    <div class="col-auto">
+        <label>Desde</label>
+        <input type="date" class="form-control" @bind="fechaDesde" />
+    </div>
+    <div class="col-auto">
+        <label>Hasta</label>
+        <input type="date" class="form-control" @bind="fechaHasta" />
+    </div>
+    <div class="col-auto d-flex align-items-end">
+        <button class="btn btn-primary" @onclick="Filtrar">Filtrar</button>
+    </div>
+</div>
+
+@if (cargando)
+{
+    <p><em>Cargando...</em></p>
+}
+else if (!ventas.Any())
+{
+    <p class="text-muted">No hay ventas registradas en este período.</p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>N° Venta</th>
+                <th>Fecha</th>
+                <th>Total Venta</th>
+                <th>Costo Total</th>
+                <th>Utilidad</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var v in ventas)
+            {
+                <tr>
+                    <td>@v.VentaId</td>
+                    <td>@v.FechaVenta.ToString("dd/MM/yyyy HH:mm")</td>
+                    <td>@v.TotalVenta.ToString("C2")</td>
+                    <td>@v.CostoTotal.ToString("C2")</td>
+                    <td class="@(v.Utilidad >= 0 ? "text-success" : "text-danger")">
+                        @v.Utilidad.ToString("C2")
+                    </td>
+                </tr>
+            }
+        </tbody>
+        <tfoot>
+            <tr class="table-success">
+                <td colspan="2" class="text-end"><strong>Totales:</strong></td>
+                <td><strong>@ventas.Sum(v => v.TotalVenta).ToString("C2")</strong></td>
+                <td><strong>@ventas.Sum(v => v.CostoTotal).ToString("C2")</strong></td>
+                <td><strong>@ventas.Sum(v => v.Utilidad).ToString("C2")</strong></td>
+            </tr>
+        </tfoot>
+    </table>
+}
+
+@code {
+    private List<ResumenUtilidad> ventas = new();
+    private bool cargando = true;
+    private DateTime? fechaDesde;
+    private DateTime? fechaHasta;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Filtrar();
+    }
+
+    private async Task Filtrar()
+    {
+        cargando = true;
+        ventas = await VentaSvc.ObtenerReporteUtilidadesAsync(fechaDesde, fechaHasta);
+        cargando = false;
+    }
+}

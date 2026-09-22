@@ -37,9 +37,27 @@ namespace XpressMarket.Client.Services
             var respuesta = await _http.PutAsync($"{RutaBase}/{id}/anular", null);
             return respuesta.IsSuccessStatusCode;
         }
+
         public async Task<byte[]> ObtenerComprobantePdfAsync(int ventaId)
         {
-            return await _http.GetByteArrayAsync($"{RutaBase}/{ventaId}/comprobante");
+            var respuesta = await _http.GetAsync($"{RutaBase}/{ventaId}/comprobante");
+
+            if (respuesta.IsSuccessStatusCode)
+            {
+                return await respuesta.Content.ReadAsByteArrayAsync();
+            }
+
+            return Array.Empty<byte>();
+        }
+
+        public async Task<List<ResumenUtilidad>> ObtenerReporteUtilidadesAsync(DateTime? desde = null, DateTime? hasta = null)
+        {
+            var filtros = new List<string>();
+            if (desde.HasValue) filtros.Add($"desde={desde:yyyy-MM-dd}");
+            if (hasta.HasValue) filtros.Add($"hasta={hasta:yyyy-MM-dd}");
+            var queryString = filtros.Any() ? "?" + string.Join("&", filtros) : "";
+
+            return await _http.GetFromJsonAsync<List<ResumenUtilidad>>($"{RutaBase}/reporte-utilidades{queryString}") ?? new List<ResumenUtilidad>();
         }
     }
 }
