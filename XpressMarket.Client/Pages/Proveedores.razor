@@ -1,4 +1,6 @@
 ﻿@page "/proveedores"
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "Administrador")]
 @inject ProveedorService ProveedorSvc
 @using XpressMarket.Shared.Models
 

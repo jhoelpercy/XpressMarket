@@ -1,4 +1,6 @@
 ﻿@page "/productos"
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "Administrador")]
 @inject ProductoService ProductoSvc
 @inject CategoriaService CategoriaSvc
 @inject NavigationManager NavManager

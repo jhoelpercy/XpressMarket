@@ -1,4 +1,6 @@
 ﻿@page "/lotes"
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "Administrador")]
 @inject LoteService LoteSvc
 @inject ProductoService ProductoSvc
 @inject ProveedorService ProveedorSvc

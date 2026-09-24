@@ -1,0 +1,71 @@
+﻿@page "/login"
+@inject AuthService AuthSvc
+@inject NavigationManager Nav
+@using System.ComponentModel.DataAnnotations
+
+<PageTitle>Iniciar Sesión</PageTitle>
+
+<div class="d-flex justify-content-center align-items-center" style="min-height: 70vh;">
+    <div class="card p-4" style="width: 350px;">
+        <h3 class="text-center mb-3">Xpress Market</h3>
+
+        <EditForm Model="modelo" OnValidSubmit="IniciarSesion">
+            <DataAnnotationsValidator />
+
+            @if (error != null)
+            {
+                <div class="alert alert-danger py-2">@error</div>
+            }
+
+            <div class="mb-3">
+                <label>Usuario</label>
+                <InputText class="form-control" @bind-Value="modelo.NombreUsuario" />
+            </div>
+            <div class="mb-3">
+                <label>Contraseña</label>
+                <InputText type="password" class="form-control" @bind-Value="modelo.Contrasena" />
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100" disabled="@cargando">
+                @(cargando ? "Ingresando..." : "Ingresar")
+            </button>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+    private LoginModelo modelo = new();
+    private string? error;
+    private bool cargando = false;
+
+    [SupplyParameterFromQuery]
+    public string? ReturnUrl { get; set; }
+
+    private async Task IniciarSesion()
+    {
+        cargando = true;
+        error = null;
+
+        var (exito, mensajeError) = await AuthSvc.LoginAsync(modelo.NombreUsuario, modelo.Contrasena);
+
+        cargando = false;
+
+        if (exito)
+        {
+            Nav.NavigateTo(string.IsNullOrWhiteSpace(ReturnUrl) ? "/" : ReturnUrl);
+        }
+        else
+        {
+            error = mensajeError;
+        }
+    }
+
+    public class LoginModelo
+    {
+        [Required(ErrorMessage = "El usuario es obligatorio.")]
+        public string NombreUsuario { get; set; } = "";
+
+        [Required(ErrorMessage = "La contraseña es obligatoria.")]
+        public string Contrasena { get; set; } = "";
+    }
+}

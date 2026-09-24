@@ -1,4 +1,6 @@
 ﻿@page "/reporte-utilidades"
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "Administrador")]
 @inject VentaService VentaSvc
 @using XpressMarket.Shared.Models
 

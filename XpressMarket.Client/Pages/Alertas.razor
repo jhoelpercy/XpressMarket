@@ -1,4 +1,6 @@
 ﻿@page "/alertas"
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "Administrador")]
 @inject LoteService LoteSvc
 @inject ProductoService ProductoSvc
 @using XpressMarket.Shared.Models

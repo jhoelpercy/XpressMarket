@@ -1,4 +1,6 @@
 ﻿@page "/categorias"
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "Administrador")]
 @inject CategoriaService CategoriaSvc
 @using XpressMarket.Shared.Models
 

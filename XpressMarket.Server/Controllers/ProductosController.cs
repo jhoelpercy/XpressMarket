@@ -1,5 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Net.NetworkInformation;
 using XpressMarket.Server.Data;
 using XpressMarket.Shared.Models;
 
@@ -7,6 +9,7 @@ namespace XpressMarket.Server.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize] // Permite el acceso a usuarios autenticados (como el Cajero para consultas)
     public class ProductosController : ControllerBase
     {
         private readonly AppDbContext _context;
@@ -55,6 +58,7 @@ namespace XpressMarket.Server.Controllers
 
         // POST: api/productos
         [HttpPost]
+        [Authorize(Roles = "Administrador")] // Restringido solo para Administradores
         public async Task<ActionResult<Producto>> PostProducto(Producto producto)
         {
             if (!await _context.Categorias.AnyAsync(c => c.Id == producto.CategoriaId))
@@ -69,6 +73,7 @@ namespace XpressMarket.Server.Controllers
 
         // PUT: api/productos/5
         [HttpPut("{id}")]
+        [Authorize(Roles = "Administrador")] // Restringido solo para Administradores
         public async Task<IActionResult> PutProducto(int id, Producto producto)
         {
             if (id != producto.Id)
@@ -93,6 +98,7 @@ namespace XpressMarket.Server.Controllers
 
         // DELETE: api/productos/5  (baja lógica, no física)
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Administrador")] // Restringido solo para Administradores
         public async Task<IActionResult> DeleteProducto(int id)
         {
             var producto = await _context.Productos.FindAsync(id);

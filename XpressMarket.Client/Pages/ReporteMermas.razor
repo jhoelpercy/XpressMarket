@@ -1,4 +1,6 @@
 ﻿@page "/reporte-mermas"
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "Administrador")]
 @inject LoteService LoteSvc
 @using XpressMarket.Shared.Models
 

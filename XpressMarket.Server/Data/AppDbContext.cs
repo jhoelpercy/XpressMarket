@@ -17,6 +17,7 @@ namespace XpressMarket.Server.Data
         public DbSet<DetalleVenta> DetallesVenta { get; set; } = null!;
         public DbSet<Proveedor> Proveedores { get; set; } = null!;
         public DbSet<Lote> Lotes { get; set; } = null!;
+        public DbSet<Usuario> Usuarios { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -74,6 +75,10 @@ namespace XpressMarket.Server.Data
 
             modelBuilder.Entity<Lote>()
                 .HasIndex(l => l.FechaVencimiento);
+
+            modelBuilder.Entity<Usuario>()
+                .HasIndex(u => u.NombreUsuario)
+                .IsUnique();
         }
     }
 }

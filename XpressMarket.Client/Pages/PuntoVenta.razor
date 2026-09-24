@@ -1,7 +1,11 @@
 ﻿@page "/punto-venta"
+@using Microsoft.AspNetCore.Authorization
+@using XpressMarket.Shared.Models
+@attribute [Authorize]
+
 @inject VentaService VentaSvc
 @inject IJSRuntime JS
-@using XpressMarket.Shared.Models
+@inject AuthenticationStateProvider AuthStateProvider
 
 <PageTitle>Punto de Venta</PageTitle>
 
@@ -11,12 +15,12 @@
 
 @if (mensajeError != null)
 {
-    <div class="alert alert-danger">@mensajeError</div>
+    <div class="alert alert-danger mt-3">@mensajeError</div>
 }
 
 @if (ultimaVentaId != null)
 {
-    <div class="alert alert-success d-flex justify-content-between align-items-center">
+    <div class="alert alert-success mt-3 d-flex justify-content-between align-items-center">
         <span>Venta N° @ultimaVentaId registrada con éxito.</span>
         <button class="btn btn-sm btn-outline-success" @onclick="DescargarComprobante">
             Descargar Comprobante PDF
@@ -26,7 +30,7 @@
 
 @if (carrito.Any())
 {
-    <table class="table">
+    <table class="table mt-3 align-middle">
         <thead>
             <tr>
                 <th>Producto</th>
@@ -39,15 +43,16 @@
         <tbody>
             @foreach (var item in carrito)
             {
+                var subtotalItem = (item.Cantidad * item.PrecioUnitario) - item.Descuento;
                 <tr>
                     <td>@item.NombreProducto</td>
                     <td>@item.PrecioUnitario.ToString("C2")</td>
-                    <td style="width: 100px;">
+                    <td style="width: 120px;">
                         <input type="number" class="form-control form-control-sm" min="1"
                                value="@item.Cantidad"
                                @onchange="(e) => CambiarCantidad(item, e.Value)" />
                     </td>
-                    <td>@item.Subtotal.ToString("C2")</td>
+                    <td>@subtotalItem.ToString("C2")</td>
                     <td>
                         <button class="btn btn-sm btn-danger" @onclick="() => QuitarDelCarrito(item)">
                             Quitar
@@ -58,8 +63,8 @@
         </tbody>
     </table>
 
-    <div class="text-end">
-        <h4>Total: @carrito.Sum(i => i.Subtotal).ToString("C2")</h4>
+    <div class="text-end mt-3">
+        <h4>Total: @TotalCarrito.ToString("C2")</h4>
         <button class="btn btn-success btn-lg" @onclick="ConfirmarVenta" disabled="@procesando">
             @(procesando ? "Procesando..." : "Confirmar Venta")
         </button>
@@ -67,17 +72,22 @@
 }
 else
 {
-    <p class="text-muted">Busca un producto arriba para agregarlo a la venta.</p>
+    <p class="text-muted mt-3">Busca un producto arriba para agregarlo a la venta.</p>
 }
 
 @code {
     private List<DetalleVenta> carrito = new();
     private string? mensajeError;
     private bool procesando = false;
+    private int? ultimaVentaId;
+
+    private decimal TotalCarrito => carrito.Sum(i => (i.Cantidad * i.PrecioUnitario) - i.Descuento);
 
     private void AgregarProductoAlCarrito(Producto producto)
     {
         mensajeError = null;
+        ultimaVentaId = null; // Limpiar mensaje de éxito anterior
+
         var itemExistente = carrito.FirstOrDefault(i => i.ProductoId == producto.Id);
 
         if (itemExistente != null)
@@ -110,32 +120,44 @@ else
         carrito.Remove(item);
     }
 
-    private int? ultimaVentaId;
-
     private async Task ConfirmarVenta()
     {
+        if (!carrito.Any()) return;
+
         mensajeError = null;
         procesando = true;
 
-        var venta = new Venta
+        try
         {
-            NombreUsuario = "Cajero Temporal",
-            UsuarioId = "temp",
-            Detalles = carrito
-        };
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var usuarioActual = authState.User;
 
-        var (exito, error, ventaCreada) = await VentaSvc.RegistrarVentaAsync(venta);
+            var venta = new Venta
+            {
+                NombreUsuario = usuarioActual.Identity?.Name ?? "Desconocido",
+                UsuarioId = usuarioActual.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "0",
+                Detalles = carrito
+            };
 
-        procesando = false;
+            var (exito, error, ventaCreada) = await VentaSvc.RegistrarVentaAsync(venta);
 
-        if (exito)
-        {
-            ultimaVentaId = ventaCreada?.Id;
-            carrito.Clear();
+            if (exito && ventaCreada != null)
+            {
+                ultimaVentaId = ventaCreada.Id;
+                carrito.Clear(); // Vaciar carrito tras registro correcto
+            }
+            else
+            {
+                mensajeError = error ?? "Ocurrió un error al procesar la venta.";
+            }
         }
-        else
+        catch (Exception ex)
         {
-            mensajeError = error ?? "Ocurrió un error al registrar la venta.";
+            mensajeError = $"Error inesperado: {ex.Message}";
+        }
+        finally
+        {
+            procesando = false;
         }
     }
 
@@ -143,8 +165,15 @@ else
     {
         if (ultimaVentaId == null) return;
 
-        var bytes = await VentaSvc.ObtenerComprobantePdfAsync(ultimaVentaId.Value);
-        var base64 = Convert.ToBase64String(bytes);
-        await JS.InvokeVoidAsync("descargarArchivo", $"Comprobante_Venta_{ultimaVentaId}.pdf", base64);
+        try
+        {
+            var bytes = await VentaSvc.ObtenerComprobantePdfAsync(ultimaVentaId.Value);
+            var base64 = Convert.ToBase64String(bytes);
+            await JS.InvokeVoidAsync("descargarArchivo", $"Comprobante_Venta_{ultimaVentaId}.pdf", base64);
+        }
+        catch (Exception ex)
+        {
+            mensajeError = $"Error al descargar el comprobante: {ex.Message}";
+        }
     }
 }

@@ -1,22 +1,40 @@
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using XpressMarket.Client;
-using XpressMarket.Client.Services; // Asegúrate de incluir este namespace si ahí viven tus servicios
+using XpressMarket.Client.Auth;
+using XpressMarket.Client.Services;
+using Microsoft.Extensions.DependencyInjection;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
+
 builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
-// 1. Configuración ÚNICA de HttpClient apuntando a la Web API (Server)
-builder.Services.AddScoped(sp => new HttpClient
-{
-    BaseAddress = new Uri("https://localhost:7232/") 
-});
+// 1. Registro del DelegatingHandler para inyectar el token JWT en las peticiones
+builder.Services.AddScoped<AuthHeaderHandler>();
 
-// 2. Registro de Servicios de Negocio
+// 2. Configuración del HttpClient autenticado apuntando a la Web API (Server)
+builder.Services.AddHttpClient("XpressMarketAPI", client =>
+{
+    client.BaseAddress = new Uri("https://localhost:7232/"); // Reemplaza por la URL de tu API
+}).AddHttpMessageHandler<AuthHeaderHandler>();
+
+// 3. Registrar HttpClient genérico para que use la instancia autenticada por defecto
+builder.Services.AddScoped(sp => sp.GetRequiredService<IHttpClientFactory>().CreateClient("XpressMarketAPI"));
+
+// 4. Servicios de Autenticación y Autorización
+builder.Services.AddAuthorizationCore();
+builder.Services.AddScoped<CustomAuthStateProvider>();
+builder.Services.AddScoped<AuthenticationStateProvider>(sp => sp.GetRequiredService<CustomAuthStateProvider>());
+builder.Services.AddScoped<AuthService>();
+
+// 5. Servicios de Negocio
 builder.Services.AddScoped<ProductoService>();
 builder.Services.AddScoped<ProveedorService>();
 builder.Services.AddScoped<LoteService>();
 builder.Services.AddScoped<CategoriaService>();
 builder.Services.AddScoped<VentaService>();
+
+// 6. Construir y ejecutar la aplicación al FINAL de la configuración
 await builder.Build().RunAsync();

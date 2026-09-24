@@ -2,9 +2,11 @@
 using Microsoft.EntityFrameworkCore;
 using XpressMarket.Server.Data;
 using XpressMarket.Shared.Models;
+using Microsoft.AspNetCore.Authorization;
 
 namespace XpressMarket.Server.Controllers
 {
+    [Authorize(Roles = "Administrador")]
     [ApiController]
     [Route("api/[controller]")]
     public class CategoriasController : ControllerBase

@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using XpressMarket.Server.Data;
 using XpressMarket.Shared.Models;
@@ -7,6 +8,7 @@ namespace XpressMarket.Server.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class VentasController : ControllerBase
     {
         private readonly AppDbContext _context;
@@ -143,8 +145,10 @@ namespace XpressMarket.Server.Controllers
         }
         // GET: api/ventas/reporte-utilidades?desde=2026-01-01&hasta=2026-12-31
         [HttpGet("reporte-utilidades")]
+        [Authorize(Roles = "Administrador")]
         public async Task<ActionResult<IEnumerable<ResumenUtilidad>>> GetReporteUtilidades(
             [FromQuery] DateTime? desde, [FromQuery] DateTime? hasta)
+
         {
             var query = _context.Ventas
                 .Include(v => v.Detalles)
