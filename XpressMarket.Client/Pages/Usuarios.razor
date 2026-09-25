@@ -1,0 +1,186 @@
+﻿@page "/usuarios"
+@attribute [Authorize(Roles = "Administrador")]
+@inject UsuarioService UsuarioSvc
+@using XpressMarket.Shared.Models
+
+<PageTitle>Usuarios</PageTitle>
+
+<h3>Gestión de Usuarios</h3>
+
+<button class="btn btn-primary mb-3" @onclick="AbrirFormularioNuevo">
+    Nuevo Usuario
+</button>
+
+@if (mensajeError != null)
+{
+    <div class="alert alert-danger">@mensajeError</div>
+}
+
+@if (cargando)
+{
+    <p><em>Cargando usuarios...</em></p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Usuario</th>
+                <th>Rol</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var u in usuarios)
+            {
+                <tr>
+                    <td>@u.NombreUsuario</td>
+                    <td>@u.Rol</td>
+                    <td>
+                        @if (u.Activo)
+                        {
+                            <span class="badge bg-success">Activo</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary">Inactivo</span>
+                        }
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-secondary" @onclick="() => AbrirFormularioEditar(u)">
+                            Editar
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@if (mostrarFormularioNuevo)
+{
+    <div class="card p-3 mt-3">
+        <h4>Nuevo Usuario</h4>
+        <EditForm Model="nuevoUsuario" OnValidSubmit="GuardarNuevo">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
+            <div class="mb-2">
+                <label>Nombre de Usuario</label>
+                <InputText class="form-control" @bind-Value="nuevoUsuario.NombreUsuario" />
+            </div>
+            <div class="mb-2">
+                <label>Contraseña</label>
+                <InputText type="password" class="form-control" @bind-Value="nuevoUsuario.Contrasena" />
+            </div>
+            <div class="mb-2">
+                <label>Rol</label>
+                <InputSelect class="form-control" @bind-Value="nuevoUsuario.Rol">
+                    <option value="Cajero">Cajero</option>
+                    <option value="Administrador">Administrador</option>
+                </InputSelect>
+            </div>
+
+            <button type="submit" class="btn btn-success mt-2">Guardar</button>
+            <button type="button" class="btn btn-secondary mt-2" @onclick="() => mostrarFormularioNuevo = false">Cancelar</button>
+        </EditForm>
+    </div>
+}
+
+@if (usuarioEditando != null)
+{
+    <div class="card p-3 mt-3">
+        <h4>Editar Usuario: @usuarioEditando.NombreUsuario</h4>
+        <EditForm Model="edicion" OnValidSubmit="GuardarEdicion">
+            <div class="mb-2">
+                <label>Rol</label>
+                <InputSelect class="form-control" @bind-Value="edicion.Rol">
+                    <option value="Cajero">Cajero</option>
+                    <option value="Administrador">Administrador</option>
+                </InputSelect>
+            </div>
+            <div class="mb-2 form-check">
+                <InputCheckbox class="form-check-input" @bind-Value="edicion.Activo" />
+                <label class="form-check-label">Activo</label>
+            </div>
+            <div class="mb-2">
+                <label>Nueva Contraseña (dejar en blanco para no cambiarla)</label>
+                <InputText type="password" class="form-control" @bind-Value="edicion.NuevaContrasena" />
+            </div>
+
+            <button type="submit" class="btn btn-success mt-2">Guardar</button>
+            <button type="button" class="btn btn-secondary mt-2" @onclick="() => usuarioEditando = null">Cancelar</button>
+        </EditForm>
+    </div>
+}
+
+@code {
+    private List<UsuarioResponse> usuarios = new();
+    private bool cargando = true;
+    private string? mensajeError;
+
+    private bool mostrarFormularioNuevo = false;
+    private UsuarioCreateRequest nuevoUsuario = new();
+
+    private UsuarioResponse? usuarioEditando;
+    private UsuarioUpdateRequest edicion = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Cargar();
+    }
+
+    private async Task Cargar()
+    {
+        cargando = true;
+        usuarios = await UsuarioSvc.ObtenerTodosAsync();
+        cargando = false;
+    }
+
+    private void AbrirFormularioNuevo()
+    {
+        nuevoUsuario = new UsuarioCreateRequest();
+        mostrarFormularioNuevo = true;
+    }
+
+    private async Task GuardarNuevo()
+    {
+        mensajeError = null;
+        var (exito, error) = await UsuarioSvc.CrearAsync(nuevoUsuario);
+
+        if (exito)
+        {
+            mostrarFormularioNuevo = false;
+            await Cargar();
+        }
+        else
+        {
+            mensajeError = error;
+        }
+    }
+
+    private void AbrirFormularioEditar(UsuarioResponse u)
+    {
+        usuarioEditando = u;
+        edicion = new UsuarioUpdateRequest { Rol = u.Rol, Activo = u.Activo };
+    }
+
+    private async Task GuardarEdicion()
+    {
+        if (usuarioEditando == null) return;
+
+        mensajeError = null;
+        var (exito, error) = await UsuarioSvc.ActualizarAsync(usuarioEditando.Id, edicion);
+
+        if (exito)
+        {
+            usuarioEditando = null;
+            await Cargar();
+        }
+        else
+        {
+            mensajeError = error;
+        }
+    }
+}

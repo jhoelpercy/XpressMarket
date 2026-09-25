@@ -1,7 +1,7 @@
 ﻿@page "/"
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize]
-
+@inject AuthenticationStateProvider AuthStateProvider
 @inject ProductoService ProductoSvc
 @inject LoteService LoteSvc
 
@@ -13,7 +13,7 @@
     <p class="hero-sub">@fechaFormateada</p>
 </section>
 
-@if (!cargando)
+@if (!cargando && esAdministrador)
 {
     <section class="resumen">
         <div class="resumen-item @(stockBajoCount > 0 ? "resumen-alerta" : "")">
@@ -42,18 +42,22 @@
             <span class="acceso-nombre">Punto de Venta</span>
             <span class="acceso-desc">Registrar una nueva venta</span>
         </a>
-        <a class="acceso-card" href="productos">
-            <span class="acceso-nombre">Productos</span>
-            <span class="acceso-desc">Ver y editar el catálogo</span>
-        </a>
-        <a class="acceso-card" href="lotes">
-            <span class="acceso-nombre">Lotes</span>
-            <span class="acceso-desc">Controlar vencimientos</span>
-        </a>
-        <a class="acceso-card" href="alertas">
-            <span class="acceso-nombre">Alertas</span>
-            <span class="acceso-desc">Revisar pendientes</span>
-        </a>
+
+        @if (esAdministrador)
+        {
+            <a class="acceso-card" href="productos">
+                <span class="acceso-nombre">Productos</span>
+                <span class="acceso-desc">Ver y editar el catálogo</span>
+            </a>
+            <a class="acceso-card" href="lotes">
+                <span class="acceso-nombre">Lotes</span>
+                <span class="acceso-desc">Controlar vencimientos</span>
+            </a>
+            <a class="acceso-card" href="alertas">
+                <span class="acceso-nombre">Alertas</span>
+                <span class="acceso-desc">Revisar pendientes</span>
+            </a>
+        }
     </div>
 </section>
 
@@ -66,25 +70,33 @@
     private string saludo = "";
     private string fechaFormateada = "";
 
+    private bool esAdministrador = false;
+
     protected override async Task OnInitializedAsync()
     {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        esAdministrador = authState.User.IsInRole("Administrador");
+
         var hora = DateTime.Now.Hour;
         saludo = hora < 12 ? "Buenos días" : hora < 19 ? "Buenas tardes" : "Buenas noches";
 
         fechaFormateada = DateTime.Now.ToString("dddd d 'de' MMMM", new System.Globalization.CultureInfo("es-ES"));
         fechaFormateada = char.ToUpper(fechaFormateada[0]) + fechaFormateada.Substring(1);
 
-        var productos = await ProductoSvc.ObtenerTodosAsync();
-        totalProductos = productos.Count;
+        if (esAdministrador)
+        {
+            var productos = await ProductoSvc.ObtenerTodosAsync();
+            totalProductos = productos.Count;
 
-        var stockBajo = await ProductoSvc.ObtenerStockBajoAsync();
-        stockBajoCount = stockBajo.Count;
+            var stockBajo = await ProductoSvc.ObtenerStockBajoAsync();
+            stockBajoCount = stockBajo.Count;
 
-        var porVencer = await LoteSvc.ObtenerProximosAVencerAsync();
-        porVencerCount = porVencer.Count;
+            var porVencer = await LoteSvc.ObtenerProximosAVencerAsync();
+            porVencerCount = porVencer.Count;
 
-        var vencidos = await LoteSvc.ObtenerVencidosAsync();
-        vencidosCount = vencidos.Count;
+            var vencidos = await LoteSvc.ObtenerVencidosAsync();
+            vencidosCount = vencidos.Count;
+        }
 
         cargando = false;
     }
