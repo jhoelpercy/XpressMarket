@@ -176,6 +176,56 @@ namespace XpressMarket.Server.Controllers
             }).ToList();
 
             return resumen;
+        }// GET: api/ventas/dashboard?dias=30
+        [HttpGet("dashboard")]
+        [Authorize(Roles = "Administrador")]
+        public async Task<ActionResult<DashboardResumen>> GetDashboard([FromQuery] int dias = 30)
+        {
+            var desde = DateTime.Now.Date.AddDays(-dias);
+
+            var ventas = await _context.Ventas
+                .Include(v => v.Detalles)
+                .Where(v => v.Estado == EstadoVenta.Completada && v.FechaVenta >= desde)
+                .ToListAsync();
+
+            var productos = await _context.Productos.ToDictionaryAsync(p => p.Id, p => p.PrecioCosto);
+
+            var totalVentas = ventas.Sum(v => v.Total);
+            var totalUtilidad = ventas.Sum(v =>
+                v.Total - v.Detalles.Sum(d => d.Cantidad * (productos.GetValueOrDefault(d.ProductoId, 0))));
+
+            var ventasPorDia = ventas
+                .GroupBy(v => v.FechaVenta.Date)
+                .Select(g => new VentaPorDia { Fecha = g.Key, Total = g.Sum(v => v.Total) })
+                .OrderBy(v => v.Fecha)
+                .ToList();
+
+            var topProductos = ventas
+                .SelectMany(v => v.Detalles)
+                .GroupBy(d => d.NombreProducto)
+                .Select(g => new ProductoMasVendido { NombreProducto = g.Key, CantidadVendida = g.Sum(d => d.Cantidad) })
+                .OrderByDescending(p => p.CantidadVendida)
+                .Take(5)
+                .ToList();
+
+            var stockBajo = await _context.Productos.Where(p => p.Activo).ToListAsync();
+            var stockBajoCount = stockBajo.Count(p => p.StockBajo);
+
+            var lotesPorVencer = await _context.Lotes
+                .Where(l => l.Activo && l.FechaVencimiento.Date >= DateTime.Now.Date
+                         && l.FechaVencimiento.Date <= DateTime.Now.Date.AddDays(30))
+                .CountAsync();
+
+            return new DashboardResumen
+            {
+                TotalVentasPeriodo = totalVentas,
+                TotalUtilidadPeriodo = totalUtilidad,
+                ProductosStockBajo = stockBajoCount,
+                LotesPorVencer = lotesPorVencer,
+                VentasPorDia = ventasPorDia,
+                TopProductos = topProductos
+            };
         }
+
     }
 }

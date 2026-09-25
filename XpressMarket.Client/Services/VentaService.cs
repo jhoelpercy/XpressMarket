@@ -59,5 +59,9 @@ namespace XpressMarket.Client.Services
 
             return await _http.GetFromJsonAsync<List<ResumenUtilidad>>($"{RutaBase}/reporte-utilidades{queryString}") ?? new List<ResumenUtilidad>();
         }
+        public async Task<DashboardResumen?> ObtenerDashboardAsync(int dias = 30)
+        {
+            return await _http.GetFromJsonAsync<DashboardResumen>($"{RutaBase}/dashboard?dias={dias}");
+        }
     }
 }

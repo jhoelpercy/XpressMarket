@@ -25,10 +25,23 @@ namespace XpressMarket.Client.Auth
                 return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
 
             var claims = ParsearClaims(_token);
+
+            // Verifica si el token ya expiró
+            var expClaim = claims.FirstOrDefault(c => c.Type == "exp");
+            if (expClaim != null && long.TryParse(expClaim.Value, out var expUnix))
+            {
+                var expiracion = DateTimeOffset.FromUnixTimeSeconds(expUnix);
+                if (expiracion < DateTimeOffset.UtcNow)
+                {
+                    _token = null;
+                    await _js.InvokeVoidAsync("localStorageRemove", "authToken");
+                    return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
+                }
+            }
+
             var identidad = new ClaimsIdentity(claims, "jwt");
             return new AuthenticationState(new ClaimsPrincipal(identidad));
         }
-
         public void MarcarComoAutenticado(string token)
         {
             _token = token;

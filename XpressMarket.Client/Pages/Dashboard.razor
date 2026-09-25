@@ -1,0 +1,87 @@
+﻿@page "/dashboard"
+@attribute [Authorize(Roles = "Administrador")]
+@inject VentaService VentaSvc
+@inject IJSRuntime JS
+@using XpressMarket.Shared.Models
+
+<PageTitle>Dashboard</PageTitle>
+
+<h3>Dashboard de KPIs</h3>
+
+@if (cargando)
+{
+    <p><em>Cargando...</em></p>
+}
+else if (resumen != null)
+{
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-white" style="background-color:#1F3D2B;">
+                <div class="card-body">
+                    <h6>Ventas (30 días)</h6>
+                    <p class="display-6">@resumen.TotalVentasPeriodo.ToString("C2")</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-dark" style="background-color:#D9A544;">
+                <div class="card-body">
+                    <h6>Utilidad (30 días)</h6>
+                    <p class="display-6">@resumen.TotalUtilidadPeriodo.ToString("C2")</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-dark bg-warning">
+                <div class="card-body">
+                    <h6>Stock Bajo</h6>
+                    <p class="display-6">@resumen.ProductosStockBajo</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-dark bg-info">
+                <div class="card-body">
+                    <h6>Lotes por Vencer</h6>
+                    <p class="display-6">@resumen.LotesPorVencer</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-7">
+            <h5>Ventas por Día</h5>
+            <canvas id="graficoVentas"></canvas>
+        </div>
+        <div class="col-md-5">
+            <h5>Productos Más Vendidos</h5>
+            <canvas id="graficoProductos"></canvas>
+        </div>
+    </div>
+}
+
+@code {
+    private DashboardResumen? resumen;
+    private bool cargando = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        resumen = await VentaSvc.ObtenerDashboardAsync();
+        cargando = false;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && resumen != null)
+        {
+            var labelsVentas = resumen.VentasPorDia.Select(v => v.Fecha.ToString("dd/MM")).ToArray();
+            var datosVentas = resumen.VentasPorDia.Select(v => v.Total).ToArray();
+            await JS.InvokeVoidAsync("renderizarGraficoVentas", labelsVentas, datosVentas);
+
+            var labelsProductos = resumen.TopProductos.Select(p => p.NombreProducto).ToArray();
+            var datosProductos = resumen.TopProductos.Select(p => p.CantidadVendida).ToArray();
+            await JS.InvokeVoidAsync("renderizarGraficoProductos", labelsProductos, datosProductos);
+        }
+    }
+}
