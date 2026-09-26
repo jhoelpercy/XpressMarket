@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using XpressMarket.Server.Data;
 using XpressMarket.Shared.Models;
 using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 namespace XpressMarket.Server.Controllers
 {
     [Authorize(Roles = "Administrador")]
@@ -76,6 +77,9 @@ namespace XpressMarket.Server.Controllers
             lote.FechaIngreso = DateTime.Now;
             if (lote.CantidadActual == 0)
                 lote.CantidadActual = lote.CantidadInicial;
+
+            lote.RegistradoPorUsuarioId = int.TryParse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var uid) ? uid : null;
+            lote.RegistradoPorNombre = User.FindFirst(ClaimTypes.Name)?.Value;
 
             _context.Lotes.Add(lote);
             await _context.SaveChangesAsync();

@@ -15,6 +15,9 @@ namespace XpressMarket.Shared.Models
         [StringLength(50, MinimumLength = 3)]
         public string NombreUsuario { get; set; } = string.Empty;
 
+        [StringLength(100)]
+        public string? NombreCompleto { get; set; }
+
         [Required]
         public string ContrasenaHash { get; set; } = string.Empty;
 

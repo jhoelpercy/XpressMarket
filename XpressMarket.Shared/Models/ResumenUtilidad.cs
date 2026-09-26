@@ -4,6 +4,7 @@
     {
         public int VentaId { get; set; }
         public DateTime FechaVenta { get; set; }
+        public string NombreUsuario { get; set; } = string.Empty;
         public decimal TotalVenta { get; set; }
         public decimal CostoTotal { get; set; }
         public decimal Utilidad { get; set; }

@@ -66,6 +66,8 @@ namespace XpressMarket.Shared.Models
 
         [NotMapped]
         public bool ProximoAVencer => !Vencido && DiasParaVencer <= 30;
+        public int? RegistradoPorUsuarioId { get; set; }
+        public string? RegistradoPorNombre { get; set; }
 
     }
 }

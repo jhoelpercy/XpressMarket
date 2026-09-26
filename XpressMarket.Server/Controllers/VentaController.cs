@@ -169,6 +169,7 @@ namespace XpressMarket.Server.Controllers
                 {
                     VentaId = v.Id,
                     FechaVenta = v.FechaVenta,
+                    NombreUsuario = v.NombreUsuario,
                     TotalVenta = v.Total,
                     CostoTotal = costoTotal,
                     Utilidad = v.Total - costoTotal

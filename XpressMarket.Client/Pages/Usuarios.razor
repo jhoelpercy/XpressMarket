@@ -13,7 +13,10 @@
 
 @if (mensajeError != null)
 {
-    <div class="alert alert-danger">@mensajeError</div>
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @mensajeError
+        <button type="button" class="btn-close" @onclick="() => mensajeError = null"></button>
+    </div>
 }
 
 @if (cargando)
@@ -22,7 +25,7 @@
 }
 else
 {
-    <table class="table table-striped">
+    <table class="table table-striped align-middle">
         <thead>
             <tr>
                 <th>Usuario</th>
@@ -60,42 +63,50 @@ else
 
 @if (mostrarFormularioNuevo)
 {
-    <div class="card p-3 mt-3">
+    <div class="card p-3 mt-3 shadow-sm">
         <h4>Nuevo Usuario</h4>
         <EditForm Model="nuevoUsuario" OnValidSubmit="GuardarNuevo">
             <DataAnnotationsValidator />
             <ValidationSummary />
 
             <div class="mb-2">
-                <label>Nombre de Usuario</label>
+                <label class="form-label">Nombre Completo</label>
+                <InputText class="form-control" @bind-Value="nuevoUsuario.NombreCompleto" />
+            </div>
+
+            <div class="mb-2">
+                <label class="form-label">Nombre de Usuario</label>
                 <InputText class="form-control" @bind-Value="nuevoUsuario.NombreUsuario" />
             </div>
             <div class="mb-2">
-                <label>Contraseña</label>
+                <label class="form-label">Contraseña</label>
                 <InputText type="password" class="form-control" @bind-Value="nuevoUsuario.Contrasena" />
             </div>
             <div class="mb-2">
-                <label>Rol</label>
-                <InputSelect class="form-control" @bind-Value="nuevoUsuario.Rol">
+                <label class="form-label">Rol</label>
+                <InputSelect class="form-select" @bind-Value="nuevoUsuario.Rol">
                     <option value="Cajero">Cajero</option>
                     <option value="Administrador">Administrador</option>
                 </InputSelect>
             </div>
 
             <button type="submit" class="btn btn-success mt-2">Guardar</button>
-            <button type="button" class="btn btn-secondary mt-2" @onclick="() => mostrarFormularioNuevo = false">Cancelar</button>
+            <button type="button" class="btn btn-secondary mt-2" @onclick="CancelarAccion">Cancelar</button>
         </EditForm>
     </div>
 }
 
 @if (usuarioEditando != null)
 {
-    <div class="card p-3 mt-3">
+    <div class="card p-3 mt-3 shadow-sm">
         <h4>Editar Usuario: @usuarioEditando.NombreUsuario</h4>
         <EditForm Model="edicion" OnValidSubmit="GuardarEdicion">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
             <div class="mb-2">
-                <label>Rol</label>
-                <InputSelect class="form-control" @bind-Value="edicion.Rol">
+                <label class="form-label">Rol</label>
+                <InputSelect class="form-select" @bind-Value="edicion.Rol">
                     <option value="Cajero">Cajero</option>
                     <option value="Administrador">Administrador</option>
                 </InputSelect>
@@ -105,12 +116,12 @@ else
                 <label class="form-check-label">Activo</label>
             </div>
             <div class="mb-2">
-                <label>Nueva Contraseña (dejar en blanco para no cambiarla)</label>
+                <label class="form-label">Nueva Contraseña (dejar en blanco para no cambiarla)</label>
                 <InputText type="password" class="form-control" @bind-Value="edicion.NuevaContrasena" />
             </div>
 
             <button type="submit" class="btn btn-success mt-2">Guardar</button>
-            <button type="button" class="btn btn-secondary mt-2" @onclick="() => usuarioEditando = null">Cancelar</button>
+            <button type="button" class="btn btn-secondary mt-2" @onclick="CancelarAccion">Cancelar</button>
         </EditForm>
     </div>
 }
@@ -140,7 +151,9 @@ else
 
     private void AbrirFormularioNuevo()
     {
-        nuevoUsuario = new UsuarioCreateRequest();
+        usuarioEditando = null;
+        mensajeError = null;
+        nuevoUsuario = new UsuarioCreateRequest { Rol = "Cajero" };
         mostrarFormularioNuevo = true;
     }
 
@@ -162,6 +175,8 @@ else
 
     private void AbrirFormularioEditar(UsuarioResponse u)
     {
+        mostrarFormularioNuevo = false;
+        mensajeError = null;
         usuarioEditando = u;
         edicion = new UsuarioUpdateRequest { Rol = u.Rol, Activo = u.Activo };
     }
@@ -182,5 +197,12 @@ else
         {
             mensajeError = error;
         }
+    }
+
+    private void CancelarAccion()
+    {
+        mostrarFormularioNuevo = false;
+        usuarioEditando = null;
+        mensajeError = null;
     }
 }

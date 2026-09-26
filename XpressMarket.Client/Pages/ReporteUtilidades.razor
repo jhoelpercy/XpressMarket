@@ -37,6 +37,7 @@ else
             <tr>
                 <th>N° Venta</th>
                 <th>Fecha</th>
+                <th>Cajero</th>
                 <th>Total Venta</th>
                 <th>Costo Total</th>
                 <th>Utilidad</th>
@@ -48,6 +49,7 @@ else
                 <tr>
                     <td>@v.VentaId</td>
                     <td>@v.FechaVenta.ToString("dd/MM/yyyy HH:mm")</td>
+                    <td>@v.NombreUsuario</td>
                     <td>@v.TotalVenta.ToString("C2")</td>
                     <td>@v.CostoTotal.ToString("C2")</td>
                     <td class="@(v.Utilidad >= 0 ? "text-success" : "text-danger")">
@@ -58,7 +60,7 @@ else
         </tbody>
         <tfoot>
             <tr class="table-success">
-                <td colspan="2" class="text-end"><strong>Totales:</strong></td>
+                <td colspan="3" class="text-end"><strong>Totales:</strong></td>
                 <td><strong>@ventas.Sum(v => v.TotalVenta).ToString("C2")</strong></td>
                 <td><strong>@ventas.Sum(v => v.CostoTotal).ToString("C2")</strong></td>
                 <td><strong>@ventas.Sum(v => v.Utilidad).ToString("C2")</strong></td>

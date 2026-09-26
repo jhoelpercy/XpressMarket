@@ -29,6 +29,7 @@ else
             <tr>
                 <th>N° Lote</th>
                 <th>Producto</th>
+                <th>Registrado Por</th>
                 <th>Proveedor</th>
                 <th>Fecha Vencimiento</th>
                 <th>Cantidad Actual</th>
@@ -42,6 +43,7 @@ else
                 <tr class="@ClaseEstado(lote)">
                     <td>@lote.NumeroLote</td>
                     <td>@lote.Producto?.Nombre</td>
+                    <td>@(lote.RegistradoPorNombre ?? "-")</td>
                     <td>@(lote.Proveedor?.Nombre ?? "-")</td>
                     <td>@lote.FechaVencimiento.ToString("dd/MM/yyyy")</td>
                     <td>@lote.CantidadActual</td>
