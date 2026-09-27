@@ -33,18 +33,15 @@ namespace XpressMarket.Client.Services
             return await _http.GetFromJsonAsync<List<Lote>>($"{RutaBase}/vencidos") ?? new List<Lote>();
         }
 
-        public async Task<Lote?> CrearAsync(Lote lote)
+        public async Task<bool> CrearAsync(LoteCreateRequest request)
         {
-            var respuesta = await _http.PostAsJsonAsync(RutaBase, lote);
-            if (!respuesta.IsSuccessStatusCode)
-                return null;
-
-            return await respuesta.Content.ReadFromJsonAsync<Lote>();
+            var response = await _http.PostAsJsonAsync("api/lotes", request);
+            return response.IsSuccessStatusCode;
         }
 
-        public async Task<bool> ActualizarAsync(int id, Lote lote)
+        public async Task<bool> ActualizarAsync(int id, LoteUpdateRequest request)
         {
-            var respuesta = await _http.PutAsJsonAsync($"{RutaBase}/{id}", lote);
+            var respuesta = await _http.PutAsJsonAsync($"{RutaBase}/{id}", request);
             return respuesta.IsSuccessStatusCode;
         }
 

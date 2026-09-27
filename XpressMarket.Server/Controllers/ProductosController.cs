@@ -58,22 +58,21 @@ namespace XpressMarket.Server.Controllers
 
         // POST: api/productos
         [HttpPost]
-        [Authorize(Roles = "Administrador")] // Restringido solo para Administradores
         public async Task<ActionResult<Producto>> PostProducto(Producto producto)
         {
             if (!await _context.Categorias.AnyAsync(c => c.Id == producto.CategoriaId))
                 return BadRequest("La categoría especificada no existe.");
 
             producto.FechaRegistro = DateTime.Now;
+            producto.StockActual = 0; // El stock solo crece cuando se registran Lotes
+
             _context.Productos.Add(producto);
             await _context.SaveChangesAsync();
 
             return CreatedAtAction(nameof(GetProducto), new { id = producto.Id }, producto);
         }
 
-        // PUT: api/productos/5
         [HttpPut("{id}")]
-        [Authorize(Roles = "Administrador")] // Restringido solo para Administradores
         public async Task<IActionResult> PutProducto(int id, Producto producto)
         {
             if (id != producto.Id)
@@ -81,6 +80,7 @@ namespace XpressMarket.Server.Controllers
 
             _context.Entry(producto).State = EntityState.Modified;
             _context.Entry(producto).Property(p => p.FechaRegistro).IsModified = false;
+            _context.Entry(producto).Property(p => p.StockActual).IsModified = false; // Se ignora cualquier valor recibido
 
             try
             {

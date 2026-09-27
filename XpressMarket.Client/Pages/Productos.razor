@@ -116,7 +116,8 @@ else
             <div class="row">
                 <div class="col mb-2">
                     <label>Stock Actual</label>
-                    <InputNumber class="form-control" @bind-Value="productoEditando.StockActual" />
+                    <input class="form-control" value="@($"{productoEditando.StockActual} unidades (solo lectura)")" disabled />
+                    <small class="text-muted">Se actualiza automáticamente al registrar o vender lotes en la sección Lotes.</small>
                 </div>
                 <div class="col mb-2">
                     <label>Stock Mínimo</label>
@@ -155,11 +156,11 @@ else
         cargando = false;
     }
 
-    private void AbrirFormularioNuevo()
-    {
-        productoEditando = new Producto { Activo = true };
-        mostrarFormulario = true;
-    }
+   private void AbrirFormularioNuevo()
+{
+    productoEditando = new Producto { Activo = true, StockActual = 0 };
+    mostrarFormulario = true;
+}
 
     private void AbrirFormularioEditar(Producto producto)
     {

@@ -68,10 +68,14 @@ namespace XpressMarket.Server.Controllers
                 .ToListAsync();
         }
 
+
         [HttpPost]
-        public async Task<ActionResult<Lote>> PostLote(Lote lote)
+        public async Task<ActionResult<Lote>> PostLote(LoteCreateRequest request)
         {
-            if (!await _context.Productos.AnyAsync(p => p.Id == lote.ProductoId))
+            var lote = request.Lote;
+
+            var producto = await _context.Productos.FindAsync(lote.ProductoId);
+            if (producto == null)
                 return BadRequest("El producto especificado no existe.");
 
             lote.FechaIngreso = DateTime.Now;
@@ -81,20 +85,55 @@ namespace XpressMarket.Server.Controllers
             lote.RegistradoPorUsuarioId = int.TryParse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var uid) ? uid : null;
             lote.RegistradoPorNombre = User.FindFirst(ClaimTypes.Name)?.Value;
 
+            // El stock físico del producto crece con cada lote que entra al inventario.
+            producto.StockActual += lote.CantidadActual;
+
+            if (request.ActualizarCostoProducto)
+                producto.PrecioCosto = lote.PrecioCosto;
+
+            if (request.NuevoPrecioVenta.HasValue && request.NuevoPrecioVenta.Value > 0)
+                producto.PrecioVenta = request.NuevoPrecioVenta.Value;
+
             _context.Lotes.Add(lote);
             await _context.SaveChangesAsync();
 
             return CreatedAtAction(nameof(GetLote), new { id = lote.Id }, lote);
         }
 
+
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutLote(int id, Lote lote)
+        public async Task<IActionResult> PutLote(int id, LoteUpdateRequest request)
         {
-            if (id != lote.Id)
+            var loteNuevo = request.Lote;
+            if (id != loteNuevo.Id)
                 return BadRequest("El ID de la ruta no coincide con el del lote.");
 
-            _context.Entry(lote).State = EntityState.Modified;
-            _context.Entry(lote).Property(l => l.FechaIngreso).IsModified = false;
+            var loteExistente = await _context.Lotes.FindAsync(id);
+            if (loteExistente == null)
+                return NotFound();
+
+            var producto = await _context.Productos.FindAsync(loteExistente.ProductoId);
+            if (producto == null)
+                return BadRequest("El producto asociado no existe.");
+
+            // Ajusta el stock del producto por la diferencia entre la cantidad vieja y la nueva,
+            // no por el valor absoluto (evita duplicar o perder unidades ya contadas).
+            var deltaCantidad = loteNuevo.CantidadActual - loteExistente.CantidadActual;
+            producto.StockActual += deltaCantidad;
+
+            if (request.ActualizarCostoProducto)
+                producto.PrecioCosto = loteNuevo.PrecioCosto;
+
+            if (request.NuevoPrecioVenta.HasValue && request.NuevoPrecioVenta.Value > 0)
+                producto.PrecioVenta = request.NuevoPrecioVenta.Value;
+
+            loteExistente.NumeroLote = loteNuevo.NumeroLote;
+            loteExistente.ProveedorId = loteNuevo.ProveedorId;
+            loteExistente.FechaVencimiento = loteNuevo.FechaVencimiento;
+            loteExistente.CantidadInicial = loteNuevo.CantidadInicial;
+            loteExistente.CantidadActual = loteNuevo.CantidadActual;
+            loteExistente.PrecioCosto = loteNuevo.PrecioCosto;
+            loteExistente.Activo = loteNuevo.Activo;
 
             try
             {
