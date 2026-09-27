@@ -156,6 +156,13 @@ namespace XpressMarket.Server.Controllers
             if (lote == null)
                 return NotFound();
 
+            if (lote.Activo && lote.CantidadActual > 0)
+            {
+                var producto = await _context.Productos.FindAsync(lote.ProductoId);
+                if (producto != null)
+                    producto.StockActual -= lote.CantidadActual;
+            }
+
             lote.Activo = false;
             await _context.SaveChangesAsync();
 
@@ -174,6 +181,13 @@ namespace XpressMarket.Server.Controllers
 
             if (lote.EsMerma)
                 return BadRequest("Este lote ya fue registrado como merma.");
+
+            if (lote.CantidadActual > 0)
+            {
+                var producto = await _context.Productos.FindAsync(lote.ProductoId);
+                if (producto != null)
+                    producto.StockActual -= lote.CantidadActual;
+            }
 
             lote.EsMerma = true;
             lote.FechaMerma = DateTime.Now;
