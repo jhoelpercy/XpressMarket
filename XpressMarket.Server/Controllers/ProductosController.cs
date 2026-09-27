@@ -80,7 +80,8 @@ namespace XpressMarket.Server.Controllers
 
             _context.Entry(producto).State = EntityState.Modified;
             _context.Entry(producto).Property(p => p.FechaRegistro).IsModified = false;
-            _context.Entry(producto).Property(p => p.StockActual).IsModified = false; // Se ignora cualquier valor recibido
+            _context.Entry(producto).Property(p => p.StockActual).IsModified = false;
+            _context.Entry(producto).Property(p => p.PrecioCosto).IsModified = false; 
 
             try
             {

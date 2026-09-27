@@ -105,7 +105,16 @@ else
             <div class="row">
                 <div class="col mb-2">
                     <label>Precio Costo</label>
-                    <InputNumber class="form-control" @bind-Value="productoEditando.PrecioCosto" />
+                    @if (productoEditando.Id == 0)
+                    {
+                        <InputNumber class="form-control" @bind-Value="productoEditando.PrecioCosto" />
+                        <small class="text-muted">Costo inicial estimado (se actualizará automáticamente con cada lote registrado).</small>
+                    }
+                    else
+                    {
+                        <input class="form-control" value="@($"{productoEditando.PrecioCosto.ToString("N2")} Bs (solo lectura)")" disabled />
+                        <small class="text-muted">Se actualiza únicamente al registrar un nuevo lote.</small>
+                    }
                 </div>
                 <div class="col mb-2">
                     <label>Precio Venta</label>
