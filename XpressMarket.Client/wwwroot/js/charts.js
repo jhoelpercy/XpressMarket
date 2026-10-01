@@ -1,20 +1,19 @@
-﻿let graficoLinea = null;
-let graficoBarras = null;
+﻿const graficosActivos = {};
 
-window.renderizarGraficoVentas = (labels, datos) => {
-    const ctx = document.getElementById('graficoVentas');
+window.renderizarGraficoLinea = (idCanvas, labels, datos, colorBorde, colorFondo, etiqueta) => {
+    const ctx = document.getElementById(idCanvas);
     if (!ctx) return;
-    if (graficoLinea) graficoLinea.destroy();
+    if (graficosActivos[idCanvas]) graficosActivos[idCanvas].destroy();
 
-    graficoLinea = new Chart(ctx, {
+    graficosActivos[idCanvas] = new Chart(ctx, {
         type: 'line',
         data: {
             labels: labels,
             datasets: [{
-                label: 'Ventas (Bs)',
+                label: etiqueta,
                 data: datos,
-                borderColor: '#1F3D2B',
-                backgroundColor: 'rgba(31, 61, 43, 0.1)',
+                borderColor: colorBorde,
+                backgroundColor: colorFondo,
                 fill: true,
                 tension: 0.3
             }]
@@ -23,19 +22,19 @@ window.renderizarGraficoVentas = (labels, datos) => {
     });
 };
 
-window.renderizarGraficoProductos = (labels, datos) => {
-    const ctx = document.getElementById('graficoProductos');
+window.renderizarGraficoBarras = (idCanvas, labels, datos, color, etiqueta) => {
+    const ctx = document.getElementById(idCanvas);
     if (!ctx) return;
-    if (graficoBarras) graficoBarras.destroy();
+    if (graficosActivos[idCanvas]) graficosActivos[idCanvas].destroy();
 
-    graficoBarras = new Chart(ctx, {
+    graficosActivos[idCanvas] = new Chart(ctx, {
         type: 'bar',
         data: {
             labels: labels,
             datasets: [{
-                label: 'Unidades vendidas',
+                label: etiqueta,
                 data: datos,
-                backgroundColor: '#D9A544'
+                backgroundColor: color
             }]
         },
         options: { responsive: true, plugins: { legend: { display: false } } }

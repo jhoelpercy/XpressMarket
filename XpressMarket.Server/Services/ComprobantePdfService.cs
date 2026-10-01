@@ -2,6 +2,7 @@
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
 using XpressMarket.Shared.Models;
+using XpressMarket.Shared.Extensions;
 
 namespace XpressMarket.Server.Services
 {
@@ -57,16 +58,16 @@ namespace XpressMarket.Server.Services
                             {
                                 tabla.Cell().Text(detalle.NombreProducto);
                                 tabla.Cell().Text(detalle.Cantidad.ToString());
-                                tabla.Cell().Text(detalle.PrecioUnitario.ToString("C2"));
-                                tabla.Cell().Text(detalle.Subtotal.ToString("C2"));
+                                tabla.Cell().Text(detalle.PrecioUnitario.Bs());
+                                tabla.Cell().Text(detalle.Subtotal.Bs());
                             }
                         });
 
                         col.Item().PaddingTop(10).LineHorizontal(1).LineColor(Colors.Grey.Lighten2);
 
-                        col.Item().AlignRight().Text($"Subtotal: {venta.Subtotal:C2}");
-                        col.Item().AlignRight().Text($"Descuento: {venta.Descuento:C2}");
-                        col.Item().AlignRight().Text($"TOTAL: {venta.Total:C2}").FontSize(13).Bold().FontColor("#1F3D2B");
+                        col.Item().AlignRight().Text($"Subtotal: {venta.Subtotal.Bs()}");
+                        col.Item().AlignRight().Text($"Descuento: {venta.Descuento.Bs()}");
+                        col.Item().AlignRight().Text($"TOTAL: {venta.Total.Bs()}").FontSize(13).Bold().FontColor("#1F3D2B");
                     });
 
                     pagina.Footer().AlignCenter().Text("Gracias por su compra")

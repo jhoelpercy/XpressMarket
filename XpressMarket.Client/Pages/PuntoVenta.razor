@@ -6,6 +6,7 @@
 @inject VentaService VentaSvc
 @inject IJSRuntime JS
 @inject AuthenticationStateProvider AuthStateProvider
+@using XpressMarket.Shared.Extensions
 
 <PageTitle>Punto de Venta</PageTitle>
 
@@ -46,13 +47,13 @@
                 var subtotalItem = (item.Cantidad * item.PrecioUnitario) - item.Descuento;
                 <tr>
                     <td>@item.NombreProducto</td>
-                    <td>@item.PrecioUnitario.ToString("C2")</td>
+                    <td>@item.PrecioUnitario.Bs()</td>
                     <td style="width: 120px;">
                         <input type="number" class="form-control form-control-sm" min="1"
                                value="@item.Cantidad"
                                @onchange="(e) => CambiarCantidad(item, e.Value)" />
                     </td>
-                    <td>@subtotalItem.ToString("C2")</td>
+                    <td>@subtotalItem.Bs()</td>
                     <td>
                         <button class="btn btn-sm btn-danger" @onclick="() => QuitarDelCarrito(item)">
                             Quitar
@@ -64,7 +65,7 @@
     </table>
 
     <div class="text-end mt-3">
-        <h4>Total: @TotalCarrito.ToString("C2")</h4>
+        <h4>Total: @TotalCarrito.Bs()</h4>
         <button class="btn btn-success btn-lg" @onclick="ConfirmarVenta" disabled="@procesando">
             @(procesando ? "Procesando..." : "Confirmar Venta")
         </button>
