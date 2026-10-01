@@ -20,6 +20,7 @@ namespace XpressMarket.Server.Controllers
         }
 
         [HttpGet]
+        [Authorize(Roles = "Administrador")]
         public async Task<ActionResult<IEnumerable<Venta>>> GetVentas()
         {
             return await _context.Ventas
@@ -29,6 +30,7 @@ namespace XpressMarket.Server.Controllers
         }
 
         [HttpGet("{id}")]
+        [Authorize(Roles = "Administrador")]
         public async Task<ActionResult<Venta>> GetVenta(int id)
         {
             var venta = await _context.Ventas
