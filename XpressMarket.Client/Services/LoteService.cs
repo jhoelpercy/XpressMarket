@@ -65,5 +65,10 @@ namespace XpressMarket.Client.Services
 
             return await _http.GetFromJsonAsync<List<Lote>>($"{RutaBase}/reporte-mermas{queryString}") ?? new List<Lote>();
         }
+        public async Task<List<PeriodoResumen>> ObtenerReporteMermasPeriodoAsync(DateTime desde, DateTime hasta, string agrupacion)
+        {
+            return await _http.GetFromJsonAsync<List<PeriodoResumen>>(
+                $"{RutaBase}/reporte-mermas-periodo?desde={desde:yyyy-MM-dd}&hasta={hasta:yyyy-MM-dd}&agrupacion={agrupacion}") ?? new();
+        }
     }
 }

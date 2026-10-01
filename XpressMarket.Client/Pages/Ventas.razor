@@ -1,0 +1,160 @@
+﻿@page "/ventas"
+@attribute [Authorize(Roles = "Administrador")]
+@inject VentaService VentaSvc
+@inject IJSRuntime JS
+@using XpressMarket.Shared.Models
+@using XpressMarket.Shared.Extensions
+
+
+
+<PageTitle>Historial de Ventas</PageTitle>
+
+<h3>Historial de Ventas</h3>
+
+@if (ventaIdParaAnular != null)
+{
+    <div class="alert alert-warning border border-warning my-3 shadow-sm">
+        <h5 class="text-dark fw-bold">  Atención antes de anular la Venta N° @ventaIdParaAnular</h5>
+        <p class="mb-2">Se detectaron las siguientes observaciones en los lotes de origen:</p>
+        
+        <ul class="mb-3">
+            @foreach (var a in advertenciasPendientes)
+            {
+                <li>
+                    <strong>@a.NombreProducto</strong> (Lote @a.NumeroLote, @a.Cantidad unids.) — 
+                    <span class="text-danger fw-semibold">@a.Motivo</span>
+                </li>
+            }
+        </ul>
+        
+        <p class="small text-muted mb-3">
+            El stock global del producto se restablecerá en el sistema, pero el lote de origen no aceptará la reactivación de estas unidades por estar inactivo/dado de baja.
+        </p>
+
+        <div>
+            <button class="btn btn-sm btn-danger me-2" @onclick="AnularForzado">
+                Sí, anular de todas formas
+            </button>
+            <button class="btn btn-sm btn-secondary" @onclick="CancelarAnulacion">
+                Cancelar
+            </button>
+        </div>
+    </div>
+}
+
+@if (cargando)
+{
+    <p><em>Cargando historial de ventas...</em></p>
+}
+else if (ventas == null || !ventas.Any())
+{
+    <p>No se encontraron ventas registradas.</p>
+}
+else
+{
+    <table class="table table-striped align-middle">
+        <thead>
+            <tr>
+                <th>N°</th>
+                <th>Fecha</th>
+                <th>Cajero</th>
+                <th>Total</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var v in ventas)
+            {
+                <tr>
+                    <td>@v.Id</td>
+                    <td>@v.FechaVenta.ToString("dd/MM/yyyy HH:mm")</td>
+                    <td>@v.NombreUsuario</td>
+                    <td>@v.Total.Bs()</td> 
+                    <td>
+                        @if (v.Estado == EstadoVenta.Completada)
+                        {
+                            <span class="badge bg-success">Completada</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary">Anulada</span>
+                        }
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-success" @onclick="() => DescargarComprobante(v.Id)">
+                            PDF
+                        </button>
+
+                        @if (v.Estado == EstadoVenta.Completada)
+                        {
+                            <button class="btn btn-sm btn-outline-danger ms-1" @onclick="() => ConfirmarAnular(v.Id)">
+                                Anular
+                            </button>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<Venta> ventas = new();
+    private bool cargando = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Cargar();
+    }
+
+    private async Task Cargar()
+    {
+        cargando = true;
+        ventas = await VentaSvc.ObtenerTodasAsync();
+        cargando = false;
+    }
+
+    private async Task DescargarComprobante(int ventaId)
+    {
+        var bytes = await VentaSvc.ObtenerComprobantePdfAsync(ventaId);
+        var base64 = Convert.ToBase64String(bytes);
+        await JS.InvokeVoidAsync("descargarArchivo", $"Comprobante_Venta_{ventaId}.pdf", base64);
+    }
+
+    private List<AdvertenciaAnulacion> advertenciasPendientes = new();
+private int? ventaIdParaAnular;
+
+private async Task ConfirmarAnular(int ventaId)
+{
+    var (exito, requiereConfirmacion, advertencias) = await VentaSvc.AnularVentaAsync(ventaId);
+
+    if (exito)
+    {
+        await Cargar();
+        return;
+    }
+
+    if (requiereConfirmacion)
+    {
+        ventaIdParaAnular = ventaId;
+        advertenciasPendientes = advertencias;
+    }
+}
+
+private async Task AnularForzado()
+{
+    if (ventaIdParaAnular == null) return;
+
+    await VentaSvc.AnularVentaAsync(ventaIdParaAnular.Value, forzar: true);
+    ventaIdParaAnular = null;
+    advertenciasPendientes.Clear();
+    await Cargar();
+}
+
+private void CancelarAnulacion()
+{
+    ventaIdParaAnular = null;
+    advertenciasPendientes.Clear();
+}
+}

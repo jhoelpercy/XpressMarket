@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using XpressMarket.Server.Data;
 using XpressMarket.Shared.Models;
+using System.Globalization;
 
 namespace XpressMarket.Server.Controllers
 {
@@ -52,6 +53,7 @@ namespace XpressMarket.Server.Controllers
             try
             {
                 decimal subtotalVenta = 0;
+                var consumosNuevos = new List<ConsumoLote>();
 
                 foreach (var detalle in venta.Detalles)
                 {
@@ -62,22 +64,17 @@ namespace XpressMarket.Server.Controllers
                     if (producto.StockActual < detalle.Cantidad)
                         return BadRequest($"Stock insuficiente para '{producto.Nombre}'. Disponible: {producto.StockActual}, solicitado: {detalle.Cantidad}.");
 
-                    // Congelamos el nombre y precio actuales en el detalle (historial)
                     detalle.NombreProducto = producto.Nombre;
                     if (detalle.PrecioUnitario == 0)
                         detalle.PrecioUnitario = producto.PrecioVenta;
 
                     subtotalVenta += (detalle.Cantidad * detalle.PrecioUnitario) - detalle.Descuento;
 
-                    // Descuento de stock general del producto
                     producto.StockActual -= detalle.Cantidad;
 
-                    // Descuento FEFO: primero el lote que vence antes
                     int cantidadPorDescontar = detalle.Cantidad;
                     var lotesDisponibles = await _context.Lotes
-                        .Where(l => l.ProductoId == detalle.ProductoId
-                                 && l.Activo
-                                 && l.CantidadActual > 0)
+                        .Where(l => l.ProductoId == detalle.ProductoId && l.Activo && l.CantidadActual > 0)
                         .OrderBy(l => l.FechaVencimiento)
                         .ToListAsync();
 
@@ -88,11 +85,15 @@ namespace XpressMarket.Server.Controllers
                         int descontarDeEsteLote = Math.Min(lote.CantidadActual, cantidadPorDescontar);
                         lote.CantidadActual -= descontarDeEsteLote;
                         cantidadPorDescontar -= descontarDeEsteLote;
-                    }
 
-                    // Nota: si cantidadPorDescontar > 0 aqui, significa que el stock de Producto
-                    // estaba desincronizado con la suma real de sus Lotes. Se permite continuar
-                    // porque ya validamos stock arriba, pero es una señal para revisar consistencia.
+                        // Registra exactamente de qué lote salió cada unidad, para poder revertirlo si se anula
+                        consumosNuevos.Add(new ConsumoLote
+                        {
+                            DetalleVenta = detalle,
+                            Lote = lote,
+                            Cantidad = descontarDeEsteLote
+                        });
+                    }
                 }
 
                 venta.Subtotal = subtotalVenta;
@@ -101,6 +102,7 @@ namespace XpressMarket.Server.Controllers
                 venta.Estado = EstadoVenta.Completada;
 
                 _context.Ventas.Add(venta);
+                _context.Consumos.AddRange(consumosNuevos);
                 await _context.SaveChangesAsync();
                 await transaccion.CommitAsync();
 
@@ -111,23 +113,70 @@ namespace XpressMarket.Server.Controllers
                 await transaccion.RollbackAsync();
                 throw;
             }
+            
         }
 
         // PUT: api/ventas/5/anular — anula una venta (no se borra, por trazabilidad)
         [HttpPut("{id}/anular")]
-        public async Task<IActionResult> AnularVenta(int id)
+        [Authorize(Roles = "Administrador")]
+        public async Task<IActionResult> AnularVenta(int id, [FromQuery] bool forzar = false)
         {
-            var venta = await _context.Ventas.FindAsync(id);
+            var venta = await _context.Ventas.Include(v => v.Detalles).ThenInclude(d => d.Producto)
+                .FirstOrDefaultAsync(v => v.Id == id);
             if (venta == null)
                 return NotFound();
 
             if (venta.Estado == EstadoVenta.Anulada)
                 return BadRequest("La venta ya está anulada.");
 
-            venta.Estado = EstadoVenta.Anulada;
-            await _context.SaveChangesAsync();
+            var detalleIds = venta.Detalles.Select(d => d.Id).ToList();
+            var consumos = await _context.Consumos
+                .Include(c => c.Lote)
+                .Where(c => detalleIds.Contains(c.DetalleVentaId))
+                .ToListAsync();
 
-            return NoContent();
+            // Detecta lotes de origen que ya no existen como stock activo (dados de baja o registrados como merma)
+            var advertencias = consumos
+                .Where(c => c.Lote != null && !c.Lote.Activo)
+                .Select(c => new AdvertenciaAnulacion
+                {
+                    NombreProducto = venta.Detalles.First(d => d.Id == c.DetalleVentaId).NombreProducto,
+                    NumeroLote = c.Lote!.NumeroLote,
+                    Cantidad = c.Cantidad,
+                    Motivo = c.Lote.EsMerma
+                        ? "Este lote ya fue registrado como merma (se dio por perdido)."
+                        : "Este lote ya fue eliminado del inventario."
+                })
+                .ToList();
+
+            if (advertencias.Any() && !forzar)
+                return StatusCode(409, advertencias);
+
+            using var transaccion = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                foreach (var consumo in consumos.Where(c => c.Lote != null && c.Lote.Activo))
+                {
+                    consumo.Lote!.CantidadActual += consumo.Cantidad;
+                }
+
+                foreach (var detalle in venta.Detalles)
+                {
+                    if (detalle.Producto != null)
+                        detalle.Producto.StockActual += detalle.Cantidad;
+                }
+
+                venta.Estado = EstadoVenta.Anulada;
+                await _context.SaveChangesAsync();
+                await transaccion.CommitAsync();
+
+                return NoContent();
+            }
+            catch
+            {
+                await transaccion.RollbackAsync();
+                throw;
+            }
         }
         // GET: api/ventas/5/comprobante
         [HttpGet("{id}/comprobante")]
@@ -227,6 +276,58 @@ namespace XpressMarket.Server.Controllers
                 TopProductos = topProductos
             };
         }
+        [HttpGet("reporte-periodo")]
+        [Authorize(Roles = "Administrador")]
+        public async Task<ActionResult<List<PeriodoResumen>>> GetReportePeriodo(
+    [FromQuery] DateTime desde, [FromQuery] DateTime hasta, [FromQuery] string agrupacion = "dia")
+        {
+            var ventas = await _context.Ventas
+                .Include(v => v.Detalles).ThenInclude(d => d.Producto)
+                .Where(v => v.Estado == EstadoVenta.Completada
+                         && v.FechaVenta.Date >= desde.Date
+                         && v.FechaVenta.Date <= hasta.Date)
+                .ToListAsync();
+
+            var cultura = CultureInfo.GetCultureInfo("es-ES");
+
+            (DateTime orden, string etiqueta) ClaveDe(Venta v) => agrupacion.ToLower() switch
+            {
+                "semana" => ObtenerClaveSemana(v.FechaVenta),
+                "mes" => (new DateTime(v.FechaVenta.Year, v.FechaVenta.Month, 1),
+                          Capitalizar(cultura.DateTimeFormat.GetMonthName(v.FechaVenta.Month)) + $" {v.FechaVenta.Year}"),
+                _ => (v.FechaVenta.Date, v.FechaVenta.ToString("dd/MM/yyyy"))
+            };
+
+            var resumen = ventas
+                .GroupBy(ClaveDe)
+                .Select(g =>
+                {
+                    var costoTotal = g.Sum(v => v.Detalles.Sum(d => d.Cantidad * (d.Producto?.PrecioCosto ?? 0)));
+                    var totalVentas = g.Sum(v => v.Total);
+                    return new PeriodoResumen
+                    {
+                        Etiqueta = g.Key.etiqueta,
+                        FechaOrden = g.Key.orden,
+                        TotalVentas = totalVentas,
+                        CostoTotal = costoTotal,
+                        Utilidad = totalVentas - costoTotal
+                    };
+                })
+                .OrderBy(r => r.FechaOrden)
+                .ToList();
+
+            return resumen;
+        }
+
+        private static (DateTime orden, string etiqueta) ObtenerClaveSemana(DateTime fecha)
+        {
+            var diasDesdeInicioSemana = ((int)fecha.DayOfWeek + 6) % 7; // Lunes = inicio de semana
+            var inicioSemana = fecha.Date.AddDays(-diasDesdeInicioSemana);
+            var finSemana = inicioSemana.AddDays(6);
+            return (inicioSemana, $"{inicioSemana:dd/MM} - {finSemana:dd/MM}");
+        }
+
+        private static string Capitalizar(string texto) => char.ToUpper(texto[0]) + texto.Substring(1);
 
     }
 }

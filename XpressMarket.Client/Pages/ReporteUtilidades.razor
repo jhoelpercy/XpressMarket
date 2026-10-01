@@ -3,11 +3,14 @@
 @attribute [Authorize(Roles = "Administrador")]
 @inject VentaService VentaSvc
 @using XpressMarket.Shared.Models
+@using XpressMarket.Shared.Extensions
+@inject IJSRuntime JS
 
 <PageTitle>Reporte de Utilidades</PageTitle>
 
 <h3>Reporte de Utilidades</h3>
 
+<!-- Filtros Principales -->
 <div class="row mb-3">
     <div class="col-auto">
         <label>Desde</label>
@@ -22,6 +25,7 @@
     </div>
 </div>
 
+<!-- Tabla Principal -->
 @if (cargando)
 {
     <p><em>Cargando...</em></p>
@@ -50,10 +54,10 @@ else
                     <td>@v.VentaId</td>
                     <td>@v.FechaVenta.ToString("dd/MM/yyyy HH:mm")</td>
                     <td>@v.NombreUsuario</td>
-                    <td>@v.TotalVenta.ToString("C2")</td>
-                    <td>@v.CostoTotal.ToString("C2")</td>
+                    <td>@v.TotalVenta.Bs()</td>
+                    <td>@v.CostoTotal.Bs()</td>
                     <td class="@(v.Utilidad >= 0 ? "text-success" : "text-danger")">
-                        @v.Utilidad.ToString("C2")
+                        @v.Utilidad.Bs()
                     </td>
                 </tr>
             }
@@ -61,11 +65,60 @@ else
         <tfoot>
             <tr class="table-success">
                 <td colspan="3" class="text-end"><strong>Totales:</strong></td>
-                <td><strong>@ventas.Sum(v => v.TotalVenta).ToString("C2")</strong></td>
-                <td><strong>@ventas.Sum(v => v.CostoTotal).ToString("C2")</strong></td>
-                <td><strong>@ventas.Sum(v => v.Utilidad).ToString("C2")</strong></td>
+                <td><strong>@ventas.Sum(v => v.TotalVenta).Bs()</strong></td>
+                <td><strong>@ventas.Sum(v => v.CostoTotal).Bs()</strong></td>
+                <td><strong>@ventas.Sum(v => v.Utilidad).Bs()</strong></td>
             </tr>
         </tfoot>
+    </table>
+}
+
+<!-- Separador -->
+<hr class="my-4" />
+
+<!-- Vista por Período (Gráficos) -->
+<h4>Vista por Período</h4>
+
+<div class="row mb-3">
+    <div class="col-auto">
+        <label>Agrupar por</label>
+        <InputSelect class="form-control" @bind-Value="agrupacionSeleccionada">
+            <option value="dia">Día</option>
+            <option value="semana">Semana</option>
+            <option value="mes">Mes</option>
+        </InputSelect>
+    </div>
+    <div class="col-auto">
+        <label>Desde</label>
+        <input type="date" class="form-control" @bind="periodoDesde" />
+    </div>
+    <div class="col-auto">
+        <label>Hasta</label>
+        <input type="date" class="form-control" @bind="periodoHasta" />
+    </div>
+    <div class="col-auto d-flex align-items-end">
+        <button class="btn btn-primary" @onclick="CargarPeriodo">Ver</button>
+    </div>
+</div>
+
+@if (resumenPeriodo.Any())
+{
+    <canvas id="graficoVentas" class="mb-3"></canvas>
+    <table class="table table-sm">
+        <thead>
+            <tr><th>Período</th><th>Ventas</th><th>Costo</th><th>Utilidad</th></tr>
+        </thead>
+        <tbody>
+            @foreach (var p in resumenPeriodo)
+            {
+                <tr>
+                    <td>@p.Etiqueta</td>
+                    <td>@p.TotalVentas.Bs()</td>
+                    <td>@p.CostoTotal.Bs()</td>
+                    <td class="@(p.Utilidad >= 0 ? "text-success" : "text-danger")">@p.Utilidad.Bs() </td>
+                </tr>
+            }
+        </tbody>
     </table>
 }
 
@@ -74,6 +127,29 @@ else
     private bool cargando = true;
     private DateTime? fechaDesde;
     private DateTime? fechaHasta;
+    private string agrupacionSeleccionada = "dia";
+    private DateTime periodoDesde = DateTime.Now.AddDays(-7);
+    private DateTime periodoHasta = DateTime.Now;
+    private List<PeriodoResumen> resumenPeriodo = new();
+    private bool graficoPendiente = false;
+
+    private async Task CargarPeriodo()
+    {
+        resumenPeriodo = await VentaSvc.ObtenerReportePeriodoAsync(periodoDesde, periodoHasta, agrupacionSeleccionada);
+        graficoPendiente = true;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (graficoPendiente && resumenPeriodo.Any())
+        {
+            graficoPendiente = false;
+            var labels = resumenPeriodo.Select(p => p.Etiqueta).ToArray();
+            var datos = resumenPeriodo.Select(p => p.Utilidad).ToArray();
+            await JS.InvokeVoidAsync("renderizarGraficoLinea", "graficoVentas", labels, datos, "#1F3D2B", "rgba(31,61,43,0.1)", "Utilidad (Bs)");
+        }
+    }
+
 
     protected override async Task OnInitializedAsync()
     {

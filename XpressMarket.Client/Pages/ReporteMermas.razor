@@ -3,6 +3,51 @@
 @attribute [Authorize(Roles = "Administrador")]
 @inject LoteService LoteSvc
 @using XpressMarket.Shared.Models
+@using XpressMarket.Shared.Extensions
+@inject IJSRuntime JS
+
+<hr class="my-4" />
+<h4>Vista por Período</h4>
+<div class="row mb-3">
+    <div class="col-auto">
+        <label>Agrupar por</label>
+        <InputSelect class="form-control" @bind-Value="agrupacionSeleccionada">
+            <option value="dia">Día</option>
+            <option value="semana">Semana</option>
+            <option value="mes">Mes</option>
+        </InputSelect>
+    </div>
+    <div class="col-auto">
+        <label>Desde</label>
+        <input type="date" class="form-control" @bind="periodoDesde" />
+    </div>
+    <div class="col-auto">
+        <label>Hasta</label>
+        <input type="date" class="form-control" @bind="periodoHasta" />
+    </div>
+    <div class="col-auto d-flex align-items-end">
+        <button class="btn btn-primary" @onclick="CargarPeriodo">Ver</button>
+    </div>
+</div>
+
+@if (resumenPeriodo.Any())
+{
+    <canvas id="graficoMermasPeriodo" class="mb-3"></canvas>
+    <table class="table table-sm">
+        <thead>
+            <tr><th>Período</th><th>Valor Perdido</th></tr>
+        </thead>
+        <tbody>
+            @foreach (var p in resumenPeriodo)
+            {
+                <tr>
+                    <td>@p.Etiqueta</td>
+                    <td class="text-danger">@Math.Abs(p.Utilidad).Bs()</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
 
 <PageTitle>Reporte de Mermas</PageTitle>
 
@@ -53,15 +98,15 @@ else
                     <td>@lote.FechaVencimiento.ToString("dd/MM/yyyy")</td>
                     <td>@lote.FechaMerma?.ToString("dd/MM/yyyy")</td>
                     <td>@lote.CantidadActual</td>
-                    <td>@lote.PrecioCosto.ToString("C2")</td>
-                    <td>@((lote.CantidadActual * lote.PrecioCosto).ToString("C2"))</td>
+                    <td>@lote.PrecioCosto.Bs()</td>
+                    <td>@((lote.CantidadActual * lote.PrecioCosto).Bs())</td>
                 </tr>
             }
         </tbody>
         <tfoot>
             <tr class="table-danger">
                 <td colspan="6" class="text-end"><strong>Valor Total Perdido:</strong></td>
-                <td><strong>@valorTotalPerdido.ToString("C2")</strong></td>
+                <td><strong>@valorTotalPerdido.Bs()</strong></td>
             </tr>
         </tfoot>
     </table>
@@ -72,7 +117,30 @@ else
     private bool cargando = true;
     private DateTime? fechaDesde;
     private DateTime? fechaHasta;
+    private string agrupacionSeleccionada = "dia";
+    private DateTime periodoDesde = DateTime.Now.AddDays(-7);
+    private DateTime periodoHasta = DateTime.Now;
+    private List<PeriodoResumen> resumenPeriodo = new();
+    private bool graficoPendiente = false;
 
+private async Task CargarPeriodo()
+{
+    resumenPeriodo = await LoteSvc.ObtenerReporteMermasPeriodoAsync(periodoDesde, periodoHasta, agrupacionSeleccionada);
+    graficoPendiente = true;
+}
+
+protected override async Task OnAfterRenderAsync(bool firstRender)
+{
+    if (graficoPendiente && resumenPeriodo.Any())
+    {
+        graficoPendiente = false;
+        var labels = resumenPeriodo.Select(p => p.Etiqueta).ToArray();
+        var datos = resumenPeriodo.Select(p => Math.Abs(p.Utilidad)).ToArray();
+        
+        // Le pasamos el id "graficoMermasPeriodo" como primer argumento
+            await JS.InvokeVoidAsync("renderizarGraficoBarras", "graficoMermasPeriodo", labels, datos, "#DC3545", "Valor Perdido (Bs)");
+    }
+}
     private decimal valorTotalPerdido => mermas.Sum(l => l.CantidadActual * l.PrecioCosto);
 
     protected override async Task OnInitializedAsync()

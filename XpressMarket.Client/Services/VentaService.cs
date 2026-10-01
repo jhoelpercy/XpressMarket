@@ -32,10 +32,20 @@ namespace XpressMarket.Client.Services
             return (true, null, ventaCreada);
         }
 
-        public async Task<bool> AnularVentaAsync(int id)
+        public async Task<(bool Exito, bool RequiereConfirmacion, List<AdvertenciaAnulacion> Advertencias)> AnularVentaAsync(int id, bool forzar = false)
         {
-            var respuesta = await _http.PutAsync($"{RutaBase}/{id}/anular", null);
-            return respuesta.IsSuccessStatusCode;
+            var respuesta = await _http.PutAsync($"{RutaBase}/{id}/anular?forzar={forzar}", null);
+
+            if (respuesta.IsSuccessStatusCode)
+                return (true, false, new());
+
+            if ((int)respuesta.StatusCode == 409)
+            {
+                var advertencias = await respuesta.Content.ReadFromJsonAsync<List<AdvertenciaAnulacion>>() ?? new();
+                return (false, true, advertencias);
+            }
+
+            return (false, false, new());
         }
 
         public async Task<byte[]> ObtenerComprobantePdfAsync(int ventaId)
@@ -62,6 +72,11 @@ namespace XpressMarket.Client.Services
         public async Task<DashboardResumen?> ObtenerDashboardAsync(int dias = 30)
         {
             return await _http.GetFromJsonAsync<DashboardResumen>($"{RutaBase}/dashboard?dias={dias}");
+        }
+        public async Task<List<PeriodoResumen>> ObtenerReportePeriodoAsync(DateTime desde, DateTime hasta, string agrupacion)
+        {
+            return await _http.GetFromJsonAsync<List<PeriodoResumen>>(
+                $"{RutaBase}/reporte-periodo?desde={desde:yyyy-MM-dd}&hasta={hasta:yyyy-MM-dd}&agrupacion={agrupacion}") ?? new();
         }
     }
 }

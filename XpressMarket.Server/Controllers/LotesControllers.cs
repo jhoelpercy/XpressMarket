@@ -1,9 +1,10 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Globalization;
+using System.Security.Claims;
 using XpressMarket.Server.Data;
 using XpressMarket.Shared.Models;
-using Microsoft.AspNetCore.Authorization;
-using System.Security.Claims;
 namespace XpressMarket.Server.Controllers
 {
     [Authorize(Roles = "Administrador")]
@@ -210,5 +211,55 @@ namespace XpressMarket.Server.Controllers
 
             return await query.OrderByDescending(l => l.FechaMerma).ToListAsync();
         }
+        [HttpGet("reporte-mermas-periodo")]
+        [Authorize(Roles = "Administrador")]
+        public async Task<ActionResult<List<PeriodoResumen>>> GetReporteMermasPeriodo(
+    [FromQuery] DateTime desde, [FromQuery] DateTime hasta, [FromQuery] string agrupacion = "dia")
+        {
+            var mermas = await _context.Lotes
+                .Where(l => l.EsMerma && l.FechaMerma.HasValue
+                         && l.FechaMerma.Value.Date >= desde.Date
+                         && l.FechaMerma.Value.Date <= hasta.Date)
+                .ToListAsync();
+
+            var cultura = CultureInfo.GetCultureInfo("es-ES");
+
+            (DateTime orden, string etiqueta) ClaveDe(Lote l)
+            {
+                var fecha = l.FechaMerma!.Value;
+                return agrupacion.ToLower() switch
+                {
+                    "semana" => ObtenerClaveSemana(fecha),
+                    "mes" => (new DateTime(fecha.Year, fecha.Month, 1),
+                              Capitalizar(cultura.DateTimeFormat.GetMonthName(fecha.Month)) + $" {fecha.Year}"),
+                    _ => (fecha.Date, fecha.ToString("dd/MM/yyyy"))
+                };
+            }
+
+            var resumen = mermas
+                .GroupBy(ClaveDe)
+                .Select(g => new PeriodoResumen
+                {
+                    Etiqueta = g.Key.etiqueta,
+                    FechaOrden = g.Key.orden,
+                    TotalVentas = 0,
+                    CostoTotal = g.Sum(l => l.CantidadActual * l.PrecioCosto),
+                    Utilidad = -g.Sum(l => l.CantidadActual * l.PrecioCosto) // Pérdida = utilidad negativa
+                })
+                .OrderBy(r => r.FechaOrden)
+                .ToList();
+
+            return resumen;
+        }
+
+        private static (DateTime orden, string etiqueta) ObtenerClaveSemana(DateTime fecha)
+        {
+            var diasDesdeInicioSemana = ((int)fecha.DayOfWeek + 6) % 7;
+            var inicioSemana = fecha.Date.AddDays(-diasDesdeInicioSemana);
+            var finSemana = inicioSemana.AddDays(6);
+            return (inicioSemana, $"{inicioSemana:dd/MM} - {finSemana:dd/MM}");
+        }
+
+        private static string Capitalizar(string texto) => char.ToUpper(texto[0]) + texto.Substring(1);
     }
 }    

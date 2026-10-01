@@ -18,7 +18,7 @@ namespace XpressMarket.Server.Data
         public DbSet<Proveedor> Proveedores { get; set; } = null!;
         public DbSet<Lote> Lotes { get; set; } = null!;
         public DbSet<Usuario> Usuarios { get; set; } = null!;
-
+        public DbSet<ConsumoLote> Consumos { get; set; } = null!;
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -79,6 +79,17 @@ namespace XpressMarket.Server.Data
             modelBuilder.Entity<Usuario>()
                 .HasIndex(u => u.NombreUsuario)
                 .IsUnique();
+            modelBuilder.Entity<ConsumoLote>()
+                .HasOne(c => c.DetalleVenta)
+                .WithMany()
+                .HasForeignKey(c => c.DetalleVentaId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<ConsumoLote>()
+                .HasOne(c => c.Lote)
+                .WithMany()
+                .HasForeignKey(c => c.LoteId)
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }
