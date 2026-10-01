@@ -5,6 +5,7 @@
 @inject CategoriaService CategoriaSvc
 @inject NavigationManager NavManager
 @using XpressMarket.Shared.Models
+@using XpressMarket.Shared.Extensions
 
 <PageTitle>Productos</PageTitle>
 
@@ -42,7 +43,7 @@ else
                 <tr class="@(producto.StockBajo ? "table-warning" : "")">
                     <td>@producto.Nombre</td>
                     <td>@producto.Categoria?.Nombre</td>
-                    <td>@producto.PrecioVenta.ToString("C2")</td>
+                    <td>@producto.PrecioVenta.Bs()</td>
                     <td>@producto.StockActual</td>
                     <td>@producto.StockMinimo</td>
                     <td>

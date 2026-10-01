@@ -28,7 +28,7 @@ namespace XpressMarket.Client.Services
             var respuesta = await _http.PostAsJsonAsync(RutaBase, proveedor);
             if (!respuesta.IsSuccessStatusCode)
                 return null;
-
+            
             return await respuesta.Content.ReadFromJsonAsync<Proveedor>();
         }
 

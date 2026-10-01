@@ -1,5 +1,6 @@
 ﻿@inject ProductoService ProductoSvc
 @using XpressMarket.Shared.Models
+@using XpressMarket.Shared.Extensions
 
 <div class="mb-3 position-relative">
     <input class="form-control"
@@ -15,7 +16,7 @@
             {
                 <button type="button" class="list-group-item list-group-item-action"
                         @onclick="() => SeleccionarProducto(producto)">
-                    @producto.Nombre — @producto.PrecioVenta.ToString("C2")
+                    @producto.Nombre — @producto.PrecioVenta.Bs()
                     <span class="text-muted small">(Stock: @producto.StockActual)</span>
                 </button>
             }
