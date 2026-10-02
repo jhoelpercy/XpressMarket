@@ -1,90 +1,138 @@
 ﻿@inject AuthService AuthSvc
 @inject NavigationManager NavManager
 
-<div class="nav-item px-3">
-    <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-        <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Inicio
-    </NavLink>
+<div class="top-row navbar navbar-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="">
+            <span class="brand-icon"><i class="bi bi-cart3"></i></span>
+            <span class="brand-text">
+                <span class="brand-xpress">Xpress</span><span class="brand-market">Market</span>
+            </span>
+        </a>
+    </div>
 </div>
 
-<AuthorizeView>
-    <Authorized>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="punto-venta">Punto de Venta</NavLink>
-        </div>
-    </Authorized>
-</AuthorizeView>
+<div class="nav-scrollable">
+    <nav class="flex-column">
 
-<AuthorizeView Roles="Administrador">
-    <Authorized>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="categorias">
-                <span class="bi bi-tag-fill-nav-menu" aria-hidden="true"></span> Categorías
+        <div class="nav-item">
+            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                <i class="bi bi-house-door-fill" aria-hidden="true"></i>
+                <span>Inicio</span>
             </NavLink>
         </div>
 
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="productos">
-                <span class="bi bi-box-seam-fill-nav-menu" aria-hidden="true"></span> Productos
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="proveedores">
-                <span class="bi bi-truck-fill-nav-menu" aria-hidden="true"></span> Proveedores
-            </NavLink>
-        </div>
+        <AuthorizeView>
+            <Authorized>
+                <div class="nav-item">
+                    <NavLink class="nav-link" href="punto-venta">
+                        <i class="bi bi-cart-check-fill" aria-hidden="true"></i>
+                        <span>Punto de Venta</span>
+                    </NavLink>
+                </div>
+            </Authorized>
+        </AuthorizeView>
 
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="lotes">
-                <span class="bi bi-calendar-fill-nav-menu" aria-hidden="true"></span> Lotes
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="ventas">
-                <span class="bi bi-tag-fill-nav-menu" aria-hidden="true"></span> Ventas
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="alertas">
-                <span class="bi bi-exclamation-triangle-fill-nav-menu" aria-hidden="true"></span> Alertas
-            </NavLink>
-        </div>
+        <AuthorizeView Roles="Administrador">
+            <Authorized>
+                <div class="nav-section-label">Administración</div>
 
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="reporte-mermas">
-                <span class="bi bi-exclamation-triangle-fill-nav-menu" aria-hidden="true"></span> Reporte de Mermas
-            </NavLink>
-        </div>
+                <div class="nav-item">
+                    <NavLink class="nav-link" href="categorias">
+                        <i class="bi bi-tags-fill" aria-hidden="true"></i>
+                        <span>Categorías</span>
+                    </NavLink>
+                </div>
 
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="reporte-utilidades">
-                <span class="bi bi-exclamation-triangle-fill-nav-menu" aria-hidden="true"></span> Reporte de Utilidades
-            </NavLink>
-        </div>
+                <div class="nav-item">
+                    <NavLink class="nav-link" href="productos">
+                        <i class="bi bi-box-seam-fill" aria-hidden="true"></i>
+                        <span>Productos</span>
+                    </NavLink>
+                </div>
 
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="dashboard">
-                <span class="bi bi-exclamation-triangle-fill-nav-menu" aria-hidden="true"></span> Dashboard
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="usuarios">Usuarios</NavLink>
-        </div>
+                <div class="nav-item">
+                    <NavLink class="nav-link" href="proveedores">
+                        <i class="bi bi-truck" aria-hidden="true"></i>
+                        <span>Proveedores</span>
+                    </NavLink>
+                </div>
 
-    </Authorized>
-</AuthorizeView>
+                <div class="nav-item">
+                    <NavLink class="nav-link" href="lotes">
+                        <i class="bi bi-calendar-check-fill" aria-hidden="true"></i>
+                        <span>Lotes</span>
+                    </NavLink>
+                </div>
 
+                <div class="nav-item">
+                    <NavLink class="nav-link" href="ventas">
+                        <i class="bi bi-receipt" aria-hidden="true"></i>
+                        <span>Ventas</span>
+                    </NavLink>
+                </div>
 
-<AuthorizeView>
-    <Authorized>
-        <div class="px-3 text-white-50 small mt-3">
-            @context.User.Identity?.Name (@context.User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value)
-        </div>
-        <div class="nav-item px-3">
-            <button class="nav-link btn btn-link text-start p-0" @onclick="CerrarSesion">Cerrar sesión</button>
-        </div>
-    </Authorized>
-</AuthorizeView>
+                <div class="nav-item">
+                    <NavLink class="nav-link" href="alertas">
+                        <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+                        <span>Alertas</span>
+                    </NavLink>
+                </div>
+
+                <div class="nav-section-label">Reportes</div>
+
+                <div class="nav-item">
+                    <NavLink class="nav-link" href="reporte-mermas">
+                        <i class="bi bi-clipboard-data-fill" aria-hidden="true"></i>
+                        <span>Reporte de Mermas</span>
+                    </NavLink>
+                </div>
+
+                <div class="nav-item">
+                    <NavLink class="nav-link" href="reporte-utilidades">
+                        <i class="bi bi-graph-up-arrow" aria-hidden="true"></i>
+                        <span>Reporte de Utilidades</span>
+                    </NavLink>
+                </div>
+
+                <div class="nav-item">
+                    <NavLink class="nav-link" href="dashboard">
+                        <i class="bi bi-speedometer2" aria-hidden="true"></i>
+                        <span>Dashboard</span>
+                    </NavLink>
+                </div>
+
+                <div class="nav-item">
+                    <NavLink class="nav-link" href="usuarios">
+                        <i class="bi bi-people-fill" aria-hidden="true"></i>
+                        <span>Usuarios</span>
+                    </NavLink>
+                </div>
+            </Authorized>
+        </AuthorizeView>
+
+        <AuthorizeView>
+            <Authorized>
+                <div class="nav-user-info">
+                    <i class="bi bi-person-circle" aria-hidden="true"></i>
+                    <div class="nav-user-details">
+                        <span class="nav-user-name">@context.User.Identity?.Name</span>
+                        <span class="nav-user-role">@context.User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value</span>
+                    </div>
+                </div>
+
+                <div class="nav-item nav-logout">
+                    <button type="button" class="nav-link nav-logout-button" @onclick="CerrarSesion">
+                        <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
+                        <span>Cerrar sesión</span>
+                    </button>
+                </div>
+            </Authorized>
+        </AuthorizeView>
+
+    </nav>
+</div>
+
 @code {
     private async Task CerrarSesion()
     {

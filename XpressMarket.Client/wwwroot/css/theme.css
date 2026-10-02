@@ -1,0 +1,120 @@
+﻿/* ============================================
+   XPRESS MARKET — Tema de marca
+   Colores extraídos del logo oficial de la empresa.
+   Este es el ÚNICO archivo donde se definen colores de marca.
+   ============================================ */
+
+:root {
+    /* Color principal — morado del logo */
+    --xm-morado: #83328F;
+    --xm-morado-oscuro: #62266B;
+    --xm-morado-claro: #F1E6F3;
+    /* Color de acento — naranja del logo (carrito/X) */
+    --xm-naranja: #EC8423;
+    --xm-naranja-oscuro: #BD6A1C;
+    --xm-naranja-claro: #FDEBD9;
+    /* Color terciario — crema del texto "press" */
+    --xm-crema: #FFEAC5;
+    /* Neutros */
+    --xm-fondo: #FBF9F5;
+    --xm-borde: #E4D9E6;
+    --xm-texto: #1C1C1C;
+    --xm-texto-muted: #7A776C;
+}
+
+/* ===== Tipografía base ===== */
+body {
+    background-color: var(--xm-fondo);
+    color: var(--xm-texto);
+    font-family: 'Inter', sans-serif;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'Zilla Slab', serif;
+    font-weight: 600;
+    color: var(--xm-morado-oscuro);
+}
+
+/* Título de cada página (se usa manualmente: <h3 class="xm-titulo-pagina">) */
+.xm-titulo-pagina {
+    border-bottom: 2px solid var(--xm-naranja);
+    padding-bottom: 0.5rem;
+    margin-bottom: 1.5rem;
+}
+
+/* ===== Enlaces ===== */
+a {
+    color: var(--xm-morado);
+}
+
+    a:hover {
+        color: var(--xm-naranja-oscuro);
+    }
+
+/* ===== Botones =====
+   Convención de este sistema:
+   - btn-primary (morado)  -> acciones principales de navegación ("Nuevo Producto", etc.)
+   - btn-success (naranja) -> confirmar/guardar (reemplaza el verde de Bootstrap)
+   - btn-danger            -> se deja el rojo normal de Bootstrap (señal de peligro real)
+   - btn-secondary/warning/info -> se dejan los colores normales de Bootstrap (significado semántico)
+*/
+.btn-primary {
+    background-color: var(--xm-morado);
+    border-color: var(--xm-morado);
+    color: #FFFFFF;
+}
+
+    .btn-primary:hover, .btn-primary:focus {
+        background-color: var(--xm-morado-oscuro);
+        border-color: var(--xm-morado-oscuro);
+        color: #FFFFFF;
+    }
+
+.btn-success {
+    background-color: var(--xm-naranja);
+    border-color: var(--xm-naranja);
+    color: #FFFFFF;
+}
+
+    .btn-success:hover, .btn-success:focus {
+        background-color: var(--xm-naranja-oscuro);
+        border-color: var(--xm-naranja-oscuro);
+        color: #FFFFFF;
+    }
+
+.btn-outline-success {
+    color: var(--xm-naranja-oscuro);
+    border-color: var(--xm-naranja);
+}
+
+    .btn-outline-success:hover {
+        background-color: var(--xm-naranja);
+        border-color: var(--xm-naranja);
+        color: #FFFFFF;
+    }
+
+/* ===== Formularios ===== */
+.form-control:focus, .form-select:focus {
+    border-color: var(--xm-morado);
+    box-shadow: 0 0 0 0.2rem rgba(131, 50, 143, 0.15);
+}
+
+/* ===== Tablas ===== */
+.table > thead > tr > th {
+    background-color: var(--xm-morado);
+    color: var(--xm-crema);
+    font-weight: 500;
+    border-bottom: none;
+}
+
+.table {
+    --bs-table-striped-bg: #F6F0F7;
+    --bs-table-hover-bg: #F1E6F3;
+    border-color: var(--xm-borde);
+}
+
+/* ===== Tarjetas ===== */
+.card {
+    border-color: var(--xm-borde);
+    border-radius: 6px;
+}
