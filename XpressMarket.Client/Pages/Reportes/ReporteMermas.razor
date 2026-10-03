@@ -6,111 +6,138 @@
 @using XpressMarket.Shared.Extensions
 @inject IJSRuntime JS
 
-<hr class="my-4" />
-<h4>Vista por Período</h4>
-<div class="row mb-3">
-    <div class="col-auto">
-        <label>Agrupar por</label>
-        <InputSelect class="form-control" @bind-Value="agrupacionSeleccionada">
-            <option value="dia">Día</option>
-            <option value="semana">Semana</option>
-            <option value="mes">Mes</option>
-        </InputSelect>
-    </div>
-    <div class="col-auto">
-        <label>Desde</label>
-        <input type="date" class="form-control" @bind="periodoDesde" />
-    </div>
-    <div class="col-auto">
-        <label>Hasta</label>
-        <input type="date" class="form-control" @bind="periodoHasta" />
-    </div>
-    <div class="col-auto d-flex align-items-end">
-        <button class="btn btn-primary" @onclick="CargarPeriodo">Ver</button>
-    </div>
+<PageTitle>XpressMarket - Reporte de Mermas</PageTitle>
+
+<div class="pa-4 pa-md-6">
+    @* Banner Principal *@
+    <MudPaper Elevation="0" Class="pa-6 mb-6 rounded-xl d-flex justify-between align-center" 
+              Style="background: linear-gradient(135deg, #4a1458 0%, #6b2181 100%); color: #ffffff; border: 1px solid rgba(255,255,255,0.1);">
+        <div>
+            <div class="d-flex align-center gap-2 mb-2">
+                <MudChip T="string" Size="Size.Small" Variant="Variant.Filled" Style="background-color: rgba(243, 130, 24, 0.2); color: #f38218;" Class="fw-bold">
+                    Control de Pérdidas
+                </MudChip>
+            </div>
+            <MudText Typo="Typo.h4" Class="fw-bold mb-1" Style="color: #ffffff; text-shadow: 0px 2px 4px rgba(0,0,0,0.2);">
+                Reporte de Mermas
+            </MudText>
+            <MudText Typo="Typo.body2" Style="color: rgba(255, 255, 255, 0.85);">
+                Historial y análisis detallado de productos vencidos y valor económico perdido.
+            </MudText>
+        </div>
+        <div class="d-none d-md-block">
+            <MudIcon Icon="@Icons.Material.Filled.ReportOff" Style="font-size: 4.5rem; color: rgba(255,255,255,0.15);" />
+        </div>
+    </MudPaper>
+
+    @* Sección: Vista por Período y Gráfico *@
+    <MudPaper Elevation="2" Class="pa-5 mb-6 rounded-xl" Style="background: #ffffff; border: 1px solid #e0e0e0;">
+        <div class="d-flex align-center mb-4">
+            <MudIcon Icon="@Icons.Material.Filled.BarChart" Style="color: #6b2181;" Class="mr-2" />
+            <MudText Typo="Typo.h6" Class="fw-bold" Style="color: #2b2b2b;">Análisis por Período</MudText>
+        </div>
+
+        <MudGrid Class="mb-4 align-center">
+            <MudItem xs="12" sm="3">
+                <MudSelect T="string" Label="Agrupar por" @bind-Value="agrupacionSeleccionada" Variant="Variant.Outlined" Margin="Margin.Dense">
+                    <MudSelectItem Value="@("dia")">Día</MudSelectItem>
+                    <MudSelectItem Value="@("semana")">Semana</MudSelectItem>
+                    <MudSelectItem Value="@("mes")">Mes</MudSelectItem>
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12" sm="3">
+                <MudDatePicker Label="Desde" @bind-Date="periodoDesde" Variant="Variant.Outlined" Margin="Margin.Dense" />
+            </MudItem>
+            <MudItem xs="12" sm="3">
+                <MudDatePicker Label="Hasta" @bind-Date="periodoHasta" Variant="Variant.Outlined" Margin="Margin.Dense" />
+            </MudItem>
+            <MudItem xs="12" sm="3">
+                <MudButton Variant="Variant.Filled" Style="background-color: #6b2181; color: #ffffff;" FullWidth="true" OnClick="CargarPeriodo">
+                    Consultar
+                </MudButton>
+            </MudItem>
+        </MudGrid>
+
+        @if (resumenPeriodo.Any())
+        {
+            <div style="position: relative; width: 100%; height: 300px;" class="mb-4">
+                <canvas id="graficoMermasPeriodo"></canvas>
+            </div>
+            <MudTable Items="@resumenPeriodo" Dense="true" Hover="true" Elevation="0" Class="rounded-lg">
+                <HeaderContent>
+                    <MudTh>Período</MudTh>
+                    <MudTh Style="text-align: right;">Valor Perdido</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Período">@context.Etiqueta</MudTd>
+                    <MudTd DataLabel="Valor Perdido" Style="text-align: right;">
+                        <span style="color: #d32f2f; font-weight: bold;">@Math.Abs(context.Utilidad).Bs()</span>
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+        }
+    </MudPaper>
+
+    @* Sección: Filtro y Tabla de Detalle Histórico *@
+    <MudPaper Elevation="2" Class="pa-5 rounded-xl" Style="background: #ffffff; border: 1px solid #e0e0e0;">
+        <div class="d-flex align-center mb-4">
+            <MudIcon Icon="@Icons.Material.Filled.History" Style="color: #f38218;" Class="mr-2" />
+            <MudText Typo="Typo.h6" Class="fw-bold" Style="color: #2b2b2b;">Detalle de Mermas</MudText>
+        </div>
+
+        <MudGrid Class="mb-4 align-center">
+            <MudItem xs="12" sm="4">
+                <MudDatePicker Label="Desde" @bind-Date="fechaDesde" Variant="Variant.Outlined" Margin="Margin.Dense" />
+            </MudItem>
+            <MudItem xs="12" sm="4">
+                <MudDatePicker Label="Hasta" @bind-Date="fechaHasta" Variant="Variant.Outlined" Margin="Margin.Dense" />
+            </MudItem>
+            <MudItem xs="12" sm="4">
+                <MudButton Variant="Variant.Outlined" Color="Color.Primary" FullWidth="true" OnClick="Filtrar">
+                    Filtrar Detalle
+                </MudButton>
+            </MudItem>
+        </MudGrid>
+
+        @if (cargando)
+        {
+            <div class="d-flex justify-center pa-6">
+                <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
+            </div>
+        }
+        else if (!mermas.Any())
+        {
+            <MudText Typo="Typo.body2" Class="text-muted italic pa-4">No hay mermas registradas en este período.</MudText>
+        }
+        else
+        {
+            <MudTable Items="@mermas" Dense="true" Hover="true" Elevation="0" Class="rounded-lg">
+                <HeaderContent>
+                    <MudTh>N° Lote</MudTh>
+                    <MudTh>Producto</MudTh>
+                    <MudTh>Fecha Vencimiento</MudTh>
+                    <MudTh>Fecha Registro Merma</MudTh>
+                    <MudTh>Cantidad</MudTh>
+                    <MudTh>Costo Unit.</MudTh>
+                    <MudTh Style="text-align: right;">Valor Perdido</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="N° Lote"><strong>@context.NumeroLote</strong></MudTd>
+                    <MudTd DataLabel="Producto">@context.Producto?.Nombre</MudTd>
+                    <MudTd DataLabel="Fecha Vencimiento">@context.FechaVencimiento.ToString("dd/MM/yyyy")</MudTd>
+                    <MudTd DataLabel="Fecha Registro Merma">@context.FechaMerma?.ToString("dd/MM/yyyy")</MudTd>
+                    <MudTd DataLabel="Cantidad">@context.CantidadActual</MudTd>
+                    <MudTd DataLabel="Costo Unit.">@context.PrecioCosto.Bs()</MudTd>
+                    <MudTd DataLabel="Valor Perdido" Style="text-align: right;">@((context.CantidadActual * context.PrecioCosto).Bs())</MudTd>
+                </RowTemplate>
+                <FooterContent>
+                    <MudTd colspan="6" Style="text-align: right;"><strong>Valor Total Perdido:</strong></MudTd>
+                    <MudTd Style="text-align: right;"><strong style="color: #d32f2f;">@valorTotalPerdido.Bs()</strong></MudTd>
+                </FooterContent>
+            </MudTable>
+        }
+    </MudPaper>
 </div>
-
-@if (resumenPeriodo.Any())
-{
-    <canvas id="graficoMermasPeriodo" class="mb-3"></canvas>
-    <table class="table table-sm">
-        <thead>
-            <tr><th>Período</th><th>Valor Perdido</th></tr>
-        </thead>
-        <tbody>
-            @foreach (var p in resumenPeriodo)
-            {
-                <tr>
-                    <td>@p.Etiqueta</td>
-                    <td class="text-danger">@Math.Abs(p.Utilidad).Bs()</td>
-                </tr>
-            }
-        </tbody>
-    </table>
-}
-
-<PageTitle>Reporte de Mermas</PageTitle>
-
-<h3>Reporte de Mermas</h3>
-
-<div class="row mb-3">
-    <div class="col-auto">
-        <label>Desde</label>
-        <input type="date" class="form-control" @bind="fechaDesde" />
-    </div>
-    <div class="col-auto">
-        <label>Hasta</label>
-        <input type="date" class="form-control" @bind="fechaHasta" />
-    </div>
-    <div class="col-auto d-flex align-items-end">
-        <button class="btn btn-primary" @onclick="Filtrar">Filtrar</button>
-    </div>
-</div>
-
-@if (cargando)
-{
-    <p><em>Cargando...</em></p>
-}
-else if (!mermas.Any())
-{
-    <p class="text-muted">No hay mermas registradas en este período.</p>
-}
-else
-{
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>N° Lote</th>
-                <th>Producto</th>
-                <th>Fecha Vencimiento</th>
-                <th>Fecha Registro Merma</th>
-                <th>Cantidad Perdida</th>
-                <th>Costo Unit.</th>
-                <th>Valor Perdido</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var lote in mermas)
-            {
-                <tr>
-                    <td>@lote.NumeroLote</td>
-                    <td>@lote.Producto?.Nombre</td>
-                    <td>@lote.FechaVencimiento.ToString("dd/MM/yyyy")</td>
-                    <td>@lote.FechaMerma?.ToString("dd/MM/yyyy")</td>
-                    <td>@lote.CantidadActual</td>
-                    <td>@lote.PrecioCosto.Bs()</td>
-                    <td>@((lote.CantidadActual * lote.PrecioCosto).Bs())</td>
-                </tr>
-            }
-        </tbody>
-        <tfoot>
-            <tr class="table-danger">
-                <td colspan="6" class="text-end"><strong>Valor Total Perdido:</strong></td>
-                <td><strong>@valorTotalPerdido.Bs()</strong></td>
-            </tr>
-        </tfoot>
-    </table>
-}
 
 @code {
     private List<Lote> mermas = new();
@@ -118,33 +145,38 @@ else
     private DateTime? fechaDesde;
     private DateTime? fechaHasta;
     private string agrupacionSeleccionada = "dia";
-    private DateTime periodoDesde = DateTime.Now.AddDays(-7);
-    private DateTime periodoHasta = DateTime.Now;
+    private DateTime? periodoDesde = DateTime.Now.AddDays(-7);
+    private DateTime? periodoHasta = DateTime.Now;
     private List<PeriodoResumen> resumenPeriodo = new();
     private bool graficoPendiente = false;
 
-private async Task CargarPeriodo()
-{
-    resumenPeriodo = await LoteSvc.ObtenerReporteMermasPeriodoAsync(periodoDesde, periodoHasta, agrupacionSeleccionada);
-    graficoPendiente = true;
-}
-
-protected override async Task OnAfterRenderAsync(bool firstRender)
-{
-    if (graficoPendiente && resumenPeriodo.Any())
+    private async Task CargarPeriodo()
     {
-        graficoPendiente = false;
-        var labels = resumenPeriodo.Select(p => p.Etiqueta).ToArray();
-        var datos = resumenPeriodo.Select(p => Math.Abs(p.Utilidad)).ToArray();
-        
-        // Le pasamos el id "graficoMermasPeriodo" como primer argumento
-            await JS.InvokeVoidAsync("renderizarGraficoBarras", "graficoMermasPeriodo", labels, datos, "#DC3545", "Valor Perdido (Bs)");
+        if (periodoDesde.HasValue && periodoHasta.HasValue)
+        {
+            resumenPeriodo = await LoteSvc.ObtenerReporteMermasPeriodoAsync(periodoDesde.Value, periodoHasta.Value, agrupacionSeleccionada);
+            graficoPendiente = true;
+        }
     }
-}
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (graficoPendiente && resumenPeriodo.Any())
+        {
+            graficoPendiente = false;
+            await Task.Delay(1);
+            var labels = resumenPeriodo.Select(p => p.Etiqueta).ToArray();
+            var datos = resumenPeriodo.Select(p => Math.Abs(p.Utilidad)).ToArray();
+            
+            await JS.InvokeVoidAsync("renderizarGraficoBarras", "graficoMermasPeriodo", labels, datos, "#d32f2f", "Valor Perdido (Bs)");
+        }
+    }
+
     private decimal valorTotalPerdido => mermas.Sum(l => l.CantidadActual * l.PrecioCosto);
 
     protected override async Task OnInitializedAsync()
     {
+        await CargarPeriodo();
         await Filtrar();
     }
 

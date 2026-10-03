@@ -6,121 +6,144 @@
 @using XpressMarket.Shared.Extensions
 @inject IJSRuntime JS
 
-<PageTitle>Reporte de Utilidades</PageTitle>
+<PageTitle>XpressMarket - Reporte de Utilidades</PageTitle>
 
-<h3>Reporte de Utilidades</h3>
+<div class="pa-4 pa-md-6">
+    @* Banner Principal *@
+    <MudPaper Elevation="0" Class="pa-6 mb-6 rounded-xl d-flex justify-between align-center" 
+              Style="background: linear-gradient(135deg, #4a1458 0%, #6b2181 100%); color: #ffffff; border: 1px solid rgba(255,255,255,0.1);">
+        <div>
+            <div class="d-flex align-center gap-2 mb-2">
+                <MudChip T="string" Size="Size.Small" Variant="Variant.Filled" Style="background-color: rgba(243, 130, 24, 0.2); color: #f38218;" Class="fw-bold">
+                    Análisis Financiero
+                </MudChip>
+            </div>
+            <MudText Typo="Typo.h4" Class="fw-bold mb-1" Style="color: #ffffff; text-shadow: 0px 2px 4px rgba(0,0,0,0.2);">
+                Reporte de Utilidades
+            </MudText>
+            <MudText Typo="Typo.body2" Style="color: rgba(255, 255, 255, 0.85);">
+                Control de ingresos, costos totales y márgenes de utilidad por venta y período.
+            </MudText>
+        </div>
+        <div class="d-none d-md-block">
+            <MudIcon Icon="@Icons.Material.Filled.TrendingUp" Style="font-size: 4.5rem; color: rgba(255,255,255,0.15);" />
+        </div>
+    </MudPaper>
 
-<!-- Filtros Principales -->
-<div class="row mb-3">
-    <div class="col-auto">
-        <label>Desde</label>
-        <input type="date" class="form-control" @bind="fechaDesde" />
-    </div>
-    <div class="col-auto">
-        <label>Hasta</label>
-        <input type="date" class="form-control" @bind="fechaHasta" />
-    </div>
-    <div class="col-auto d-flex align-items-end">
-        <button class="btn btn-primary" @onclick="Filtrar">Filtrar</button>
-    </div>
+    @* Sección: Vista por Período y Gráficos *@
+    <MudPaper Elevation="2" Class="pa-5 mb-6 rounded-xl" Style="background: #ffffff; border: 1px solid #e0e0e0;">
+        <div class="d-flex align-center mb-4">
+            <MudIcon Icon="@Icons.Material.Filled.ShowChart" Style="color: #6b2181;" Class="mr-2" />
+            <MudText Typo="Typo.h6" Class="fw-bold" Style="color: #2b2b2b;">Vista por Período</MudText>
+        </div>
+
+        <MudGrid Class="mb-4 align-center">
+            <MudItem xs="12" sm="3">
+                <MudSelect T="string" Label="Agrupar por" @bind-Value="agrupacionSeleccionada" Variant="Variant.Outlined" Margin="Margin.Dense">
+                    <MudSelectItem Value="@("dia")">Día</MudSelectItem>
+                    <MudSelectItem Value="@("semana")">Semana</MudSelectItem>
+                    <MudSelectItem Value="@("mes")">Mes</MudSelectItem>
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12" sm="3">
+                <MudDatePicker Label="Desde" @bind-Date="periodoDesde" Variant="Variant.Outlined" Margin="Margin.Dense" />
+            </MudItem>
+            <MudItem xs="12" sm="3">
+                <MudDatePicker Label="Hasta" @bind-Date="periodoHasta" Variant="Variant.Outlined" Margin="Margin.Dense" />
+            </MudItem>
+            <MudItem xs="12" sm="3">
+                <MudButton Variant="Variant.Filled" Style="background-color: #6b2181; color: #ffffff;" FullWidth="true" OnClick="CargarPeriodo">
+                    Consultar
+                </MudButton>
+            </MudItem>
+        </MudGrid>
+
+        @if (resumenPeriodo.Any())
+        {
+            <div style="position: relative; width: 100%; height: 300px;" class="mb-4">
+                <canvas id="graficoVentas"></canvas>
+            </div>
+            <MudTable Items="@resumenPeriodo" Dense="true" Hover="true" Elevation="0" Class="rounded-lg">
+                <HeaderContent>
+                    <MudTh>Período</MudTh>
+                    <MudTh Style="text-align: right;">Ventas</MudTh>
+                    <MudTh Style="text-align: right;">Costo</MudTh>
+                    <MudTh Style="text-align: right;">Utilidad</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Período">@context.Etiqueta</MudTd>
+                    <MudTd DataLabel="Ventas" Style="text-align: right;">@context.TotalVentas.Bs()</MudTd>
+                    <MudTd DataLabel="Costo" Style="text-align: right;">@context.CostoTotal.Bs()</MudTd>
+                    <MudTd DataLabel="Utilidad" Style="text-align: right;">
+                        <span class="@(context.Utilidad >= 0 ? "text-success" : "text-danger")" style="font-weight: bold;">@context.Utilidad.Bs()</span>
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+        }
+    </MudPaper>
+
+    @* Sección: Tabla Principal de Utilidades por Venta *@
+    <MudPaper Elevation="2" Class="pa-5 rounded-xl" Style="background: #ffffff; border: 1px solid #e0e0e0;">
+        <div class="d-flex align-center mb-4">
+            <MudIcon Icon="@Icons.Material.Filled.ReceiptLong" Style="color: #f38218;" Class="mr-2" />
+            <MudText Typo="Typo.h6" Class="fw-bold" Style="color: #2b2b2b;">Detalle de Ventas y Utilidades</MudText>
+        </div>
+
+        <MudGrid Class="mb-4 align-center">
+            <MudItem xs="12" sm="4">
+                <MudDatePicker Label="Desde" @bind-Date="fechaDesde" Variant="Variant.Outlined" Margin="Margin.Dense" />
+            </MudItem>
+            <MudItem xs="12" sm="4">
+                <MudDatePicker Label="Hasta" @bind-Date="fechaHasta" Variant="Variant.Outlined" Margin="Margin.Dense" />
+            </MudItem>
+            <MudItem xs="12" sm="4">
+                <MudButton Variant="Variant.Outlined" Color="Color.Primary" FullWidth="true" OnClick="Filtrar">
+                    Filtrar Detalle
+                </MudButton>
+            </MudItem>
+        </MudGrid>
+
+        @if (cargando)
+        {
+            <div class="d-flex justify-center pa-6">
+                <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
+            </div>
+        }
+        else if (!ventas.Any())
+        {
+            <MudText Typo="Typo.body2" Class="text-muted italic pa-4">No hay ventas registradas en este período.</MudText>
+        }
+        else
+        {
+            <MudTable Items="@ventas" Dense="true" Hover="true" Elevation="0" Class="rounded-lg">
+                <HeaderContent>
+                    <MudTh>N° Venta</MudTh>
+                    <MudTh>Fecha</MudTh>
+                    <MudTh>Cajero</MudTh>
+                    <MudTh Style="text-align: right;">Total Venta</MudTh>
+                    <MudTh Style="text-align: right;">Costo Total</MudTh>
+                    <MudTh Style="text-align: right;">Utilidad</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="N° Venta"><strong>@context.VentaId</strong></MudTd>
+                    <MudTd DataLabel="Fecha">@context.FechaVenta.ToString("dd/MM/yyyy HH:mm")</MudTd>
+                    <MudTd DataLabel="Cajero">@context.NombreUsuario</MudTd>
+                    <MudTd DataLabel="Total Venta" Style="text-align: right;">@context.TotalVenta.Bs()</MudTd>
+                    <MudTd DataLabel="Costo Total" Style="text-align: right;">@context.CostoTotal.Bs()</MudTd>
+                    <MudTd DataLabel="Utilidad" Style="text-align: right;">
+                        <span class="@(context.Utilidad >= 0 ? "text-success" : "text-danger")" style="font-weight: bold;">@context.Utilidad.Bs()</span>
+                    </MudTd>
+                </RowTemplate>
+                <FooterContent>
+                    <MudTd colspan="3" Style="text-align: right;"><strong>Totales:</strong></MudTd>
+                    <MudTd Style="text-align: right;"><strong>@ventas.Sum(v => v.TotalVenta).Bs()</strong></MudTd>
+                    <MudTd Style="text-align: right;"><strong>@ventas.Sum(v => v.CostoTotal).Bs()</strong></MudTd>
+                    <MudTd Style="text-align: right;"><strong class="@(ventas.Sum(v => v.Utilidad) >= 0 ? "text-success" : "text-danger")">@ventas.Sum(v => v.Utilidad).Bs()</strong></MudTd>
+                </FooterContent>
+            </MudTable>
+        }
+    </MudPaper>
 </div>
-
-<!-- Tabla Principal -->
-@if (cargando)
-{
-    <p><em>Cargando...</em></p>
-}
-else if (!ventas.Any())
-{
-    <p class="text-muted">No hay ventas registradas en este período.</p>
-}
-else
-{
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>N° Venta</th>
-                <th>Fecha</th>
-                <th>Cajero</th>
-                <th>Total Venta</th>
-                <th>Costo Total</th>
-                <th>Utilidad</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var v in ventas)
-            {
-                <tr>
-                    <td>@v.VentaId</td>
-                    <td>@v.FechaVenta.ToString("dd/MM/yyyy HH:mm")</td>
-                    <td>@v.NombreUsuario</td>
-                    <td>@v.TotalVenta.Bs()</td>
-                    <td>@v.CostoTotal.Bs()</td>
-                    <td class="@(v.Utilidad >= 0 ? "text-success" : "text-danger")">
-                        @v.Utilidad.Bs()
-                    </td>
-                </tr>
-            }
-        </tbody>
-        <tfoot>
-            <tr class="table-success">
-                <td colspan="3" class="text-end"><strong>Totales:</strong></td>
-                <td><strong>@ventas.Sum(v => v.TotalVenta).Bs()</strong></td>
-                <td><strong>@ventas.Sum(v => v.CostoTotal).Bs()</strong></td>
-                <td><strong>@ventas.Sum(v => v.Utilidad).Bs()</strong></td>
-            </tr>
-        </tfoot>
-    </table>
-}
-
-<!-- Separador -->
-<hr class="my-4" />
-
-<!-- Vista por Período (Gráficos) -->
-<h4>Vista por Período</h4>
-
-<div class="row mb-3">
-    <div class="col-auto">
-        <label>Agrupar por</label>
-        <InputSelect class="form-control" @bind-Value="agrupacionSeleccionada">
-            <option value="dia">Día</option>
-            <option value="semana">Semana</option>
-            <option value="mes">Mes</option>
-        </InputSelect>
-    </div>
-    <div class="col-auto">
-        <label>Desde</label>
-        <input type="date" class="form-control" @bind="periodoDesde" />
-    </div>
-    <div class="col-auto">
-        <label>Hasta</label>
-        <input type="date" class="form-control" @bind="periodoHasta" />
-    </div>
-    <div class="col-auto d-flex align-items-end">
-        <button class="btn btn-primary" @onclick="CargarPeriodo">Ver</button>
-    </div>
-</div>
-
-@if (resumenPeriodo.Any())
-{
-    <canvas id="graficoVentas" class="mb-3"></canvas>
-    <table class="table table-sm">
-        <thead>
-            <tr><th>Período</th><th>Ventas</th><th>Costo</th><th>Utilidad</th></tr>
-        </thead>
-        <tbody>
-            @foreach (var p in resumenPeriodo)
-            {
-                <tr>
-                    <td>@p.Etiqueta</td>
-                    <td>@p.TotalVentas.Bs()</td>
-                    <td>@p.CostoTotal.Bs()</td>
-                    <td class="@(p.Utilidad >= 0 ? "text-success" : "text-danger")">@p.Utilidad.Bs() </td>
-                </tr>
-            }
-        </tbody>
-    </table>
-}
 
 @code {
     private List<ResumenUtilidad> ventas = new();
@@ -128,15 +151,18 @@ else
     private DateTime? fechaDesde;
     private DateTime? fechaHasta;
     private string agrupacionSeleccionada = "dia";
-    private DateTime periodoDesde = DateTime.Now.AddDays(-7);
-    private DateTime periodoHasta = DateTime.Now;
+    private DateTime? periodoDesde = DateTime.Now.AddDays(-7);
+    private DateTime? periodoHasta = DateTime.Now;
     private List<PeriodoResumen> resumenPeriodo = new();
     private bool graficoPendiente = false;
 
     private async Task CargarPeriodo()
     {
-        resumenPeriodo = await VentaSvc.ObtenerReportePeriodoAsync(periodoDesde, periodoHasta, agrupacionSeleccionada);
-        graficoPendiente = true;
+        if (periodoDesde.HasValue && periodoHasta.HasValue)
+        {
+            resumenPeriodo = await VentaSvc.ObtenerReportePeriodoAsync(periodoDesde.Value, periodoHasta.Value, agrupacionSeleccionada);
+            graficoPendiente = true;
+        }
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -144,15 +170,16 @@ else
         if (graficoPendiente && resumenPeriodo.Any())
         {
             graficoPendiente = false;
+            await Task.Delay(1);
             var labels = resumenPeriodo.Select(p => p.Etiqueta).ToArray();
             var datos = resumenPeriodo.Select(p => p.Utilidad).ToArray();
-            await JS.InvokeVoidAsync("renderizarGraficoLinea", "graficoVentas", labels, datos, "#1F3D2B", "rgba(31,61,43,0.1)", "Utilidad (Bs)");
+            await JS.InvokeVoidAsync("renderizarGraficoLinea", "graficoVentas", labels, datos, "#6b2181", "rgba(107,33,129,0.12)", "Utilidad (Bs)");
         }
     }
 
-
     protected override async Task OnInitializedAsync()
     {
+        await CargarPeriodo();
         await Filtrar();
     }
 
