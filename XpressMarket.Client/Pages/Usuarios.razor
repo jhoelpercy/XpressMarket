@@ -51,7 +51,11 @@ else
                         }
                     </td>
                     <td>
-                        <button class="btn btn-sm btn-secondary" @onclick="() => AbrirFormularioEditar(u)">
+                        @if (u.EsSuperAdmin)
+                        {
+                            <span class="badge bg-dark">Cuenta de Respaldo</span>
+                        }
+                        <button class="btn btn-sm btn-secondary ms-1" @onclick="() => AbrirFormularioEditar(u)">
                             Editar
                         </button>
                     </td>
@@ -106,13 +110,13 @@ else
 
             <div class="mb-2">
                 <label class="form-label">Rol</label>
-                <InputSelect class="form-select" @bind-Value="edicion.Rol">
+                <InputSelect class="form-control" @bind-Value="edicion.Rol" disabled="@usuarioEditando?.EsSuperAdmin">
                     <option value="Cajero">Cajero</option>
                     <option value="Administrador">Administrador</option>
                 </InputSelect>
             </div>
             <div class="mb-2 form-check">
-                <InputCheckbox class="form-check-input" @bind-Value="edicion.Activo" />
+                <InputCheckbox class="form-check-input" @bind-Value="edicion.Activo" disabled="@usuarioEditando?.EsSuperAdmin" />
                 <label class="form-check-label">Activo</label>
             </div>
             <div class="mb-2">

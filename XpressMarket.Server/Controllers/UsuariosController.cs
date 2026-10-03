@@ -29,7 +29,8 @@ namespace XpressMarket.Server.Controllers
                     NombreCompleto = u.NombreCompleto ?? string.Empty,
                     NombreUsuario = u.NombreUsuario,
                     Rol = u.Rol,
-                    Activo = u.Activo
+                    Activo = u.Activo,
+                    EsSuperAdmin = u.EsSuperAdmin
                 })
                 .ToListAsync();
         }
@@ -92,16 +93,12 @@ namespace XpressMarket.Server.Controllers
             if (usuario == null)
                 return NotFound();
 
-            // Evita que el admin actual se desactive o se despoje del rol de Administrador
-            var idActual = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (idActual == id.ToString())
-            {
-                if (!request.Activo)
-                    return BadRequest("No puedes desactivar tu propia cuenta.");
+            if (usuario.EsSuperAdmin && (!request.Activo || request.Rol != "Administrador"))
+                return BadRequest("Esta es la cuenta de respaldo del sistema: no puede desactivarse ni cambiar de rol. Solo se le puede actualizar la contraseña.");
 
-                if (request.Rol != "Administrador")
-                    return BadRequest("No puedes cambiar tu propio rol de Administrador.");
-            }
+            var idActual = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (idActual == id.ToString() && !request.Activo)
+                return BadRequest("No puedes desactivar tu propia cuenta.");
 
             usuario.Rol = request.Rol;
             usuario.Activo = request.Activo;

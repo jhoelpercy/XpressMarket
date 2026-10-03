@@ -9,7 +9,9 @@ namespace XpressMarket.Shared.Models
         public string NombreUsuario { get; set; } = string.Empty;
         public string Rol { get; set; } = string.Empty;
         public bool Activo { get; set; }
+        public bool EsSuperAdmin { get; set; } = false;
     }
+
 
     public class UsuarioCreateRequest
     {

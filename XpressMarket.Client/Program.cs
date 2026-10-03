@@ -35,6 +35,7 @@ builder.Services.AddScoped<ProveedorService>();
 builder.Services.AddScoped<LoteService>();
 builder.Services.AddScoped<CategoriaService>();
 builder.Services.AddScoped<VentaService>();
+builder.Services.AddScoped<ReporteService>();
 builder.Services.AddScoped<UsuarioService>();
 
 // 6. Construir y ejecutar la aplicación al FINAL de la configuración

@@ -2,6 +2,7 @@
 @attribute [Authorize(Roles = "Administrador")]
 @inject VentaService VentaSvc
 @inject IJSRuntime JS
+@inject ReporteService ReporteSvc
 @using XpressMarket.Shared.Models
 @using XpressMarket.Shared.Extensions
 
@@ -60,12 +61,75 @@ else if (resumen != null)
             <canvas id="graficoProductos"></canvas>
         </div>
     </div>
+    <hr class="my-4" />
+
+    <h5>Informe Gerencial</h5>
+    <p class="text-muted small">Descarga un informe en PDF con ventas, utilidad, mermas, stock bajo y lotes por vencer de un período específico.</p>
+
+    @if (errorInforme != null)
+    {
+        <div class="alert alert-danger">@errorInforme</div>
+    }
+
+    <div class="row mb-2">
+        <div class="col-auto">
+            <label>Desde</label>
+            <input type="date" class="form-control" @bind="desdeInforme" />
+        </div>
+        <div class="col-auto">
+            <label>Hasta</label>
+            <input type="date" class="form-control" @bind="hastaInforme" />
+        </div>
+        <div class="col-auto d-flex align-items-end gap-2">
+            <button class="btn btn-outline-secondary btn-sm" @onclick="SeleccionarHoy">Hoy</button>
+            <button class="btn btn-outline-secondary btn-sm" @onclick="SeleccionarEsteMes">Este Mes</button>
+        </div>
+    </div>
+
+    <button class="btn btn-primary" @onclick="DescargarInforme" disabled="@generandoInforme">
+        @(generandoInforme ? "Generando..." : "Descargar Informe PDF")
+    </button>
 }
 
 @code {
     private DashboardResumen? resumen;
     private bool cargando = true;
     private bool graficosPendientes = false;
+    private DateTime desdeInforme = DateTime.Now.Date;
+    private DateTime hastaInforme = DateTime.Now.Date;
+    private bool generandoInforme = false;
+    private string? errorInforme;
+
+    private void SeleccionarHoy()
+    {
+        desdeInforme = DateTime.Now.Date;
+        hastaInforme = DateTime.Now.Date;
+    }
+
+    private void SeleccionarEsteMes()
+    {
+        desdeInforme = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
+        hastaInforme = DateTime.Now.Date;
+    }
+
+    private async Task DescargarInforme()
+    {
+        errorInforme = null;
+        generandoInforme = true;
+
+        try
+        {
+            var bytes = await ReporteSvc.ObtenerInformeGerencialPdfAsync(desdeInforme, hastaInforme);
+            var base64 = Convert.ToBase64String(bytes);
+            await JS.InvokeVoidAsync("descargarArchivo", $"Informe_Gerencial_{desdeInforme:yyyyMMdd}_{hastaInforme:yyyyMMdd}.pdf", base64);
+        }
+        catch (Exception ex)
+        {
+            errorInforme = $"Error al generar el informe: {ex.Message}";
+        }
+
+        generandoInforme = false;
+    }
 
     protected override async Task OnInitializedAsync()
     {
