@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using XpressMarket.Client;
 using XpressMarket.Client.Auth;
 using XpressMarket.Client.Services;
+using MudBlazor.Services;
 using Microsoft.Extensions.DependencyInjection;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
@@ -28,6 +29,9 @@ builder.Services.AddAuthorizationCore();
 builder.Services.AddScoped<CustomAuthStateProvider>();
 builder.Services.AddScoped<AuthenticationStateProvider>(sp => sp.GetRequiredService<CustomAuthStateProvider>());
 builder.Services.AddScoped<AuthService>();
+
+//servicios de MudBlazor
+builder.Services.AddMudServices();
 
 // 5. Servicios de Negocio
 builder.Services.AddScoped<ProductoService>();

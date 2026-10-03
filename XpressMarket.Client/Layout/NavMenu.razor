@@ -1,137 +1,85 @@
-﻿@inject AuthService AuthSvc
+﻿@using MudBlazor
+@inject AuthService AuthSvc
 @inject NavigationManager NavManager
 
-<div class="top-row navbar navbar-dark">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="">
-            <span class="brand-icon"><i class="bi bi-cart3"></i></span>
-            <span class="brand-text">
-                <span class="brand-xpress">Xpress</span><span class="brand-market">Market</span>
-            </span>
-        </a>
+<MudNavMenu Class="mud-width-full py-2">
+
+    @* Brand / Header del Menú *@
+    <div class="d-flex align-center justify-center px-4 py-3 mb-2" style="background: rgba(255, 255, 255, 0.08); border-radius: 8px;">
+        <MudIcon Icon="@Icons.Material.Filled.ShoppingCart" Style="color: #f38218;" Size="Size.Large" Class="mr-2" />
+        <MudText Typo="Typo.h6" Class="fw-bold" Style="color: #fbf2db; letter-spacing: 0.5px;">
+            <span style="color: #f38218;">Xpress</span><span>Market</span>
+        </MudText>
     </div>
-</div>
 
-<div class="nav-scrollable">
-    <nav class="flex-column">
+    <MudDivider Style="background-color: rgba(251, 242, 219, 0.2);" Class="my-2" />
 
-        <div class="nav-item">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <i class="bi bi-house-door-fill" aria-hidden="true"></i>
-                <span>Inicio</span>
-            </NavLink>
-        </div>
+    @* Navegación General *@
+    <MudNavLink Href="" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home" Style="color: #fbf2db;">
+        Inicio
+    </MudNavLink>
 
-        <AuthorizeView>
-            <Authorized>
-                <div class="nav-item">
-                    <NavLink class="nav-link" href="punto-venta">
-                        <i class="bi bi-cart-check-fill" aria-hidden="true"></i>
-                        <span>Punto de Venta</span>
-                    </NavLink>
+    <AuthorizeView>
+        <Authorized>
+            <MudNavLink Href="punto-venta" Icon="@Icons.Material.Filled.PointOfSale" Style="color: #fbf2db;">
+                Punto de Venta
+            </MudNavLink>
+        </Authorized>
+    </AuthorizeView>
+
+    @* Sección de Administración y Reportes *@
+    <AuthorizeView Roles="Administrador">
+        <Authorized>
+            <MudNavGroup Title="Administración" Icon="@Icons.Material.Filled.AdminPanelSettings" Expanded="true" Style="color: #fbf2db;">
+                <MudNavLink Href="categorias" Icon="@Icons.Material.Filled.Category" Style="color: #fbf2db;">Categorías</MudNavLink>
+                <MudNavLink Href="productos" Icon="@Icons.Material.Filled.Inventory2" Style="color: #fbf2db;">Productos</MudNavLink>
+                <MudNavLink Href="proveedores" Icon="@Icons.Material.Filled.LocalShipping" Style="color: #fbf2db;">Proveedores</MudNavLink>
+                <MudNavLink Href="lotes" Icon="@Icons.Material.Filled.QrCodeScanner" Style="color: #fbf2db;">Lotes</MudNavLink>
+                <MudNavLink Href="ventas" Icon="@Icons.Material.Filled.ReceiptLong" Style="color: #fbf2db;">Ventas</MudNavLink>
+                <MudNavLink Href="alertas" Icon="@Icons.Material.Filled.NotificationsActive" Style="color: #f38218;">Alertas</MudNavLink>
+                <MudNavLink Href="usuarios" Icon="@Icons.Material.Filled.People" Style="color: #fbf2db;">Usuarios</MudNavLink>
+            </MudNavGroup>
+
+            <MudNavGroup Title="Reportes" Icon="@Icons.Material.Filled.Assessment" Expanded="false" Style="color: #fbf2db;">
+                <MudNavLink Href="dashboard" Icon="@Icons.Material.Filled.Speed" Style="color: #fbf2db;">Dashboard</MudNavLink>
+                <MudNavLink Href="reporte-mermas" Icon="@Icons.Material.Filled.AssignmentReturn" Style="color: #fbf2db;">Reporte de Mermas</MudNavLink>
+                <MudNavLink Href="reporte-utilidades" Icon="@Icons.Material.Filled.ShowChart" Style="color: #fbf2db;">Reporte de Utilidades</MudNavLink>
+            </MudNavGroup>
+        </Authorized>
+    </AuthorizeView>
+
+    <MudSpacer />
+    <MudDivider Style="background-color: rgba(251, 242, 219, 0.2);" Class="my-3" />
+
+    @* Usuario y Cierre de Sesión *@
+    <AuthorizeView>
+        <Authorized Context="authContext">
+            <div class="px-3 py-2 d-flex align-center rounded mb-2" style="background: rgba(255, 255, 255, 0.08);">
+                <MudAvatar Style="background-color: #f38218; color: #ffffff;" Variant="Variant.Filled" Size="Size.Medium" Class="mr-3">
+                    @(string.IsNullOrEmpty(authContext.User.Identity?.Name) ? "U" : authContext.User.Identity.Name.Trim().Substring(0, 1).ToUpper())
+                </MudAvatar>
+                <div class="d-flex flex-column">
+                    <MudText Typo="Typo.body2" Class="fw-bold" Style="color: #fbf2db;">
+                        @authContext.User.Identity?.Name
+                    </MudText>
+                    <MudText Typo="Typo.caption" Style="color: rgba(251, 242, 219, 0.7);">
+                        @authContext.User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value
+                    </MudText>
                 </div>
-            </Authorized>
-        </AuthorizeView>
+            </div>
 
-        <AuthorizeView Roles="Administrador">
-            <Authorized>
-                <div class="nav-section-label">Administración</div>
+            <MudButton Variant="Variant.Outlined"
+                       Style="color: #fbf2db; border-color: #f38218; background-color: rgba(243, 130, 24, 0.1);"
+                       StartIcon="@Icons.Material.Filled.Logout"
+                       FullWidth="true"
+                       OnClick="CerrarSesion"
+                       Class="mt-2">
+                Cerrar sesión
+            </MudButton>
+        </Authorized>
+    </AuthorizeView>
 
-                <div class="nav-item">
-                    <NavLink class="nav-link" href="categorias">
-                        <i class="bi bi-tags-fill" aria-hidden="true"></i>
-                        <span>Categorías</span>
-                    </NavLink>
-                </div>
-
-                <div class="nav-item">
-                    <NavLink class="nav-link" href="productos">
-                        <i class="bi bi-box-seam-fill" aria-hidden="true"></i>
-                        <span>Productos</span>
-                    </NavLink>
-                </div>
-
-                <div class="nav-item">
-                    <NavLink class="nav-link" href="proveedores">
-                        <i class="bi bi-truck" aria-hidden="true"></i>
-                        <span>Proveedores</span>
-                    </NavLink>
-                </div>
-
-                <div class="nav-item">
-                    <NavLink class="nav-link" href="lotes">
-                        <i class="bi bi-calendar-check-fill" aria-hidden="true"></i>
-                        <span>Lotes</span>
-                    </NavLink>
-                </div>
-
-                <div class="nav-item">
-                    <NavLink class="nav-link" href="ventas">
-                        <i class="bi bi-receipt" aria-hidden="true"></i>
-                        <span>Ventas</span>
-                    </NavLink>
-                </div>
-
-                <div class="nav-item">
-                    <NavLink class="nav-link" href="alertas">
-                        <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
-                        <span>Alertas</span>
-                    </NavLink>
-                </div>
-
-                <div class="nav-section-label">Reportes</div>
-
-                <div class="nav-item">
-                    <NavLink class="nav-link" href="reporte-mermas">
-                        <i class="bi bi-clipboard-data-fill" aria-hidden="true"></i>
-                        <span>Reporte de Mermas</span>
-                    </NavLink>
-                </div>
-
-                <div class="nav-item">
-                    <NavLink class="nav-link" href="reporte-utilidades">
-                        <i class="bi bi-graph-up-arrow" aria-hidden="true"></i>
-                        <span>Reporte de Utilidades</span>
-                    </NavLink>
-                </div>
-
-                <div class="nav-item">
-                    <NavLink class="nav-link" href="dashboard">
-                        <i class="bi bi-speedometer2" aria-hidden="true"></i>
-                        <span>Dashboard</span>
-                    </NavLink>
-                </div>
-
-                <div class="nav-item">
-                    <NavLink class="nav-link" href="usuarios">
-                        <i class="bi bi-people-fill" aria-hidden="true"></i>
-                        <span>Usuarios</span>
-                    </NavLink>
-                </div>
-            </Authorized>
-        </AuthorizeView>
-
-        <AuthorizeView>
-            <Authorized>
-                <div class="nav-user-info">
-                    <i class="bi bi-person-circle" aria-hidden="true"></i>
-                    <div class="nav-user-details">
-                        <span class="nav-user-name">@context.User.Identity?.Name</span>
-                        <span class="nav-user-role">@context.User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value</span>
-                    </div>
-                </div>
-
-                <div class="nav-item nav-logout">
-                    <button type="button" class="nav-link nav-logout-button" @onclick="CerrarSesion">
-                        <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
-                        <span>Cerrar sesión</span>
-                    </button>
-                </div>
-            </Authorized>
-        </AuthorizeView>
-
-    </nav>
-</div>
+</MudNavMenu>
 
 @code {
     private async Task CerrarSesion()

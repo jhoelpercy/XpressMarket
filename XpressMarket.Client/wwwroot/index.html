@@ -21,15 +21,17 @@
     <link rel="icon" type="image/png" href="favicon.png" />
     <script type="importmap"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <link href="_content/MudBlazor/MudBlazor.min.css" rel="stylesheet" />
 </head>
 
 <body>
     <div id="app">
-        <svg class="loading-progress">
-            <circle r="40%" cx="50%" cy="50%" />
-            <circle r="40%" cx="50%" cy="50%" />
-        </svg>
-        <div class="loading-progress-text"></div>
+        <div style="position:fixed; top:0; left:0; width:100vw; height:100vh; background-color:#6b2181; display:flex; flex-direction:column; justify-content:center; align-items:center; z-index:9999;">
+            <img src="images/expressmarket.png" alt="XpressMarket" style="width:180px; margin-bottom:20px; animate: pulse 2s infinite;" />
+            <div class="mud-wasm-loading-circle" style="border: 4px solid #fbf2db; border-top: 4px solid #f38218; border-radius: 50%; width: 45px; height: 45px; animation: spin 1s linear infinite;"></div>
+            <p style="color:#fbf2db; font-family:sans-serif; margin-top:15px; font-weight:500;">Cargando XpressMarket...</p>
+        </div>
     </div>
 
     <div id="blazor-error-ui">
@@ -41,8 +43,8 @@
     <script src="js/download.js"></script>
     <script src="js/storage.js"></script>
     <script src="js/charts.js"></script>
+    <<style>
+        @keyframes spin {0% {transform:rotate(0deg;)}100%{transform:rotate(360deg);}}
+    </style>
 </body>
-</body>
-
-
 </html>
