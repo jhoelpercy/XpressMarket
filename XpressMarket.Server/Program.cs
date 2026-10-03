@@ -1,11 +1,12 @@
 using Microsoft.EntityFrameworkCore;
 using XpressMarket.Server.Data;
 using XpressMarket.Shared.Models;
-
-QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
+using QuestPDF.Infrastructure;
 
 System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler.DefaultOutboundClaimTypeMap.Clear();
 var builder = WebApplication.CreateBuilder(args);
+
+QuestPDF.Settings.License = LicenseType.Community;
 
 // Add services to the container.
 
@@ -16,6 +17,18 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+
+// Capturar excepciones no controladas a nivel de proceso
+AppDomain.CurrentDomain.UnhandledException += (sender, args) =>
+{
+    Console.WriteLine($"[CRASH INESPERADO DEL PROCESO]: {args.ExceptionObject}");
+};
+
+TaskScheduler.UnobservedTaskException += (sender, args) =>
+{
+    Console.WriteLine($"[CRASH EN TAREA ASÍNCRONA]: {args.Exception}");
+    args.SetObserved();
+};
 
 builder.Services.AddCors(options =>
 {

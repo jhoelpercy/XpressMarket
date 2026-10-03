@@ -1,35 +1,42 @@
 <!DOCTYPE html>
-<html lang="en">
-
+<html lang="es">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Xpress Market</title>
     <base href="/" />
-    <link rel="preload" id="webassembly" />
 
     <!-- Librerías de terceros -->
     <link rel="stylesheet" href="lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 
-    <!-- Estilos propios: app.css primero (base de la plantilla), theme.css al final (gana sin !important) -->
+    <!-- Estilos de MudBlazor y Propios -->
+    <link href="_content/MudBlazor/MudBlazor.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="css/app.css" />
     <link rel="stylesheet" href="css/theme.css" />
     <link href="XpressMarket.Client.styles.css" rel="stylesheet" />
 
     <link rel="icon" type="image/png" href="favicon.png" />
-    <script type="importmap"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-    <link href="_content/MudBlazor/MudBlazor.min.css" rel="stylesheet" />
+    <style>
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
 </head>
 
 <body>
     <div id="app">
         <div style="position:fixed; top:0; left:0; width:100vw; height:100vh; background-color:#6b2181; display:flex; flex-direction:column; justify-content:center; align-items:center; z-index:9999;">
-            <img src="images/expressmarket.png" alt="XpressMarket" style="width:180px; margin-bottom:20px; animate: pulse 2s infinite;" />
-            <div class="mud-wasm-loading-circle" style="border: 4px solid #fbf2db; border-top: 4px solid #f38218; border-radius: 50%; width: 45px; height: 45px; animation: spin 1s linear infinite;"></div>
+            <img src="images/expressmarket.png" alt="XpressMarket" style="width:180px; margin-bottom:20px;" />
+            <div style="border: 4px solid #fbf2db; border-top: 4px solid #f38218; border-radius: 50%; width: 45px; height: 45px; animation: spin 1s linear infinite;"></div>
             <p style="color:#fbf2db; font-family:sans-serif; margin-top:15px; font-weight:500;">Cargando XpressMarket...</p>
         </div>
     </div>
@@ -39,12 +46,15 @@
         <a href="." class="reload">Reload</a>
         <span class="dismiss">🗙</span>
     </div>
-    <script src="_framework/blazor.webassembly#[.{fingerprint}].js"></script>
+
+    <!-- Carga del framework de Blazor (única referencia) -->
+    <script src="_framework/blazor.webassembly.js"></script>
+
+    <!-- Librerías JS ejecutas tras Blazor -->
+    <script src="_content/MudBlazor/MudBlazor.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="js/download.js"></script>
     <script src="js/storage.js"></script>
     <script src="js/charts.js"></script>
-    <<style>
-        @keyframes spin {0% {transform:rotate(0deg;)}100%{transform:rotate(360deg);}}
-    </style>
 </body>
 </html>

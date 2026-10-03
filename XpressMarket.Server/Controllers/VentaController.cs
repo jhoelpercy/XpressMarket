@@ -181,18 +181,28 @@ namespace XpressMarket.Server.Controllers
             }
         }
         // GET: api/ventas/5/comprobante
+        // En VentasController.cs
         [HttpGet("{id}/comprobante")]
         public async Task<IActionResult> GetComprobante(int id)
         {
             var venta = await _context.Ventas
                 .Include(v => v.Detalles)
+                    .ThenInclude(d => d.Producto)
                 .FirstOrDefaultAsync(v => v.Id == id);
 
             if (venta == null)
-                return NotFound();
+                return NotFound("Venta no encontrada.");
 
-            var pdfBytes = XpressMarket.Server.Services.ComprobantePdfService.Generar(venta);
-            return File(pdfBytes, "application/pdf", $"Comprobante_Venta_{venta.Id}.pdf");
+            try
+            {
+                byte[] pdfBytes = XpressMarket.Server.Services.ComprobantePdfService.Generar(venta);
+                return File(pdfBytes, "application/pdf", $"Comprobante_Venta_{venta.Id}.pdf");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ERROR EN GENERACIÓN PDF]: {ex.Message}");
+                return StatusCode(500, "Error interno al generar el PDF.");
+            }
         }
         // GET: api/ventas/reporte-utilidades?desde=2026-01-01&hasta=2026-12-31
         [HttpGet("reporte-utilidades")]

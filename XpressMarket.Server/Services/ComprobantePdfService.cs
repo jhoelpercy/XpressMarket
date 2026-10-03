@@ -1,8 +1,8 @@
-﻿using QuestPDF.Fluent;
+﻿// En ComprobantePdfService.cs
+using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
 using XpressMarket.Shared.Models;
-using XpressMarket.Shared.Extensions;
 
 namespace XpressMarket.Server.Services
 {
@@ -10,13 +10,18 @@ namespace XpressMarket.Server.Services
     {
         public static byte[] Generar(Venta venta)
         {
-            var documento = Document.Create(container =>
+            // Configurar licencias y asegurar uso de fuentes del sistema estandarizadas
+            QuestPDF.Settings.License = LicenseType.Community;
+            QuestPDF.Settings.UseSystemFonts = true;
+
+            var pdfDocument = Document.Create(container =>
             {
                 container.Page(pagina =>
                 {
                     pagina.Size(PageSizes.A5);
                     pagina.Margin(25);
-                    pagina.DefaultTextStyle(x => x.FontSize(10));
+                    // Uso de Arial estándar para evitar fallas nativas al resolver 'Lato' en SkiaSharp
+                    pagina.DefaultTextStyle(x => x.FontFamily(Fonts.Arial).FontSize(10));
 
                     pagina.Header().Column(col =>
                     {
@@ -32,7 +37,7 @@ namespace XpressMarket.Server.Services
                             row.RelativeItem().Text($"N° Venta: {venta.Id}");
                             row.RelativeItem().AlignRight().Text($"Fecha: {venta.FechaVenta:dd/MM/yyyy HH:mm}");
                         });
-                        col.Item().Text($"Atendido por: {venta.NombreUsuario}");
+                        col.Item().Text($"Atendido por: {venta.NombreUsuario ?? "Cajero"}");
                         col.Item().PaddingTop(10);
 
                         col.Item().Table(tabla =>
@@ -54,20 +59,24 @@ namespace XpressMarket.Server.Services
                                 header.Cell().ColumnSpan(4).PaddingTop(3).BorderBottom(1).BorderColor(Colors.Grey.Lighten1);
                             });
 
-                            foreach (var detalle in venta.Detalles)
+                            if (venta.Detalles != null)
                             {
-                                tabla.Cell().Text(detalle.NombreProducto);
-                                tabla.Cell().Text(detalle.Cantidad.ToString());
-                                tabla.Cell().Text(detalle.PrecioUnitario.Bs());
-                                tabla.Cell().Text(detalle.Subtotal.Bs());
+                                foreach (var detalle in venta.Detalles)
+                                {
+                                    var nombreProd = detalle.Producto?.Nombre ?? detalle.NombreProducto ?? "Producto";
+                                    tabla.Cell().Text(nombreProd);
+                                    tabla.Cell().Text(detalle.Cantidad.ToString());
+                                    tabla.Cell().Text($"Bs. {detalle.PrecioUnitario:N2}");
+                                    tabla.Cell().Text($"Bs. {detalle.Subtotal:N2}");
+                                }
                             }
                         });
 
                         col.Item().PaddingTop(10).LineHorizontal(1).LineColor(Colors.Grey.Lighten2);
 
-                        col.Item().AlignRight().Text($"Subtotal: {venta.Subtotal.Bs()}");
-                        col.Item().AlignRight().Text($"Descuento: {venta.Descuento.Bs()}");
-                        col.Item().AlignRight().Text($"TOTAL: {venta.Total.Bs()}").FontSize(13).Bold().FontColor("#1F3D2B");
+                        col.Item().AlignRight().Text($"Subtotal: Bs. {venta.Subtotal:N2}");
+                        col.Item().AlignRight().Text($"Descuento: Bs. {venta.Descuento:N2}");
+                        col.Item().AlignRight().Text($"TOTAL: Bs. {venta.Total:N2}").FontSize(13).Bold().FontColor("#1F3D2B");
                     });
 
                     pagina.Footer().AlignCenter().Text("Gracias por su compra")
@@ -75,7 +84,7 @@ namespace XpressMarket.Server.Services
                 });
             });
 
-            return documento.GeneratePdf();
+            return pdfDocument.GeneratePdf();
         }
     }
 }
