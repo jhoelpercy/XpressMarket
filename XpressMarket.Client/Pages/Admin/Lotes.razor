@@ -7,220 +7,277 @@
 @using XpressMarket.Shared.Models
 @using XpressMarket.Shared.Extensions
 
-<PageTitle>Lotes</PageTitle>
+<PageTitle>Lotes - XpressMarket</PageTitle>
 
-<h3>Gestión de Lotes</h3>
+<div class="container-fluid px-0">
+    <!-- Header de Sección -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold mb-1 text-dark">Gestión de Lotes</h3>
+            <p class="text-muted small mb-0">Administra las entradas, vencimientos y stock por lote de los productos.</p>
+        </div>
+        <button class="btn btn-primary shadow-sm d-flex align-items-center gap-2 px-3 py-2" @onclick="AbrirFormularioNuevo">
+            <i class="bi bi-plus-lg fs-6"></i>
+            <span class="fw-semibold">Nuevo Lote</span>
+        </button>
+    </div>
 
-<button class="btn btn-primary mb-3" @onclick="AbrirFormularioNuevo">
-    Nuevo Lote
-</button>
-
-@if (cargando)
-{
-    <p><em>Cargando lotes...</em></p>
-}
-else if (lotes == null || !lotes.Any())
-{
-    <p>No hay lotes registrados.</p>
-}
-else
-{
-    <table class="table table-striped align-middle">
-        <thead>
-            <tr>
-                <th>N° Lote</th>
-                <th>Producto</th>
-                <th>Registrado Por</th>
-                <th>Proveedor</th>
-                <th>Fecha Vencimiento</th>
-                <th>Cantidad Actual</th>
-                <th>Estado</th>
-                <th>Acciones</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var lote in lotes)
-            {
-                <tr class="@ClaseEstado(lote)">
-                    <td>@lote.NumeroLote</td>
-                    <td>@lote.Producto?.Nombre</td>
-                    <td>@(lote.RegistradoPorNombre ?? "-")</td>
-                    <td>@(lote.Proveedor?.Nombre ?? "-")</td>
-                    <td>@lote.FechaVencimiento.ToString("dd/MM/yyyy")</td>
-                    <td>@lote.CantidadActual</td>
-                    <td>
-                        @if (lote.Vencido)
-                        {
-                            <span class="badge bg-danger">Vencido</span>
-                        }
-                        else if (lote.ProximoAVencer)
-                        {
-                            <span class="badge bg-warning text-dark">Vence en @lote.DiasParaVencer días</span>
-                        }
-                        else
-                        {
-                            <span class="badge bg-success">OK</span>
-                        }
-                    </td>
-                    <td>
-                        <button class="btn btn-sm btn-secondary" @onclick="() => AbrirFormularioEditar(lote)">
-                            Editar
-                        </button>
-                        <button class="btn btn-sm btn-danger ms-1" @onclick="() => EliminarLote(lote.Id)">
-                            Eliminar
-                        </button>
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
-}
-
-@if (mostrarFormulario)
-{
-    <div class="card p-3 mt-3 shadow-sm">
-        <h4>@(loteEditando.Id == 0 ? "Nuevo Lote" : "Editar Lote")</h4>
-
-        <EditForm Model="loteEditando" OnValidSubmit="GuardarLote">
-            <DataAnnotationsValidator />
-            <ValidationSummary />
-
-            <div class="mb-2">
-                <label class="form-label">Número de Lote</label>
-                <InputText class="form-control" @bind-Value="loteEditando.NumeroLote" />
-            </div>
-
-            <div class="mb-2">
-                <label class="form-label">Producto</label>
-                @if (loteEditando.Id > 0)
-                {
-                    <!-- Al editar un lote existente, el producto no cambia -->
-                    <input class="form-control" value="@productoSeleccionadoNombre" disabled />
-                }
-                else if (productoSeleccionadoNombre != null)
-                {
-                    <div class="alert alert-secondary d-flex justify-content-between align-items-center py-2 mb-0">
-                        <span>@productoSeleccionadoNombre</span>
-                        <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="QuitarProductoSeleccionado">
-                            Cambiar
-                        </button>
-                    </div>
-                }
-                else
-                {
-                    <BuscadorProducto ProductoSeleccionado="SeleccionarProductoParaLote" />
-                }
-            </div>
-
-            <div class="mb-2">
-                <label class="form-label">Proveedor (opcional)</label>
-                <InputSelect class="form-select" @bind-Value="proveedorSeleccionado">
-                    <option value="0">-- Sin proveedor --</option>
-                    @if (proveedores != null)
-                    {
-                        @foreach (var prov in proveedores)
-                        {
-                            <option value="@prov.Id">@prov.Nombre</option>
-                        }
-                    }
-                </InputSelect>
-            </div>
-
-            <div class="row">
-                <div class="col mb-2">
-                    <label class="form-label">Fecha de Ingreso</label>
-                    <InputDate class="form-control" @bind-Value="loteEditando.FechaIngreso" />
-                </div>
-                <div class="col mb-2">
-                    <label class="form-label">Fecha de Vencimiento</label>
-                    <InputDate class="form-control" @bind-Value="loteEditando.FechaVencimiento" />
-                </div>
-            </div>
-
-           <div class="row">
-    @if (loteEditando.Id == 0)
+    <!-- Contenido Principal -->
+    @if (cargando)
     {
-        <div class="col mb-2">
-            <label class="form-label">Cantidad Inicial</label>
-            <InputNumber class="form-control" @bind-Value="loteEditando.CantidadInicial" />
-            <small class="text-muted">La cantidad actual quedará igual a la inicial — nada se ha vendido todavía de este lote.</small>
+        <div class="card border-0 shadow-sm rounded-3">
+            <div class="card-body text-center py-5">
+                <div class="spinner-border text-primary mb-3" role="status"></div>
+                <p class="text-muted mb-0">Cargando lotes...</p>
+            </div>
+        </div>
+    }
+    else if (lotes == null || !lotes.Any())
+    {
+        <div class="card border-0 shadow-sm rounded-3">
+            <div class="card-body text-center py-5">
+                <i class="bi bi-boxes display-4 text-muted mb-3 d-block"></i>
+                <h5 class="text-secondary fw-normal">No hay lotes registrados</h5>
+                <p class="text-muted small mb-3">Comienza creando un nuevo lote para gestionar el inventario.</p>
+                <button class="btn btn-outline-primary btn-sm" @onclick="AbrirFormularioNuevo">
+                    <i class="bi bi-plus-lg me-1"></i> Crear primer lote
+                </button>
+            </div>
         </div>
     }
     else
     {
-        <div class="col mb-2">
-            <label class="form-label">Cantidad Inicial (histórico)</label>
-            <input class="form-control" value="@loteEditando.CantidadInicial" disabled />
+        <div class="card border-0 shadow-sm rounded-3">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light text-secondary small text-uppercase fw-semibold border-bottom">
+                        <tr>
+                            <th class="ps-4 py-3">N° Lote</th>
+                            <th class="py-3">Producto</th>
+                            <th class="py-3">Registrado Por</th>
+                            <th class="py-3">Proveedor</th>
+                            <th class="py-3">Fecha Vencimiento</th>
+                            <th class="py-3 text-center">Cantidad Actual</th>
+                            <th class="py-3">Estado</th>
+                            <th class="pe-4 py-3 text-end">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody class="border-top-0">
+                        @foreach (var lote in lotes)
+                        {
+                            <tr class="@ClaseEstado(lote)">
+                                <td class="ps-4 fw-semibold text-dark">@lote.NumeroLote</td>
+                                <td class="fw-medium">@(lote.Producto?.Nombre ?? "-")</td>
+                                <td class="text-muted small">@(lote.RegistradoPorNombre ?? "-")</td>
+                                <td class="text-muted small">@(lote.Proveedor?.Nombre ?? "-")</td>
+                                <td>@lote.FechaVencimiento.ToString("dd/MM/yyyy")</td>
+                                <td class="text-center fw-semibold">@lote.CantidadActual</td>
+                                <td>
+                                    @if (lote.Vencido)
+                                    {
+                                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1 rounded-pill">
+                                            <i class="bi bi-exclamation-octagon me-1"></i>Vencido
+                                        </span>
+                                    }
+                                    else if (lote.ProximoAVencer)
+                                    {
+                                        <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2 py-1 rounded-pill">
+                                            <i class="bi bi-clock-history me-1"></i>Vence en @lote.DiasParaVencer días
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 rounded-pill">
+                                            <i class="bi bi-check-circle me-1"></i>OK
+                                        </span>
+                                    }
+                                </td>
+                                <td class="pe-4 text-end">
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <button class="btn btn-outline-secondary" @onclick="() => AbrirFormularioEditar(lote)" title="Editar">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        <button class="btn btn-outline-danger" @onclick="() => EliminarLote(lote.Id)" title="Eliminar">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
         </div>
-        <div class="col mb-2">
-            <label class="form-label">Cantidad Actual</label>
-            <InputNumber class="form-control" @bind-Value="loteEditando.CantidadActual" />
-            <small class="text-muted">Ajusta esto solo para corregir un conteo físico real (rotura, pérdida, error de conteo).</small>
+    }
+
+    <!-- Modal Formulario -->
+    @if (mostrarFormulario)
+    {
+        <div class="modal fade show d-block tab-modal-backdrop" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content border-0 shadow-lg rounded-3">
+                    <div class="modal-header bg-light border-bottom py-3">
+                        <h5 class="modal-title fw-bold text-dark">
+                            <i class="bi bi-box-seam me-2 text-primary"></i>
+                            @(loteEditando.Id == 0 ? "Nuevo Lote" : "Editar Lote")
+                        </h5>
+                        <button type="button" class="btn-close" @onclick="CerrarFormulario"></button>
+                    </div>
+
+                    <EditForm Model="loteEditando" OnValidSubmit="GuardarLote">
+                        <div class="modal-body p-4">
+                            <DataAnnotationsValidator />
+                            <ValidationSummary class="alert alert-danger p-2 small mb-3" />
+
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold small text-secondary">Número de Lote</label>
+                                    <InputText class="form-control" @bind-Value="loteEditando.NumeroLote" placeholder="Ej. LOT-2024-001" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold small text-secondary">Proveedor (opcional)</label>
+                                    <InputSelect class="form-select" @bind-Value="proveedorSeleccionado">
+                                        <option value="0">-- Sin proveedor --</option>
+                                        @if (proveedores != null)
+                                        {
+                                            @foreach (var prov in proveedores)
+                                            {
+                                                <option value="@prov.Id">@prov.Nombre</option>
+                                            }
+                                        }
+                                    </InputSelect>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold small text-secondary">Producto</label>
+                                @if (loteEditando.Id > 0)
+                                {
+                                    <input class="form-control bg-light" value="@productoSeleccionadoNombre" disabled />
+                                }
+                                else if (productoSeleccionadoNombre != null)
+                                {
+                                    <div class="alert alert-secondary d-flex justify-content-between align-items-center py-2 px-3 mb-0 rounded-3">
+                                        <span class="fw-semibold text-dark"><i class="bi bi-box me-2"></i>@productoSeleccionadoNombre</span>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="QuitarProductoSeleccionado">
+                                            Cambiar
+                                        </button>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <BuscadorProducto ProductoSeleccionado="SeleccionarProductoParaLote" />
+                                }
+                            </div>
+
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold small text-secondary">Fecha de Ingreso</label>
+                                    <InputDate class="form-control" @bind-Value="loteEditando.FechaIngreso" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold small text-secondary">Fecha de Vencimiento</label>
+                                    <InputDate class="form-control" @bind-Value="loteEditando.FechaVencimiento" />
+                                </div>
+                            </div>
+
+                            <div class="row g-3 mb-3">
+                                @if (loteEditando.Id == 0)
+                                {
+                                    <div class="col-12">
+                                        <label class="form-label fw-semibold small text-secondary">Cantidad Inicial</label>
+                                        <InputNumber class="form-control" @bind-Value="loteEditando.CantidadInicial" />
+                                        <div class="form-text small">La cantidad actual quedará igual a la inicial.</div>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-semibold small text-secondary">Cantidad Inicial (histórico)</label>
+                                        <input class="form-control bg-light" value="@loteEditando.CantidadInicial" disabled />
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-semibold small text-secondary">Cantidad Actual</label>
+                                        <InputNumber class="form-control" @bind-Value="loteEditando.CantidadActual" />
+                                        <div class="form-text small">Ajusta solo para corregir el conteo físico real.</div>
+                                    </div>
+                                }
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold small text-secondary">Precio Costo de este Lote</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">Bs</span>
+                                    <InputNumber class="form-control" Value="loteEditando.PrecioCosto" ValueChanged="@((decimal v) => OnPrecioCostoCambiado(v))" ValueExpression="@(() => loteEditando.PrecioCosto)" />
+                                </div>
+                            </div>
+
+                            @if (loteEditando.ProductoId > 0)
+                            {
+                                <div class="card border-info-subtle bg-info-subtle bg-opacity-10 rounded-3 p-3 mb-3">
+                                    <h6 class="fw-bold text-info-emphasis mb-2"><i class="bi bi-info-circle me-2"></i>Estado actual del Producto</h6>
+                                    <ul class="list-unstyled mb-2 small text-secondary">
+                                        <li><strong>Costo de compra actual:</strong> @costoActualProducto.ToString("N2") Bs</li>
+                                        <li><strong>Precio de venta actual:</strong> @precioVentaActualProducto.ToString("N2") Bs</li>
+                                    </ul>
+
+                                    @if (loteEditando.PrecioCosto > precioVentaActualProducto && loteEditando.PrecioCosto > 0)
+                                    {
+                                        <div class="alert alert-danger py-2 mb-2 small fw-semibold">
+                                            <i class="bi bi-exclamation-triangle me-1"></i> El costo ingresado (@loteEditando.PrecioCosto.ToString("N2") Bs) supera el precio de venta actual (@precioVentaActualProducto.ToString("N2") Bs).
+                                        </div>
+                                    }
+
+                                    <div class="mt-2">
+                                        <label class="form-label fw-bold small text-dark">Nuevo Precio de Venta Sugerido (30% Margen):</label>
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text">Bs</span>
+                                            <InputNumber class="form-control" @bind-Value="nuevoPrecioVentaSugerido" />
+                                        </div>
+                                        <div class="form-text small">Puedes modificar este precio si deseas ajustar el valor comercial de la tienda.</div>
+                                    </div>
+                                </div>
+                            }
+
+                            @if (mostrarConfirmacionCosto)
+                            {
+                                <div class="card border-warning-subtle bg-warning-subtle bg-opacity-10 rounded-3 p-3">
+                                    <p class="small text-dark mb-2">
+                                        El costo actual del producto es <strong>@costoActualProducto.ToString("N2") Bs</strong> y el precio de venta es <strong>@precioVentaActualProducto.ToString("N2") Bs</strong>.
+                                    </p>
+                                    <p class="small text-dark mb-2">
+                                        Este lote se registró con un costo de <strong>@loteEditando.PrecioCosto.ToString("N2") Bs</strong>, sugerido a <strong>@(nuevoPrecioVentaSugerido?.ToString("N2") ?? "-") Bs</strong>.
+                                    </p>
+                                    <p class="small fw-bold text-dark mb-3">¿Deseas actualizar el producto con estos nuevos valores?</p>
+
+                                    <div class="d-flex gap-2 flex-wrap">
+                                        <button type="button" class="btn btn-success btn-sm" @onclick="() => GuardarLoteConfirmado(true)">
+                                            Sí, actualizar
+                                        </button>
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" @onclick="() => GuardarLoteConfirmado(false)">
+                                            No, mantener actuales
+                                        </button>
+                                        <button type="button" class="btn btn-link btn-sm text-decoration-none" @onclick="() => mostrarConfirmacionCosto = false">
+                                            Editar valor
+                                        </button>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+
+                        <div class="modal-footer bg-light border-top py-2 px-4">
+                            @if (!mostrarConfirmacionCosto)
+                            {
+                                <button type="button" class="btn btn-outline-secondary px-3" @onclick="CerrarFormulario">Cancelar</button>
+                                <button type="submit" class="btn btn-primary px-4 fw-semibold">Guardar Lote</button>
+                            }
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
         </div>
     }
 </div>
-
-            <div class="mb-2">
-                <label class="form-label">Precio Costo de este Lote</label>
-                <InputNumber class="form-control" Value="loteEditando.PrecioCosto" ValueChanged="@((decimal v) => OnPrecioCostoCambiado(v))" ValueExpression="@(() => loteEditando.PrecioCosto)" />
-            </div>
-
-            @if (loteEditando.ProductoId > 0)
-            {
-                <div class="alert alert-info mt-3">
-                    <h6>Estado actual del Producto</h6>
-                    <ul class="mb-1">
-                        <li><strong>Costo de compra actual:</strong> @costoActualProducto.ToString("N2") Bs</li>
-                        <li><strong>Precio de venta actual:</strong> @precioVentaActualProducto.ToString("N2") Bs</li>
-                    </ul>
-
-                    @if (loteEditando.PrecioCosto > precioVentaActualProducto && loteEditando.PrecioCosto > 0)
-                    {
-                        <p class="text-danger fw-bold my-2">
-                            El costo ingresado (@loteEditando.PrecioCosto.ToString("N2") Bs) supera el precio de venta actual (@precioVentaActualProducto.ToString("N2") Bs).
-                        </p>
-                    }
-
-                    <div class="mt-2">
-                        <label class="form-label fw-bold">Nuevo Precio de Venta Sugerido (30% Margen):</label>
-                        <InputNumber class="form-control" @bind-Value="nuevoPrecioVentaSugerido" />
-                        <small class="text-muted">Puedes modificar este precio si deseas ajustar el valor comercial de la tienda.</small>
-                    </div>
-                </div>
-            }
-
-            @if (mostrarConfirmacionCosto)
-            {
-                <div class="alert alert-warning mt-3">
-                    <p class="mb-2">
-                        El costo actual del producto es <strong>@costoActualProducto.ToString("N2") Bs</strong>
-                        y el precio de venta actual es <strong>@precioVentaActualProducto.ToString("N2") Bs</strong>.
-                    </p>
-                    <p class="mb-2">
-                        Este lote se registró con un costo de <strong>@loteEditando.PrecioCosto.ToString("N2") Bs</strong>,
-                        con un precio de venta sugerido de <strong>@(nuevoPrecioVentaSugerido?.ToString("N2") ?? "-") Bs</strong>.
-                    </p>
-                    <p class="mb-2">¿Deseas actualizar el producto con estos nuevos valores?</p>
-
-                    <button type="button" class="btn btn-success btn-sm" @onclick="() => GuardarLoteConfirmado(true)">
-                        Sí, actualizar
-                    </button>
-                    <button type="button" class="btn btn-secondary btn-sm" @onclick="() => GuardarLoteConfirmado(false)">
-                        No, mantener valores actuales
-                    </button>
-                    <button type="button" class="btn btn-link btn-sm" @onclick="() => mostrarConfirmacionCosto = false">
-                        Editar valor
-                    </button>
-                </div>
-            }
-            else
-            {
-                <button type="submit" class="btn btn-success mt-2">Guardar</button>
-                <button type="button" class="btn btn-secondary mt-2" @onclick="CerrarFormulario">Cancelar</button>
-            }
-        </EditForm>
-    </div>
-}
 
 @code {
     private List<Lote>? lotes;
@@ -255,8 +312,8 @@ else
 
     private string ClaseEstado(Lote lote)
     {
-        if (lote.Vencido) return "table-danger";
-        if (lote.ProximoAVencer) return "table-warning";
+        if (lote.Vencido) return "table-danger bg-opacity-25";
+        if (lote.ProximoAVencer) return "table-warning bg-opacity-25";
         return "";
     }
 
@@ -280,8 +337,6 @@ else
         loteEditando.ProductoId = producto.Id;
         productoSeleccionadoNombre = producto.Nombre;
 
-        // Se vuelve a pedir el producto al servidor para no usar una copia
-        // en memoria que pudo quedar desactualizada.
         var productoActualizado = await ProductoSvc.ObtenerPorIdAsync(producto.Id);
         costoActualProducto = productoActualizado?.PrecioCosto ?? producto.PrecioCosto;
         precioVentaActualProducto = productoActualizado?.PrecioVenta ?? producto.PrecioVenta;
@@ -308,8 +363,6 @@ else
     {
         if (loteEditando.PrecioCosto > 0)
         {
-            // Margen de referencia del 30% sobre el costo del nuevo lote.
-            // Editable por el administrador antes de guardar.
             nuevoPrecioVentaSugerido = Math.Round(loteEditando.PrecioCosto * 1.30m, 2);
         }
     }

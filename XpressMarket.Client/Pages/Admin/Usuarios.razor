@@ -3,128 +3,210 @@
 @inject UsuarioService UsuarioSvc
 @using XpressMarket.Shared.Models
 
-<PageTitle>Usuarios</PageTitle>
+<PageTitle>Usuarios - XpressMarket</PageTitle>
 
-<h3>Gestión de Usuarios</h3>
-
-<button class="btn btn-primary mb-3" @onclick="AbrirFormularioNuevo">
-    Nuevo Usuario
-</button>
-
-@if (mensajeError != null)
-{
-    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        @mensajeError
-        <button type="button" class="btn-close" @onclick="() => mensajeError = null"></button>
+<div class="container-fluid px-0">
+    <!-- Header de Sección -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold mb-1 text-dark">Gestión de Usuarios</h3>
+            <p class="text-muted small mb-0">Administra las cuentas de usuario, asignación de roles y permisos del sistema.</p>
+        </div>
+        <button class="btn btn-primary shadow-sm d-flex align-items-center gap-2 px-3 py-2" @onclick="AbrirFormularioNuevo">
+            <i class="bi bi-person-plus-fill fs-6"></i>
+            <span class="fw-semibold">Nuevo Usuario</span>
+        </button>
     </div>
-}
 
-@if (cargando)
-{
-    <p><em>Cargando usuarios...</em></p>
-}
-else
-{
-    <table class="table table-striped align-middle">
-        <thead>
-            <tr>
-                <th>Usuario</th>
-                <th>Rol</th>
-                <th>Estado</th>
-                <th>Acciones</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var u in usuarios)
-            {
-                <tr>
-                    <td>@u.NombreUsuario</td>
-                    <td>@u.Rol</td>
-                    <td>
-                        @if (u.Activo)
+    @if (mensajeError != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show shadow-sm rounded-3 mb-4" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            @mensajeError
+            <button type="button" class="btn-close" @onclick="() => mensajeError = null"></button>
+        </div>
+    }
+
+    <!-- Contenido Principal -->
+    @if (cargando)
+    {
+        <div class="card border-0 shadow-sm rounded-3">
+            <div class="card-body text-center py-5">
+                <div class="spinner-border text-primary mb-3" role="status"></div>
+                <p class="text-muted mb-0">Cargando usuarios...</p>
+            </div>
+        </div>
+    }
+    else if (usuarios == null || !usuarios.Any())
+    {
+        <div class="card border-0 shadow-sm rounded-3">
+            <div class="card-body text-center py-5">
+                <i class="bi bi-people display-4 text-muted mb-3 d-block"></i>
+                <h5 class="text-secondary fw-normal">No hay usuarios registrados</h5>
+                <p class="text-muted small mb-3">Comienza registrando un nuevo usuario para otorgar acceso al sistema.</p>
+                <button class="btn btn-outline-primary btn-sm" @onclick="AbrirFormularioNuevo">
+                    <i class="bi bi-person-plus me-1"></i> Crear primer usuario
+                </button>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="card border-0 shadow-sm rounded-3">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light text-secondary small text-uppercase fw-semibold border-bottom">
+                        <tr>
+                            <th class="ps-4 py-3">Usuario</th>
+                            <th class="py-3">Rol</th>
+                            <th class="py-3">Estado</th>
+                            <th class="pe-4 py-3 text-end">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody class="border-top-0">
+                        @foreach (var u in usuarios)
                         {
-                            <span class="badge bg-success">Activo</span>
+                            <tr>
+                                <td class="ps-4 fw-semibold text-dark">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="rounded-circle bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                                            <i class="bi bi-person-fill"></i>
+                                        </div>
+                                        <span>@u.NombreUsuario</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-dark border px-2 py-1">
+                                        <i class="bi bi-shield-lock me-1 text-secondary"></i>@u.Rol
+                                    </span>
+                                </td>
+                                <td>
+                                    @if (u.Activo)
+                                    {
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 rounded-pill">
+                                            <i class="bi bi-check-circle me-1"></i>Activo
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2 py-1 rounded-pill">
+                                            <i class="bi bi-x-circle me-1"></i>Inactivo
+                                        </span>
+                                    }
+                                </td>
+                                <td class="pe-4 text-end">
+                                    <button class="btn btn-outline-secondary btn-sm" @onclick="() => AbrirFormularioEditar(u)" title="Editar">
+                                        <i class="bi bi-pencil me-1"></i> Editar
+                                    </button>
+                                </td>
+                            </tr>
                         }
-                        else
-                        {
-                            <span class="badge bg-secondary">Inactivo</span>
-                        }
-                    </td>
-                    <td>
-                        <button class="btn btn-sm btn-secondary" @onclick="() => AbrirFormularioEditar(u)">
-                            Editar
-                        </button>
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
-}
-
-@if (mostrarFormularioNuevo)
-{
-    <div class="card p-3 mt-3 shadow-sm">
-        <h4>Nuevo Usuario</h4>
-        <EditForm Model="nuevoUsuario" OnValidSubmit="GuardarNuevo">
-            <DataAnnotationsValidator />
-            <ValidationSummary />
-
-            <div class="mb-2">
-                <label class="form-label">Nombre Completo</label>
-                <InputText class="form-control" @bind-Value="nuevoUsuario.NombreCompleto" />
+                    </tbody>
+                </table>
             </div>
+        </div>
+    }
 
-            <div class="mb-2">
-                <label class="form-label">Nombre de Usuario</label>
-                <InputText class="form-control" @bind-Value="nuevoUsuario.NombreUsuario" />
-            </div>
-            <div class="mb-2">
-                <label class="form-label">Contraseña</label>
-                <InputText type="password" class="form-control" @bind-Value="nuevoUsuario.Contrasena" />
-            </div>
-            <div class="mb-2">
-                <label class="form-label">Rol</label>
-                <InputSelect class="form-select" @bind-Value="nuevoUsuario.Rol">
-                    <option value="Cajero">Cajero</option>
-                    <option value="Administrador">Administrador</option>
-                </InputSelect>
-            </div>
+    <!-- Modal Nuevo Usuario -->
+    @if (mostrarFormularioNuevo)
+    {
+        <div class="modal fade show d-block tab-modal-backdrop" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content border-0 shadow-lg rounded-3">
+                    <div class="modal-header bg-light border-bottom py-3">
+                        <h5 class="modal-title fw-bold text-dark">
+                            <i class="bi bi-person-plus me-2 text-primary"></i>Nuevo Usuario
+                        </h5>
+                        <button type="button" class="btn-close" @onclick="CancelarAccion"></button>
+                    </div>
 
-            <button type="submit" class="btn btn-success mt-2">Guardar</button>
-            <button type="button" class="btn btn-secondary mt-2" @onclick="CancelarAccion">Cancelar</button>
-        </EditForm>
-    </div>
-}
+                    <EditForm Model="nuevoUsuario" OnValidSubmit="GuardarNuevo">
+                        <div class="modal-body p-4">
+                            <DataAnnotationsValidator />
+                            <ValidationSummary class="alert alert-danger p-2 small mb-3" />
 
-@if (usuarioEditando != null)
-{
-    <div class="card p-3 mt-3 shadow-sm">
-        <h4>Editar Usuario: @usuarioEditando.NombreUsuario</h4>
-        <EditForm Model="edicion" OnValidSubmit="GuardarEdicion">
-            <DataAnnotationsValidator />
-            <ValidationSummary />
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold small text-secondary">Nombre Completo</label>
+                                <InputText class="form-control" @bind-Value="nuevoUsuario.NombreCompleto" placeholder="Ej. Juan Pérez" />
+                            </div>
 
-            <div class="mb-2">
-                <label class="form-label">Rol</label>
-                <InputSelect class="form-select" @bind-Value="edicion.Rol">
-                    <option value="Cajero">Cajero</option>
-                    <option value="Administrador">Administrador</option>
-                </InputSelect>
-            </div>
-            <div class="mb-2 form-check">
-                <InputCheckbox class="form-check-input" @bind-Value="edicion.Activo" />
-                <label class="form-check-label">Activo</label>
-            </div>
-            <div class="mb-2">
-                <label class="form-label">Nueva Contraseña (dejar en blanco para no cambiarla)</label>
-                <InputText type="password" class="form-control" @bind-Value="edicion.NuevaContrasena" />
-            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold small text-secondary">Nombre de Usuario</label>
+                                <InputText class="form-control" @bind-Value="nuevoUsuario.NombreUsuario" placeholder="Ej. jperez" />
+                            </div>
 
-            <button type="submit" class="btn btn-success mt-2">Guardar</button>
-            <button type="button" class="btn btn-secondary mt-2" @onclick="CancelarAccion">Cancelar</button>
-        </EditForm>
-    </div>
-}
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold small text-secondary">Contraseña</label>
+                                <InputText type="password" class="form-control" @bind-Value="nuevoUsuario.Contrasena" placeholder="••••••••" />
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold small text-secondary">Rol</label>
+                                <InputSelect class="form-select" @bind-Value="nuevoUsuario.Rol">
+                                    <option value="Cajero">Cajero</option>
+                                    <option value="Administrador">Administrador</option>
+                                </InputSelect>
+                            </div>
+                        </div>
+
+                        <div class="modal-footer bg-light border-top py-2 px-4">
+                            <button type="button" class="btn btn-outline-secondary px-3" @onclick="CancelarAccion">Cancelar</button>
+                            <button type="submit" class="btn btn-primary px-4 fw-semibold">Guardar Usuario</button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Modal Editar Usuario -->
+    @if (usuarioEditando != null)
+    {
+        <div class="modal fade show d-block tab-modal-backdrop" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content border-0 shadow-lg rounded-3">
+                    <div class="modal-header bg-light border-bottom py-3">
+                        <h5 class="modal-title fw-bold text-dark">
+                            <i class="bi bi-person-gear me-2 text-primary"></i>Editar Usuario: <span class="text-primary">@usuarioEditando.NombreUsuario</span>
+                        </h5>
+                        <button type="button" class="btn-close" @onclick="CancelarAccion"></button>
+                    </div>
+
+                    <EditForm Model="edicion" OnValidSubmit="GuardarEdicion">
+                        <div class="modal-body p-4">
+                            <DataAnnotationsValidator />
+                            <ValidationSummary class="alert alert-danger p-2 small mb-3" />
+
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold small text-secondary">Rol</label>
+                                <InputSelect class="form-select" @bind-Value="edicion.Rol">
+                                    <option value="Cajero">Cajero</option>
+                                    <option value="Administrador">Administrador</option>
+                                </InputSelect>
+                            </div>
+
+                            <div class="form-check form-switch mb-3">
+                                <InputCheckbox class="form-check-input" id="activoCheck" @bind-Value="edicion.Activo" />
+                                <label class="form-check-label fw-semibold small text-secondary" for="activoCheck">Usuario Activo</label>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold small text-secondary">Nueva Contraseña</label>
+                                <InputText type="password" class="form-control" @bind-Value="edicion.NuevaContrasena" placeholder="Dejar en blanco para no cambiarla" />
+                                <div class="form-text small">Ingresa un valor únicamente si deseas restablecer la contraseña.</div>
+                            </div>
+                        </div>
+
+                        <div class="modal-footer bg-light border-top py-2 px-4">
+                            <button type="button" class="btn btn-outline-secondary px-3" @onclick="CancelarAccion">Cancelar</button>
+                            <button type="submit" class="btn btn-primary px-4 fw-semibold">Guardar Cambios</button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    }
+</div>
 
 @code {
     private List<UsuarioResponse> usuarios = new();

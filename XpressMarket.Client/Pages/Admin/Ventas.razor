@@ -5,99 +5,145 @@
 @using XpressMarket.Shared.Models
 @using XpressMarket.Shared.Extensions
 
+<PageTitle>Historial de Ventas - XpressMarket</PageTitle>
 
-
-<PageTitle>Historial de Ventas</PageTitle>
-
-<h3>Historial de Ventas</h3>
-
-@if (ventaIdParaAnular != null)
-{
-    <div class="alert alert-warning border border-warning my-3 shadow-sm">
-        <h5 class="text-dark fw-bold">  Atención antes de anular la Venta N° @ventaIdParaAnular</h5>
-        <p class="mb-2">Se detectaron las siguientes observaciones en los lotes de origen:</p>
-        
-        <ul class="mb-3">
-            @foreach (var a in advertenciasPendientes)
-            {
-                <li>
-                    <strong>@a.NombreProducto</strong> (Lote @a.NumeroLote, @a.Cantidad unids.) — 
-                    <span class="text-danger fw-semibold">@a.Motivo</span>
-                </li>
-            }
-        </ul>
-        
-        <p class="small text-muted mb-3">
-            El stock global del producto se restablecerá en el sistema, pero el lote de origen no aceptará la reactivación de estas unidades por estar inactivo/dado de baja.
-        </p>
-
+<div class="container-fluid px-0">
+    <!-- Header de Sección -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <button class="btn btn-sm btn-danger me-2" @onclick="AnularForzado">
-                Sí, anular de todas formas
-            </button>
-            <button class="btn btn-sm btn-secondary" @onclick="CancelarAnulacion">
-                Cancelar
-            </button>
+            <h3 class="fw-bold mb-1 text-dark">Historial de Ventas</h3>
+            <p class="text-muted small mb-0">Consulta las ventas realizadas, emite comprobantes en PDF y gestiona las anulaciones.</p>
         </div>
     </div>
-}
 
-@if (cargando)
-{
-    <p><em>Cargando historial de ventas...</em></p>
-}
-else if (ventas == null || !ventas.Any())
-{
-    <p>No se encontraron ventas registradas.</p>
-}
-else
-{
-    <table class="table table-striped align-middle">
-        <thead>
-            <tr>
-                <th>N°</th>
-                <th>Fecha</th>
-                <th>Cajero</th>
-                <th>Total</th>
-                <th>Estado</th>
-                <th>Acciones</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var v in ventas)
-            {
-                <tr>
-                    <td>@v.Id</td>
-                    <td>@v.FechaVenta.ToString("dd/MM/yyyy HH:mm")</td>
-                    <td>@v.NombreUsuario</td>
-                    <td>@v.Total.Bs()</td> 
-                    <td>
-                        @if (v.Estado == EstadoVenta.Completada)
-                        {
-                            <span class="badge bg-success">Completada</span>
-                        }
-                        else
-                        {
-                            <span class="badge bg-secondary">Anulada</span>
-                        }
-                    </td>
-                    <td>
-                        <button class="btn btn-sm btn-outline-success" @onclick="() => DescargarComprobante(v.Id)">
-                            PDF
-                        </button>
+    <!-- Advertencia de Anulación -->
+    @if (ventaIdParaAnular != null)
+    {
+        <div class="card border-warning bg-warning bg-opacity-10 shadow-sm rounded-3 mb-4">
+            <div class="card-body p-4">
+                <div class="d-flex align-items-center gap-2 text-warning-emphasis mb-2">
+                    <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+                    <h5 class="fw-bold mb-0">Atención antes de anular la Venta N° @ventaIdParaAnular</h5>
+                </div>
+                <p class="text-secondary small mb-3">Se detectaron las siguientes observaciones en los lotes de origen:</p>
 
-                        @if (v.Estado == EstadoVenta.Completada)
+                <div class="card border-0 bg-white rounded-3 p-3 mb-3 shadow-sm">
+                    <ul class="mb-0 small text-dark ps-3">
+                        @foreach (var a in advertenciasPendientes)
                         {
-                            <button class="btn btn-sm btn-outline-danger ms-1" @onclick="() => ConfirmarAnular(v.Id)">
-                                Anular
-                            </button>
+                            <li class="mb-1">
+                                <strong>@a.NombreProducto</strong> (Lote @a.NumeroLote, @a.Cantidad unids.) — 
+                                <span class="text-danger fw-semibold">@a.Motivo</span>
+                            </li>
                         }
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
-}
+                    </ul>
+                </div>
+
+                <p class="small text-muted mb-3">
+                    <i class="bi bi-info-circle me-1"></i>
+                    El stock global del producto se restablecerá en el sistema, pero el lote de origen no aceptará la reactivación de estas unidades por estar inactivo/dado de baja.
+                </p>
+
+                <div class="d-flex gap-2">
+                    <button class="btn btn-danger btn-sm px-3 fw-semibold" @onclick="AnularForzado">
+                        <i class="bi bi-check-circle me-1"></i>Sí, anular de todas formas
+                    </button>
+                    <button class="btn btn-outline-secondary btn-sm px-3" @onclick="CancelarAnulacion">
+                        Cancelar
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Contenido Principal -->
+    @if (cargando)
+    {
+        <div class="card border-0 shadow-sm rounded-3">
+            <div class="card-body text-center py-5">
+                <div class="spinner-border text-primary mb-3" role="status"></div>
+                <p class="text-muted mb-0">Cargando historial de ventas...</p>
+            </div>
+        </div>
+    }
+    else if (ventas == null || !ventas.Any())
+    {
+        <div class="card border-0 shadow-sm rounded-3">
+            <div class="card-body text-center py-5">
+                <i class="bi bi-receipt display-4 text-muted mb-3 d-block"></i>
+                <h5 class="text-secondary fw-normal">No se encontraron ventas registradas</h5>
+                <p class="text-muted small mb-0">Las transacciones realizadas desde la caja aparecerán aquí.</p>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="card border-0 shadow-sm rounded-3">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light text-secondary small text-uppercase fw-semibold border-bottom">
+                        <tr>
+                            <th class="ps-4 py-3">N° Venta</th>
+                            <th class="py-3">Fecha y Hora</th>
+                            <th class="py-3">Cajero</th>
+                            <th class="py-3">Total</th>
+                            <th class="py-3">Estado</th>
+                            <th class="pe-4 py-3 text-end">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody class="border-top-0">
+                        @foreach (var v in ventas)
+                        {
+                            <tr>
+                                <td class="ps-4 fw-semibold text-dark">#@v.Id</td>
+                                <td class="text-muted small">@v.FechaVenta.ToString("dd/MM/yyyy HH:mm")</td>
+                                <td class="fw-medium">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="rounded-circle bg-light text-secondary d-flex align-items-center justify-content-center" style="width: 28px; height: 28px;">
+                                            <i class="bi bi-person-sm"></i>
+                                        </div>
+                                        <span>@v.NombreUsuario</span>
+                                    </div>
+                                </td>
+                                <td class="fw-bold text-dark">@v.Total.Bs()</td>
+                                <td>
+                                    @if (v.Estado == EstadoVenta.Completada)
+                                    {
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 rounded-pill">
+                                            <i class="bi bi-check-circle me-1"></i>Completada
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2 py-1 rounded-pill">
+                                            <i class="bi bi-x-circle me-1"></i>Anulada
+                                        </span>
+                                    }
+                                </td>
+                                <td class="pe-4 text-end">
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <button class="btn btn-outline-primary d-inline-flex align-items-center gap-1" @onclick="() => DescargarComprobante(v.Id)" title="Descargar comprobante en PDF">
+                                            <i class="bi bi-file-earmark-pdf"></i>
+                                            <span>PDF</span>
+                                        </button>
+
+                                        @if (v.Estado == EstadoVenta.Completada)
+                                        {
+                                            <button class="btn btn-outline-danger d-inline-flex align-items-center gap-1" @onclick="() => ConfirmarAnular(v.Id)" title="Anular venta">
+                                                <i class="bi bi-slash-circle"></i>
+                                                <span>Anular</span>
+                                            </button>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</div>
 
 @code {
     private List<Venta> ventas = new();
@@ -123,38 +169,38 @@ else
     }
 
     private List<AdvertenciaAnulacion> advertenciasPendientes = new();
-private int? ventaIdParaAnular;
+    private int? ventaIdParaAnular;
 
-private async Task ConfirmarAnular(int ventaId)
-{
-    var (exito, requiereConfirmacion, advertencias) = await VentaSvc.AnularVentaAsync(ventaId);
-
-    if (exito)
+    private async Task ConfirmarAnular(int ventaId)
     {
+        var (exito, requiereConfirmacion, advertencias) = await VentaSvc.AnularVentaAsync(ventaId);
+
+        if (exito)
+        {
+            await Cargar();
+            return;
+        }
+
+        if (requiereConfirmacion)
+        {
+            ventaIdParaAnular = ventaId;
+            advertenciasPendientes = advertencias;
+        }
+    }
+
+    private async Task AnularForzado()
+    {
+        if (ventaIdParaAnular == null) return;
+
+        await VentaSvc.AnularVentaAsync(ventaIdParaAnular.Value, forzar: true);
+        ventaIdParaAnular = null;
+        advertenciasPendientes.Clear();
         await Cargar();
-        return;
     }
 
-    if (requiereConfirmacion)
+    private void CancelarAnulacion()
     {
-        ventaIdParaAnular = ventaId;
-        advertenciasPendientes = advertencias;
+        ventaIdParaAnular = null;
+        advertenciasPendientes.Clear();
     }
-}
-
-private async Task AnularForzado()
-{
-    if (ventaIdParaAnular == null) return;
-
-    await VentaSvc.AnularVentaAsync(ventaIdParaAnular.Value, forzar: true);
-    ventaIdParaAnular = null;
-    advertenciasPendientes.Clear();
-    await Cargar();
-}
-
-private void CancelarAnulacion()
-{
-    ventaIdParaAnular = null;
-    advertenciasPendientes.Clear();
-}
 }

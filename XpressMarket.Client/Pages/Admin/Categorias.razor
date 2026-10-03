@@ -2,85 +2,142 @@
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize(Roles = "Administrador")]
 @inject CategoriaService CategoriaSvc
+@inject ISnackbar Snackbar
 @using XpressMarket.Shared.Models
 
+<PageTitle>XpressMarket - Categorías</PageTitle>
 
-<PageTitle>Categorías</PageTitle>
+<div class="pa-4 pa-md-6">
+    @* Banner Principal *@
+    <MudPaper Elevation="0" Class="pa-6 mb-6 rounded-xl d-flex justify-between align-center" 
+              Style="background: linear-gradient(135deg, #4a1458 0%, #6b2181 100%); color: #ffffff; border: 1px solid rgba(255,255,255,0.1);">
+        <div>
+            <div class="d-flex align-center gap-2 mb-2">
+                <MudChip T="string" Size="Size.Small" Variant="Variant.Filled" Style="background-color: rgba(243, 130, 24, 0.2); color: #f38218;" Class="fw-bold">
+                    Catálogo Base
+                </MudChip>
+            </div>
+            <MudText Typo="Typo.h4" Class="fw-bold mb-1" Style="color: #ffffff; text-shadow: 0px 2px 4px rgba(0,0,0,0.2);">
+                Gestión de Categorías
+            </MudText>
+            <MudText Typo="Typo.body2" Style="color: rgba(255, 255, 255, 0.85);">
+                Organiza y clasifica los productos de tu inventario.
+            </MudText>
+        </div>
+        <div class="d-none d-md-block">
+            <MudIcon Icon="@Icons.Material.Filled.Category" Style="font-size: 4.5rem; color: rgba(255,255,255,0.15);" />
+        </div>
+    </MudPaper>
 
-<h3>Gestión de Categorías</h3>
+    @* Contenedor Principal *@
+    <MudPaper Elevation="2" Class="pa-5 rounded-xl" Style="background: #ffffff; border: 1px solid #e0e0e0;">
+        <div class="d-flex justify-between align-center mb-4">
+            <MudText Typo="Typo.h6" Class="fw-bold" Style="color: #2b2b2b;">
+                Listado de Categorías
+            </MudText>
+            <MudButton Variant="Variant.Filled" 
+                       Style="background-color: #6b2181; color: #ffffff; font-weight: bold;" 
+                       StartIcon="@Icons.Material.Filled.Add" 
+                       OnClick="AbrirFormularioNuevo" 
+                       Class="rounded-lg">
+                Nueva Categoría
+            </MudButton>
+        </div>
 
-<button class="btn btn-primary mb-3" @onclick="AbrirFormularioNuevo">
-    Nueva Categoría
-</button>
+        @if (cargando)
+        {
+            <div class="d-flex justify-center pa-6">
+                <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
+            </div>
+        }
+        else if (categorias == null || !categorias.Any())
+        {
+            <MudText Typo="Typo.body2" Class="text-muted italic pa-4">No hay categorías registradas.</MudText>
+        }
+        else
+        {
+            <MudTable Items="@categorias" Dense="true" Hover="true" Elevation="0" Class="rounded-lg">
+                <HeaderContent>
+                    <MudTh>Nombre</MudTh>
+                    <MudTh>Descripción</MudTh>
+                    <MudTh Style="text-align: right;">Acciones</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Nombre">
+                        <strong Style="color: #4a1458;">@context.Nombre</strong>
+                    </MudTd>
+                    <MudTd DataLabel="Descripción">
+                        <span Style="color: #6c757d;">@(string.IsNullOrWhiteSpace(context.Descripcion) ? "Sin descripción" : context.Descripcion)</span>
+                    </MudTd>
+                    <MudTd DataLabel="Acciones" Style="text-align: right;">
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit" 
+                                       Color="Color.Info" 
+                                       Size="Size.Small" 
+                                       OnClick="() => AbrirFormularioEditar(context)" />
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete" 
+                                       Color="Color.Error" 
+                                       Size="Size.Small" 
+                                       OnClick="() => EliminarCategoria(context.Id)" />
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+        }
+    </MudPaper>
+</div>
 
-@if (cargando)
-{
-    <p><em>Cargando categorías...</em></p>
-}
-else if (categorias == null || !categorias.Any())
-{
-    <p>No hay categorías registradas.</p>
-}
-else
-{
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>Nombre</th>
-                <th>Descripción</th>
-                <th>Acciones</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var categoria in categorias)
-            {
-                <tr>
-                    <td>@categoria.Nombre</td>
-                    <td>@categoria.Descripcion</td>
-                    <td>
-                        <button class="btn btn-sm btn-secondary" @onclick="() => AbrirFormularioEditar(categoria)">
-                            Editar
-                        </button>
-                        <button class="btn btn-sm btn-danger" @onclick="() => EliminarCategoria(categoria.Id)">
-                            Eliminar
-                        </button>
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
-}
-
-@if (mostrarFormulario)
-{
-    <div class="card p-3 mt-3">
-        <h4>@(categoriaEditando.Id == 0 ? "Nueva Categoría" : "Editar Categoría")</h4>
-
+@* Diálogo Formulario Modal *@
+<MudDialog @bind-IsVisible="mostrarFormulario" Options="dialogOptions">
+    <TitleContent>
+        <MudText Typo="Typo.h6" Class="fw-bold" Style="color: #6b2181;">
+            <MudIcon Icon="@(categoriaEditando.Id == 0 ? Icons.Material.Filled.AddCircle : Icons.Material.Filled.Edit)" Class="mr-2" />
+            @(categoriaEditando.Id == 0 ? "Nueva Categoría" : "Editar Categoría")
+        </MudText>
+    </TitleContent>
+    <DialogContent>
         <EditForm Model="categoriaEditando" OnValidSubmit="GuardarCategoria">
             <DataAnnotationsValidator />
-            <ValidationSummary />
 
-            <div class="mb-2">
-                <label>Nombre</label>
-                <InputText class="form-control" @bind-Value="categoriaEditando.Nombre" />
+            <MudTextField Label="Nombre" 
+                          @bind-Value="categoriaEditando.Nombre" 
+                          For="@(() => categoriaEditando.Nombre)" 
+                          Variant="Variant.Outlined" 
+                          Margin="Margin.Dense" 
+                          Class="mb-4" />
+
+            <MudTextField Label="Descripción" 
+                          @bind-Value="categoriaEditando.Descripcion" 
+                          For="@(() => categoriaEditando.Descripcion)" 
+                          Variant="Variant.Outlined" 
+                          Lines="3" 
+                          Margin="Margin.Dense" 
+                          Class="mb-2" />
+
+            <div class="d-flex justify-end gap-2 mt-4">
+                <MudButton OnClick="CerrarFormulario" Variant="Variant.Outlined" Color="Color.Secondary">
+                    Cancelar
+                </MudButton>
+                <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Style="background-color: #6b2181; color: #ffffff;">
+                    Guardar
+                </MudButton>
             </div>
-
-            <div class="mb-2">
-                <label>Descripción</label>
-                <InputTextArea class="form-control" @bind-Value="categoriaEditando.Descripcion" />
-            </div>
-
-            <button type="submit" class="btn btn-success mt-2">Guardar</button>
-            <button type="button" class="btn btn-secondary mt-2" @onclick="CerrarFormulario">Cancelar</button>
         </EditForm>
-    </div>
-}
+    </DialogContent>
+</MudDialog>
 
 @code {
     private List<Categoria>? categorias;
     private bool cargando = true;
     private bool mostrarFormulario = false;
     private Categoria categoriaEditando = new();
+
+    private DialogOptions dialogOptions = new DialogOptions 
+    { 
+        CloseButton = true, 
+        MaxWidth = MaxWidth.Small, 
+        FullWidth = true, 
+        BackdropClick = false,
+        CloseOnEscapeKey = false
+    };
 
     protected override async Task OnInitializedAsync()
     {
@@ -90,8 +147,18 @@ else
     private async Task CargarDatos()
     {
         cargando = true;
-        categorias = await CategoriaSvc.ObtenerTodasAsync();
-        cargando = false;
+        try
+        {
+            categorias = await CategoriaSvc.ObtenerTodasAsync();
+        }
+        catch
+        {
+            // Manejo seguro
+        }
+        finally
+        {
+            cargando = false;
+        }
     }
 
     private void AbrirFormularioNuevo()
@@ -122,10 +189,12 @@ else
         if (categoriaEditando.Id == 0)
         {
             await CategoriaSvc.CrearAsync(categoriaEditando);
+            Snackbar.Add("Categoría creada con éxito", Severity.Success);
         }
         else
         {
             await CategoriaSvc.ActualizarAsync(categoriaEditando.Id, categoriaEditando);
+            Snackbar.Add("Categoría actualizada con éxito", Severity.Success);
         }
 
         mostrarFormulario = false;
@@ -135,6 +204,7 @@ else
     private async Task EliminarCategoria(int id)
     {
         await CategoriaSvc.EliminarAsync(id);
+        Snackbar.Add("Categoría eliminada", Severity.Warning);
         await CargarDatos();
     }
 }

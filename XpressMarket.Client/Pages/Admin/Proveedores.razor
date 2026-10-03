@@ -5,96 +5,166 @@
 @using XpressMarket.Shared.Models
 @using XpressMarket.Shared.Extensions
 
-<PageTitle>Proveedores</PageTitle>
+<PageTitle>Proveedores - XpressMarket</PageTitle>
 
-<h3>Gestión de Proveedores</h3>
-
-<button class="btn btn-primary mb-3" @onclick="AbrirFormularioNuevo">
-    Nuevo Proveedor
-</button>
-
-@if (cargando)
-{
-    <p><em>Cargando proveedores...</em></p>
-}
-else if (proveedores == null || !proveedores.Any())
-{
-    <p>No hay proveedores registrados.</p>
-}
-else
-{
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>Nombre</th>
-                <th>Contacto</th>
-                <th>Teléfono</th>
-                <th>Email</th>
-                <th>Acciones</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var proveedor in proveedores)
-            {
-                <tr>
-                    <td>@proveedor.Nombre</td>
-                    <td>@proveedor.Contacto</td>
-                    <td>@proveedor.Telefono</td>
-                    <td>@proveedor.Email</td>
-                    <td>
-                        <button class="btn btn-sm btn-secondary" @onclick="() => AbrirFormularioEditar(proveedor)">
-                            Editar
-                        </button>
-                        <button class="btn btn-sm btn-danger" @onclick="() => EliminarProveedor(proveedor.Id)">
-                            Eliminar
-                        </button>
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
-}
-
-@if (mostrarFormulario)
-{
-    <div class="card p-3 mt-3">
-        <h4>@(proveedorEditando.Id == 0 ? "Nuevo Proveedor" : "Editar Proveedor")</h4>
-
-        <EditForm Model="proveedorEditando" OnValidSubmit="GuardarProveedor">
-            <DataAnnotationsValidator />
-            <ValidationSummary />
-
-            <div class="mb-2">
-                <label>Nombre</label>
-                <InputText class="form-control" @bind-Value="proveedorEditando.Nombre" />
-            </div>
-
-            <div class="mb-2">
-                <label>Contacto</label>
-                <InputText class="form-control" @bind-Value="proveedorEditando.Contacto" />
-            </div>
-
-            <div class="row">
-                <div class="col mb-2">
-                    <label>Teléfono</label>
-                    <InputText class="form-control" @bind-Value="proveedorEditando.Telefono" />
-                </div>
-                <div class="col mb-2">
-                    <label>Email</label>
-                    <InputText class="form-control" @bind-Value="proveedorEditando.Email" />
-                </div>
-            </div>
-
-            <div class="mb-2">
-                <label>Dirección</label>
-                <InputTextArea class="form-control" @bind-Value="proveedorEditando.Direccion" />
-            </div>
-
-            <button type="submit" class="btn btn-success mt-2">Guardar</button>
-            <button type="button" class="btn btn-secondary mt-2" @onclick="CerrarFormulario">Cancelar</button>
-        </EditForm>
+<div class="container-fluid px-0">
+    <!-- Header de Sección -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold mb-1 text-dark">Gestión de Proveedores</h3>
+            <p class="text-muted small mb-0">Administra el directorio de proveedores, contactos y datos de facturación.</p>
+        </div>
+        <button class="btn btn-primary shadow-sm d-flex align-items-center gap-2 px-3 py-2" @onclick="AbrirFormularioNuevo">
+            <i class="bi bi-person-plus-fill fs-6"></i>
+            <span class="fw-semibold">Nuevo Proveedor</span>
+        </button>
     </div>
-}
+
+    <!-- Contenido Principal -->
+    @if (cargando)
+    {
+        <div class="card border-0 shadow-sm rounded-3">
+            <div class="card-body text-center py-5">
+                <div class="spinner-border text-primary mb-3" role="status"></div>
+                <p class="text-muted mb-0">Cargando proveedores...</p>
+            </div>
+        </div>
+    }
+    else if (proveedores == null || !proveedores.Any())
+    {
+        <div class="card border-0 shadow-sm rounded-3">
+            <div class="card-body text-center py-5">
+                <i class="bi bi-truck display-4 text-muted mb-3 d-block"></i>
+                <h5 class="text-secondary fw-normal">No hay proveedores registrados</h5>
+                <p class="text-muted small mb-3">Comienza agregando un nuevo proveedor para vinculadamente sus lotes.</p>
+                <button class="btn btn-outline-primary btn-sm" @onclick="AbrirFormularioNuevo">
+                    <i class="bi bi-plus-lg me-1"></i> Crear primer proveedor
+                </button>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="card border-0 shadow-sm rounded-3">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light text-secondary small text-uppercase fw-semibold border-bottom">
+                        <tr>
+                            <th class="ps-4 py-3">Nombre</th>
+                            <th class="py-3">Contacto</th>
+                            <th class="py-3">Teléfono</th>
+                            <th class="py-3">Email</th>
+                            <th class="pe-4 py-3 text-end">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody class="border-top-0">
+                        @foreach (var proveedor in proveedores)
+                        {
+                            <tr>
+                                <td class="ps-4 fw-semibold text-dark">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="rounded-circle bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                                            <i class="bi bi-building"></i>
+                                        </div>
+                                        <span>@proveedor.Nombre</span>
+                                    </div>
+                                </td>
+                                <td class="text-muted small">@(string.IsNullOrWhiteSpace(proveedor.Contacto) ? "-" : proveedor.Contacto)</td>
+                                <td class="fw-medium">
+                                    @if (!string.IsNullOrWhiteSpace(proveedor.Telefono))
+                                    {
+                                        <span class="text-dark"><i class="bi bi-telephone text-muted me-1 small"></i>@proveedor.Telefono</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted small">-</span>
+                                    }
+                                </td>
+                                <td class="text-muted small">
+                                    @if (!string.IsNullOrWhiteSpace(proveedor.Email))
+                                    {
+                                        <span class="text-dark"><i class="bi bi-envelope text-muted me-1 small"></i>@proveedor.Email</span>
+                                    }
+                                    else
+                                    {
+                                        <span>-</span>
+                                    }
+                                </td>
+                                <td class="pe-4 text-end">
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <button class="btn btn-outline-secondary" @onclick="() => AbrirFormularioEditar(proveedor)" title="Editar">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        <button class="btn btn-outline-danger" @onclick="() => EliminarProveedor(proveedor.Id)" title="Eliminar">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+
+    <!-- Modal Formulario -->
+    @if (mostrarFormulario)
+    {
+        <div class="modal fade show d-block tab-modal-backdrop" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content border-0 shadow-lg rounded-3">
+                    <div class="modal-header bg-light border-bottom py-3">
+                        <h5 class="modal-title fw-bold text-dark">
+                            <i class="bi bi-truck me-2 text-primary"></i>
+                            @(proveedorEditando.Id == 0 ? "Nuevo Proveedor" : "Editar Proveedor")
+                        </h5>
+                        <button type="button" class="btn-close" @onclick="CerrarFormulario"></button>
+                    </div>
+
+                    <EditForm Model="proveedorEditando" OnValidSubmit="GuardarProveedor">
+                        <div class="modal-body p-4">
+                            <DataAnnotationsValidator />
+                            <ValidationSummary class="alert alert-danger p-2 small mb-3" />
+
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold small text-secondary">Nombre de la Empresa</label>
+                                    <InputText class="form-control" @bind-Value="proveedorEditando.Nombre" placeholder="Ej. Distribuidora Central S.R.L." />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold small text-secondary">Persona de Contacto</label>
+                                    <InputText class="form-control" @bind-Value="proveedorEditando.Contacto" placeholder="Ej. Carlos Mendoza" />
+                                </div>
+                            </div>
+
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold small text-secondary">Teléfono</label>
+                                    <InputText class="form-control" @bind-Value="proveedorEditando.Telefono" placeholder="Ej. +591 70012345" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold small text-secondary">Correo Electrónico</label>
+                                    <InputText class="form-control" @bind-Value="proveedorEditando.Email" placeholder="contacto@proveedor.com" />
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold small text-secondary">Dirección / Ubicación</label>
+                                <InputTextArea class="form-control" rows="2" @bind-Value="proveedorEditando.Direccion" placeholder="Dirección comercial o de depósito..." />
+                            </div>
+                        </div>
+
+                        <div class="modal-footer bg-light border-top py-2 px-4">
+                            <button type="button" class="btn btn-outline-secondary px-3" @onclick="CerrarFormulario">Cancelar</button>
+                            <button type="submit" class="btn btn-primary px-4 fw-semibold">Guardar Proveedor</button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    }
+</div>
 
 @code {
     private List<Proveedor>? proveedores;

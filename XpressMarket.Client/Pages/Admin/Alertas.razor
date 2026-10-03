@@ -5,145 +5,194 @@
 @inject ProductoService ProductoSvc
 @using XpressMarket.Shared.Models
 
+<PageTitle>XpressMarket - Alertas</PageTitle>
 
-<PageTitle>Alertas</PageTitle>
-
-<h3>Panel de Alertas</h3>
-
-@if (cargando)
-{
-    <p><em>Cargando alertas...</em></p>
-}
-else
-{
-    <div class="row mb-4">
-        <div class="col-md-4">
-            <div class="card text-white bg-danger">
-                <div class="card-body">
-                    <h5 class="card-title">Lotes Vencidos</h5>
-                    <p class="card-text display-6">@lotesVencidos.Count</p>
-                </div>
+<div class="pa-4 pa-md-6">
+    @* Banner Principal *@
+    <MudPaper Elevation="0" Class="pa-6 mb-6 rounded-xl d-flex justify-between align-center" 
+              Style="background: linear-gradient(135deg, #4a1458 0%, #6b2181 100%); color: #ffffff; border: 1px solid rgba(255,255,255,0.1);">
+        <div>
+            <div class="d-flex align-center gap-2 mb-2">
+                <MudChip T="string" Size="Size.Small" Variant="Variant.Filled" Style="background-color: rgba(243, 130, 24, 0.2); color: #f38218;" Class="fw-bold">
+                    Control Crítico
+                </MudChip>
             </div>
+            <MudText Typo="Typo.h4" Class="fw-bold mb-1" Style="color: #ffffff; text-shadow: 0px 2px 4px rgba(0,0,0,0.2);">
+                Panel de Alertas
+            </MudText>
+            <MudText Typo="Typo.body2" Style="color: rgba(255, 255, 255, 0.85);">
+                Monitoreo de productos caducados, próx. a vencer y bajo límite de inventario.
+            </MudText>
         </div>
-        <div class="col-md-4">
-            <div class="card text-dark bg-warning">
-                <div class="card-body">
-                    <h5 class="card-title">Próximos a Vencer</h5>
-                    <p class="card-text display-6">@lotesProximosAVencer.Count</p>
-                </div>
-            </div>
+        <div class="d-none d-md-block">
+            <MudIcon Icon="@Icons.Material.Filled.NotificationsActive" Style="font-size: 4.5rem; color: rgba(255,255,255,0.15);" />
         </div>
-        <div class="col-md-4">
-            <div class="card text-dark bg-info">
-                <div class="card-body">
-                    <h5 class="card-title">Productos con Stock Bajo</h5>
-                    <p class="card-text display-6">@productosStockBajo.Count</p>
-                </div>
-            </div>
-        </div>
-    </div>
+    </MudPaper>
 
-    <h4>Lotes Vencidos</h4>
-    @if (!lotesVencidos.Any())
+    @if (cargando)
     {
-        <p class="text-muted">No hay lotes vencidos.</p>
+        <MudPaper Elevation="0" Class="pa-8 d-flex justify-center align-center rounded-xl" Style="background: #ffffff;">
+            <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" Class="my-4" />
+        </MudPaper>
     }
     else
     {
-        <table class="table table-sm table-danger">
-            <thead>
-                <tr>
-                    <th>N° Lote</th>
-                    <th>Producto</th>
-                    <th>Fecha Vencimiento</th>
-                    <th>Días Vencido</th>
-                    <th>Cantidad</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var lote in lotesVencidos)
-                {
-                    <tr>
-                        <td>@lote.NumeroLote</td>
-                        <td>@lote.Producto?.Nombre</td>
-                        <td>@lote.FechaVencimiento.ToString("dd/MM/yyyy")</td>
-                        <td>@Math.Abs(lote.DiasParaVencer)</td>
-                        <td>@lote.CantidadActual</td>
-                        <td>
-                            <button class="btn btn-sm btn-outline-danger" @onclick="() => RegistrarMerma(lote.Id)">
-                                Registrar como Merma
-                            </button>
-                        </td>
+        @* Tarjetas KPI de Resumen *@
+        <MudGrid Class="mb-6">
+            <MudItem xs="12" sm="4">
+                <MudPaper Elevation="2" Class="pa-4 rounded-xl d-flex align-center" Style="border-left: 5px solid #d32f2f; background: #ffffff;">
+                    <MudAvatar Style="background-color: #ffebee; color: #d32f2f;" Class="mr-3" Size="Size.Large">
+                        <MudIcon Icon="@Icons.Material.Filled.Cancel" />
+                    </MudAvatar>
+                    <div>
+                        <MudText Typo="Typo.caption" Style="color: #6c757d; font-weight: 600; text-transform: uppercase;">Lotes Vencidos</MudText>
+                        <MudText Typo="Typo.h5" Class="fw-bold" Style="color: #d32f2f;">@lotesVencidos.Count</MudText>
+                    </div>
+                </MudPaper>
+            </MudItem>
 
-                    </tr>
-                }
-            </tbody>
-        </table>
-    }
+            <MudItem xs="12" sm="4">
+                <MudPaper Elevation="2" Class="pa-4 rounded-xl d-flex align-center" Style="border-left: 5px solid #f38218; background: #ffffff;">
+                    <MudAvatar Style="background-color: #fff3e0; color: #f38218;" Class="mr-3" Size="Size.Large">
+                        <MudIcon Icon="@Icons.Material.Filled.Warning" />
+                    </MudAvatar>
+                    <div>
+                        <MudText Typo="Typo.caption" Style="color: #6c757d; font-weight: 600; text-transform: uppercase;">Próximos a Vencer</MudText>
+                        <MudText Typo="Typo.h5" Class="fw-bold" Style="color: #2b2b2b;">@lotesProximosAVencer.Count</MudText>
+                    </div>
+                </MudPaper>
+            </MudItem>
 
-    <h4 class="mt-4">Lotes Próximos a Vencer (30 días)</h4>
-    @if (!lotesProximosAVencer.Any())
-    {
-        <p class="text-muted">No hay lotes próximos a vencer.</p>
-    }
-    else
-    {
-        <table class="table table-sm table-warning">
-            <thead>
-                <tr>
-                    <th>N° Lote</th>
-                    <th>Producto</th>
-                    <th>Fecha Vencimiento</th>
-                    <th>Días Restantes</th>
-                    <th>Cantidad</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var lote in lotesProximosAVencer.OrderBy(l => l.DiasParaVencer))
-                {
-                    <tr>
-                        <td>@lote.NumeroLote</td>
-                        <td>@lote.Producto?.Nombre</td>
-                        <td>@lote.FechaVencimiento.ToString("dd/MM/yyyy")</td>
-                        <td>@lote.DiasParaVencer</td>
-                        <td>@lote.CantidadActual</td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    }
+            <MudItem xs="12" sm="4">
+                <MudPaper Elevation="2" Class="pa-4 rounded-xl d-flex align-center" Style="border-left: 5px solid #0288d1; background: #ffffff;">
+                    <MudAvatar Style="background-color: #e1f5fe; color: #0288d1;" Class="mr-3" Size="Size.Large">
+                        <MudIcon Icon="@Icons.Material.Filled.Inventory2" />
+                    </MudAvatar>
+                    <div>
+                        <MudText Typo="Typo.caption" Style="color: #6c757d; font-weight: 600; text-transform: uppercase;">Stock Bajo</MudText>
+                        <MudText Typo="Typo.h5" Class="fw-bold" Style="color: #2b2b2b;">@productosStockBajo.Count</MudText>
+                    </div>
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
 
-    <h4 class="mt-4">Productos con Stock Bajo</h4>
-    @if (!productosStockBajo.Any())
-    {
-        <p class="text-muted">No hay productos con stock bajo.</p>
+        @* Tabla: Lotes Vencidos *@
+        <MudPaper Elevation="2" Class="pa-5 mb-6 rounded-xl" Style="background: #ffffff; border: 1px solid #e0e0e0;">
+            <div class="d-flex align-center mb-4">
+                <MudIcon Icon="@Icons.Material.Filled.HighlightOff" Style="color: #d32f2f;" Class="mr-2" />
+                <MudText Typo="Typo.h6" Class="fw-bold" Style="color: #2b2b2b;">Lotes Vencidos</MudText>
+            </div>
+
+            @if (!lotesVencidos.Any())
+            {
+                <MudText Typo="Typo.body2" Class="text-muted italic">No hay lotes vencidos registrados.</MudText>
+            }
+            else
+            {
+                <MudTable Items="@lotesVencidos" Dense="true" Hover="true" Elevation="0" Class="rounded-lg">
+                    <HeaderContent>
+                        <MudTh>N° Lote</MudTh>
+                        <MudTh>Producto</MudTh>
+                        <MudTh>Fecha Vencimiento</MudTh>
+                        <MudTh>Días Vencido</MudTh>
+                        <MudTh>Cantidad</MudTh>
+                        <MudTh Style="text-align: right;">Acciones</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd DataLabel="N° Lote"><strong>@context.NumeroLote</strong></MudTd>
+                        <MudTd DataLabel="Producto">@context.Producto?.Nombre</MudTd>
+                        <MudTd DataLabel="Fecha Vencimiento">@context.FechaVencimiento.ToString("dd/MM/yyyy")</MudTd>
+                        <MudTd DataLabel="Días Vencido">
+                            <MudChip T="string" Size="Size.Small" Color="Color.Error" Variant="Variant.Filled">
+                                @Math.Abs(context.DiasParaVencer) días
+                            </MudChip>
+                        </MudTd>
+                        <MudTd DataLabel="Cantidad">@context.CantidadActual</MudTd>
+                        <MudTd DataLabel="Acciones" Style="text-align: right;">
+                            <MudButton Variant="Variant.Outlined" 
+                                       Color="Color.Error" 
+                                       Size="Size.Small" 
+                                       StartIcon="@Icons.Material.Filled.DeleteForever" 
+                                       OnClick="() => RegistrarMerma(context.Id)">
+                                Registrar Merma
+                            </MudButton>
+                        </MudTd>
+                    </RowTemplate>
+                </MudTable>
+            }
+        </MudPaper>
+
+        @* Tabla: Lotes Próximos a Vencer *@
+        <MudPaper Elevation="2" Class="pa-5 mb-6 rounded-xl" Style="background: #ffffff; border: 1px solid #e0e0e0;">
+            <div class="d-flex align-center mb-4">
+                <MudIcon Icon="@Icons.Material.Filled.AccessTime" Style="color: #f38218;" Class="mr-2" />
+                <MudText Typo="Typo.h6" Class="fw-bold" Style="color: #2b2b2b;">Lotes Próximos a Vencer (30 días)</MudText>
+            </div>
+
+            @if (!lotesProximosAVencer.Any())
+            {
+                <MudText Typo="Typo.body2" Class="text-muted italic">No hay lotes próximos a vencer.</MudText>
+            }
+            else
+            {
+                <MudTable Items="@lotesProximosAVencer.OrderBy(l => l.DiasParaVencer)" Dense="true" Hover="true" Elevation="0" Class="rounded-lg">
+                    <HeaderContent>
+                        <MudTh>N° Lote</MudTh>
+                        <MudTh>Producto</MudTh>
+                        <MudTh>Fecha Vencimiento</MudTh>
+                        <MudTh>Días Restantes</MudTh>
+                        <MudTh>Cantidad</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd DataLabel="N° Lote"><strong>@context.NumeroLote</strong></MudTd>
+                        <MudTd DataLabel="Producto">@context.Producto?.Nombre</MudTd>
+                        <MudTd DataLabel="Fecha Vencimiento">@context.FechaVencimiento.ToString("dd/MM/yyyy")</MudTd>
+                        <MudTd DataLabel="Días Restantes">
+                            <MudChip T="string" Size="Size.Small" Style="background-color: #fff3e0; color: #f38218; font-weight: bold;">
+                                @context.DiasParaVencer días
+                            </MudChip>
+                        </MudTd>
+                        <MudTd DataLabel="Cantidad">@context.CantidadActual</MudTd>
+                    </RowTemplate>
+                </MudTable>
+            }
+        </MudPaper>
+
+        @* Tabla: Productos con Stock Bajo *@
+        <MudPaper Elevation="2" Class="pa-5 rounded-xl" Style="background: #ffffff; border: 1px solid #e0e0e0;">
+            <div class="d-flex align-center mb-4">
+                <MudIcon Icon="@Icons.Material.Filled.Warning" Style="color: #0288d1;" Class="mr-2" />
+                <MudText Typo="Typo.h6" Class="fw-bold" Style="color: #2b2b2b;">Productos con Stock Bajo</MudText>
+            </div>
+
+            @if (!productosStockBajo.Any())
+            {
+                <MudText Typo="Typo.body2" Class="text-muted italic">No hay productos por debajo del stock mínimo.</MudText>
+            }
+            else
+            {
+                <MudTable Items="@productosStockBajo" Dense="true" Hover="true" Elevation="0" Class="rounded-lg">
+                    <HeaderContent>
+                        <MudTh>Producto</MudTh>
+                        <MudTh>Categoría</MudTh>
+                        <MudTh>Stock Actual</MudTh>
+                        <MudTh>Stock Mínimo</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd DataLabel="Producto"><strong>@context.Nombre</strong></MudTd>
+                        <MudTd DataLabel="Categoría">@context.Categoria?.Nombre</MudTd>
+                        <MudTd DataLabel="Stock Actual">
+                            <MudChip T="string" Size="Size.Small" Color="Color.Info" Variant="Variant.Filled">
+                                @context.StockActual
+                            </MudChip>
+                        </MudTd>
+                        <MudTd DataLabel="Stock Mínimo">@context.StockMinimo</MudTd>
+                    </RowTemplate>
+                </MudTable>
+            }
+        </MudPaper>
     }
-    else
-    {
-        <table class="table table-sm table-info">
-            <thead>
-                <tr>
-                    <th>Producto</th>
-                    <th>Categoría</th>
-                    <th>Stock Actual</th>
-                    <th>Stock Mínimo</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var producto in productosStockBajo)
-                {
-                    <tr>
-                        <td>@producto.Nombre</td>
-                        <td>@producto.Categoria?.Nombre</td>
-                        <td>@producto.StockActual</td>
-                        <td>@producto.StockMinimo</td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    }
-}
+</div>
 
 @code {
     private List<Lote> lotesVencidos = new();
@@ -159,17 +208,25 @@ else
     private async Task CargarAlertas()
     {
         cargando = true;
-
-        lotesVencidos = await LoteSvc.ObtenerVencidosAsync();
-        lotesProximosAVencer = await LoteSvc.ObtenerProximosAVencerAsync();
-        productosStockBajo = await ProductoSvc.ObtenerStockBajoAsync();
-
-        cargando = false;
+        try
+        {
+            lotesVencidos = await LoteSvc.ObtenerVencidosAsync() ?? new();
+            lotesProximosAVencer = await LoteSvc.ObtenerProximosAVencerAsync() ?? new();
+            productosStockBajo = await ProductoSvc.ObtenerStockBajoAsync() ?? new();
+        }
+        catch
+        {
+            // Carga protegida
+        }
+        finally
+        {
+            cargando = false;
+        }
     }
+
     private async Task RegistrarMerma(int loteId)
     {
         await LoteSvc.RegistrarMermaAsync(loteId);
         await CargarAlertas();
     }
-
 }
