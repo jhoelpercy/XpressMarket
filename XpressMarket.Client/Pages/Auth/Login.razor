@@ -1,46 +1,197 @@
 ﻿@page "/login"
+@layout EmptyLayout
 @inject AuthService AuthSvc
 @inject NavigationManager Nav
+@inject ISnackbar Snackbar
 @using System.ComponentModel.DataAnnotations
 @using XpressMarket.Shared.Extensions
 
-<PageTitle>Iniciar Sesión</PageTitle>
+<PageTitle>Iniciar Sesión - XpressMarket</PageTitle>
 
-<div class="d-flex justify-content-center align-items-center" style="min-height: 70vh;">
-    <div class="card p-4" style="width: 350px;">
-        <h3 class="text-center mb-3">Xpress Market</h3>
-
-        <EditForm Model="modelo" OnValidSubmit="IniciarSesion">
-            <DataAnnotationsValidator />
-
-            @if (error != null)
-            {
-                <div class="alert alert-danger py-2">@error</div>
-            }
-
-            <div class="mb-3">
-                <label>Usuario</label>
-                <InputText class="form-control" @bind-Value="modelo.NombreUsuario" />
-            </div>
-            <div class="mb-3">
-                <label>Contraseña</label>
-                <InputText type="password" class="form-control" @bind-Value="modelo.Contrasena" />
+<div class="login-wrapper">
+    <MudGrid Spacing="0" Class="ma-0 pa-0 fill-height">
+        
+        @* Columna Izquierda: Branding e Identidad Visual *@
+        <MudItem xs="12" md="7" Class="d-none d-md-flex flex-column justify-between pa-12 brand-panel">
+            <div class="d-flex align-center">
+                <MudIcon Icon="@Icons.Material.Filled.ShoppingCart" Style="color: #f38218; font-size: 2.5rem;" Class="mr-3" />
+                <MudText Typo="Typo.h5" Class="fw-bold" Style="color: #fbf2db; letter-spacing: 1px;">
+                    <span style="color: #f38218;">Xpress</span>Market
+                </MudText>
             </div>
 
-            <button type="submit" class="btn btn-primary w-100" disabled="@cargando">
-                @(cargando ? "Ingresando..." : "Ingresar")
-            </button>
-        </EditForm>
-    </div>
+            <div class="my-auto pr-8">
+                <MudText Typo="Typo.h2" Class="fw-bold mb-4" Style="color: #ffffff; line-height: 1.1;">
+                    Gestión inteligente de ventas e inventario
+                </MudText>
+                <MudText Typo="Typo.h6" Style="color: rgba(251, 242, 219, 0.85); font-weight: 300;">
+                    Optimiza tus procesos de caja, control de lotes y emisión de reportes en tiempo real.
+                </MudText>
+
+                <div class="d-flex gap-4 mt-8">
+                    <div class="feature-chip">
+                        <MudIcon Icon="@Icons.Material.Filled.Speed" Style="color: #f38218;" Class="mr-2" />
+                        <MudText Typo="Typo.body2" Style="color: #fbf2db;">Punto de Venta Ágil</MudText>
+                    </div>
+                    <div class="feature-chip">
+                        <MudIcon Icon="@Icons.Material.Filled.Shield" Style="color: #f38218;" Class="mr-2" />
+                        <MudText Typo="Typo.body2" Style="color: #fbf2db;">Control de Roles</MudText>
+                    </div>
+                </div>
+            </div>
+
+            <MudText Typo="Typo.caption" Style="color: rgba(251, 242, 219, 0.5);">
+                © 2026 XpressMarket `- Sistema Web
+            </MudText>
+        </MudItem>
+
+        @* Columna Derecha: Formulario de Autenticación *@
+        <MudItem xs="12" md="5" Class="d-flex align-center justify-center pa-6 pa-md-12 form-panel">
+            <div style="width: 100%; max-width: 380px;">
+                
+                @* Logo para móviles *@
+                <div class="d-flex d-md-none align-center justify-center mb-6">
+                    <MudIcon Icon="@Icons.Material.Filled.ShoppingCart" Style="color: #f38218;" Size="Size.Large" Class="mr-2" />
+                    <MudText Typo="Typo.h5" Class="fw-bold" Style="color: #6b2181;">
+                        <span style="color: #f38218;">Xpress</span>Market
+                    </MudText>
+                </div>
+
+                <div class="mb-8">
+                    <MudText Typo="Typo.h4" Class="fw-bold mb-1" Style="color: #1a1a1a;">
+                        ¡Bienvenido!
+                    </MudText>
+                    <MudText Typo="Typo.body2" Style="color: #6c757d;">
+                        Ingresa con tu cuenta para acceder al sistema
+                    </MudText>
+                </div>
+
+                @if (error != null)
+                {
+                    <MudAlert Severity="Severity.Error" Variant="Variant.Filled" Class="mb-6 rounded-lg" Dense="true">
+                        @error
+                    </MudAlert>
+                }
+
+                <EditForm Model="modelo" OnValidSubmit="IniciarSesion">
+                    <DataAnnotationsValidator />
+
+                    <div class="mb-4">
+                        <MudText Typo="Typo.caption" Class="fw-bold mb-1 d-block" Style="color: #4a4a4a;">USUARIO</MudText>
+                        <MudTextField T="string" 
+                                      Placeholder="Deyna" 
+                                      @bind-Value="modelo.NombreUsuario" 
+                                      For="@(() => modelo.NombreUsuario)"
+                                      Variant="Variant.Outlined" 
+                                      Adornment="Adornment.Start" 
+                                      AdornmentIcon="@Icons.Material.Filled.PersonOutline" 
+                                      AdornmentColor="Color.Primary" />
+                    </div>
+
+                    <div class="mb-6">
+                        <MudText Typo="Typo.caption" Class="fw-bold mb-1 d-block" Style="color: #4a4a4a;">CONTRASEÑA</MudText>
+                        <MudTextField T="string" 
+                                      Placeholder="••••••••" 
+                                      @bind-Value="modelo.Contrasena" 
+                                      For="@(() => modelo.Contrasena)"
+                                      InputType="_passwordInputType" 
+                                      Variant="Variant.Outlined" 
+                                      Adornment="Adornment.Start" 
+                                      AdornmentIcon="@Icons.Material.Filled.LockOpen" 
+                                      AdornmentColor="Color.Primary"
+                                      AdornmentIconEnd="@_passwordInputIcon"
+                                      OnAdornmentClick="TogglePasswordVisibility" />
+                    </div>
+
+                    <MudButton ButtonType="ButtonType.Submit" 
+                               Variant="Variant.Filled" 
+                               Style="background: linear-gradient(90deg, #6b2181 0%, #83289e 100%); color: #fbf2db; font-weight: 600; border-radius: 8px;" 
+                               FullWidth="true" 
+                               Size="Size.Large" 
+                               Disabled="@cargando"
+                               Class="py-3 shadow-md">
+                        @if (cargando)
+                        {
+                            <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+                            <MudText Class="ms-2">Validando credenciales...</MudText>
+                        }
+                        else
+                        {
+                            <MudText>Ingresar al Sistema</MudText>
+                        }
+                    </MudButton>
+                </EditForm>
+            </div>
+        </MudItem>
+
+    </MudGrid>
 </div>
+
+<style>
+    .login-wrapper {
+        min-height: 100vh;
+        width: 100vw;
+        background-color: #ffffff;
+        overflow: hidden;
+    }
+    .fill-height {
+        min-height: 100vh;
+    }
+    .brand-panel {
+        background: linear-gradient(135deg, #4a1458 0%, #6b2181 50%, #350c40 100%);
+        position: relative;
+    }
+    .brand-panel::before {
+        content: '';
+        position: absolute;
+        top: -10%;
+        right: -10%;
+        width: 350px;
+        height: 350px;
+        background: rgba(243, 130, 24, 0.15);
+        border-radius: 50%;
+        filter: blur(80px);
+    }
+    .form-panel {
+        background-color: #ffffff;
+    }
+    .feature-chip {
+        display: flex;
+        align-items: center;
+        background: rgba(255, 255, 255, 0.08);
+        padding: 8px 16px;
+        border-radius: 20px;
+        border: 1px solid rgba(251, 242, 219, 0.15);
+    }
+</style>
 
 @code {
     private LoginModelo modelo = new();
     private string? error;
     private bool cargando = false;
 
+    private bool mostrarContrasena = false;
+    private InputType _passwordInputType = InputType.Password;
+    private string _passwordInputIcon = Icons.Material.Filled.VisibilityOff;
+
     [SupplyParameterFromQuery]
     public string? ReturnUrl { get; set; }
+
+    private void TogglePasswordVisibility()
+    {
+        if (mostrarContrasena)
+        {
+            mostrarContrasena = false;
+            _passwordInputIcon = Icons.Material.Filled.VisibilityOff;
+            _passwordInputType = InputType.Password;
+        }
+        else
+        {
+            mostrarContrasena = true;
+            _passwordInputIcon = Icons.Material.Filled.Visibility;
+            _passwordInputType = InputType.Text;
+        }
+    }
 
     private async Task IniciarSesion()
     {
@@ -53,6 +204,7 @@
 
         if (exito)
         {
+            Snackbar.Add("¡Bienvenido a XpressMarket!", Severity.Success);
             Nav.NavigateTo(string.IsNullOrWhiteSpace(ReturnUrl) ? "/" : ReturnUrl);
         }
         else
