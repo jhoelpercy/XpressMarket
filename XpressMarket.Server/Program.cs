@@ -10,7 +10,8 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseMySql(builder.Configuration.GetConnectionString("DefaultConnection"),
+        ServerVersion.AutoDetect(builder.Configuration.GetConnectionString("DefaultConnection"))));
 
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
@@ -20,7 +21,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("PermitirClient", policy =>
     {
-        policy.WithOrigins("https://localhost:7204") 
+        policy.WithOrigins("https://localhost:7204")
               .AllowAnyHeader()
               .AllowAnyMethod();
     });
@@ -130,11 +131,9 @@ using (var scope = app.Services.CreateScope())
 
             db.Lotes.AddRange(loteA, loteB);
 
-            // Replicamos manualmente lo que haría el Controller (esto es un seed directo, no pasa por la API)
             producto.StockActual = cantCorto + cantLargo;
         }
 
-        // Producto extra ya VENCIDO, para probar "Registrar como Merma"
         var pan = new Producto
         {
             Nombre = "Pan de Molde Ideal",
@@ -166,18 +165,45 @@ using (var scope = app.Services.CreateScope())
         db.SaveChanges();
     }
 
-    if (!db.Usuarios.Any(u => u.NombreUsuario == "cajero1"))
+    // Crear usuario cajero si no existe, con contraseña hasheada limpia
+    var cajero = db.Usuarios.FirstOrDefault(u => u.NombreUsuario == "cajero");
+    string hashCajero = BCrypt.Net.BCrypt.HashPassword("cajero123");
+    if (cajero == null)
     {
         db.Usuarios.Add(new Usuario
         {
-            NombreUsuario = "cajero1",
+            NombreUsuario = "cajero",
             NombreCompleto = "Juan Pérez",
-            ContrasenaHash = BCrypt.Net.BCrypt.HashPassword("Cajero123!"),
+            ContrasenaHash = hashCajero,
             Rol = "Cajero",
             Activo = true
         });
-        db.SaveChanges();
     }
+    else
+    {
+        cajero.ContrasenaHash = hashCajero;
+    }
+
+    // Crear usuario administrador si no existe, con contraseña hasheada limpia
+    var admin = db.Usuarios.FirstOrDefault(u => u.NombreUsuario == "admin");
+    string hashAdmin = BCrypt.Net.BCrypt.HashPassword("Admin123*");
+    if (admin == null)
+    {
+        db.Usuarios.Add(new Usuario
+        {
+            NombreUsuario = "admin",
+            NombreCompleto = "Administrador del Sistema",
+            ContrasenaHash = hashAdmin,
+            Rol = "Administrador",
+            Activo = true
+        });
+    }
+    else
+    {
+        admin.ContrasenaHash = hashAdmin;
+    }
+
+    db.SaveChanges();
 }
 
 app.UseCors("PermitirClient");
@@ -193,8 +219,6 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.UseHttpsRedirection();
-
-app.UseAuthorization();
 
 app.MapControllers();
 

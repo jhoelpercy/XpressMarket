@@ -3,11 +3,11 @@
     "Name": "Nuevo perfil",
     "Projects": [
       {
-        "Path": "XpressMarket.Client\\XpressMarket.Client.csproj",
+        "Path": "XpressMarket.Server\\XpressMarket.Server.csproj",
         "Action": "Start"
       },
       {
-        "Path": "XpressMarket.Server\\XpressMarket.Server.csproj",
+        "Path": "XpressMarket.Client\\XpressMarket.Client.csproj",
         "Action": "Start"
       }
     ]
