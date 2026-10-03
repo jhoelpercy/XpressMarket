@@ -4,65 +4,181 @@
 @inject AuthenticationStateProvider AuthStateProvider
 @inject ProductoService ProductoSvc
 @inject LoteService LoteSvc
-@using XpressMarket.Shared.Extensions
 
-<PageTitle>Xpress Market</PageTitle>
+<PageTitle>XpressMarket - Dashboard</PageTitle>
 
-<section class="hero">
-    <div class="hero-brand">Xpress Market</div>
-    <h1>@saludo</h1>
-    <p class="hero-sub">@fechaFormateada</p>
-</section>
-
-@if (!cargando && esAdministrador)
-{
-    <section class="resumen">
-        <div class="resumen-item @(stockBajoCount > 0 ? "resumen-alerta" : "")">
-            <span class="resumen-numero">@stockBajoCount</span>
-            <span class="resumen-texto">producto@(stockBajoCount == 1 ? "" : "s") con stock bajo</span>
+<div class="pa-4 pa-md-6">
+    @* Banner Principal con Contraste Correcto *@
+    <MudPaper Elevation="0" Class="pa-6 mb-6 rounded-xl d-flex justify-between align-center" 
+              Style="background: linear-gradient(135deg, #6b2181 0%, #4a1458 100%); color: #ffffff; border: 1px solid rgba(255,255,255,0.1);">
+        <div>
+            <div class="d-flex align-center gap-2 mb-2">
+                <MudIcon Icon="@Icons.Material.Filled.Storefront" Style="color: #f38218;" Size="Size.Small" />
+                <MudText Typo="Typo.caption" Class="fw-bold text-uppercase" Style="color: #fbf2db; letter-spacing: 1px;">
+                    Panel Principal
+                </MudText>
+            </div>
+            <MudText Typo="Typo.h4" Class="fw-bold mb-1" Style="color: #ffffff; text-shadow: 0px 2px 4px rgba(0,0,0,0.2);">
+                @saludo
+            </MudText>
+            <MudText Typo="Typo.body2" Style="color: rgba(255, 255, 255, 0.85);">
+                <MudIcon Icon="@Icons.Material.Filled.CalendarToday" Size="Size.Small" Class="mr-1" Style="vertical-align: middle;" />
+                @fechaFormateada
+            </MudText>
         </div>
-        <div class="resumen-item @(porVencerCount > 0 ? "resumen-alerta" : "")">
-            <span class="resumen-numero">@porVencerCount</span>
-            <span class="resumen-texto">lote@(porVencerCount == 1 ? "" : "s") por vencer pronto</span>
+        <div class="d-none d-md-block">
+            <MudIcon Icon="@Icons.Material.Filled.PointOfSale" Style="font-size: 4.5rem; color: rgba(255,255,255,0.15);" />
         </div>
-        <div class="resumen-item @(vencidosCount > 0 ? "resumen-critico" : "")">
-            <span class="resumen-numero">@vencidosCount</span>
-            <span class="resumen-texto">lote@(vencidosCount == 1 ? "" : "s") vencido@(vencidosCount == 1 ? "" : "s")</span>
-        </div>
-        <div class="resumen-item">
-            <span class="resumen-numero">@totalProductos</span>
-            <span class="resumen-texto">producto@(totalProductos == 1 ? "" : "s") en catálogo</span>
-        </div>
-    </section>
-}
+    </MudPaper>
 
-<section class="accesos">
-    <p class="accesos-titulo">Ir directo a</p>
-    <div class="accesos-grid">
-        <a class="acceso-card acceso-venta" href="punto-venta">
-            <span class="acceso-nombre">Punto de Venta</span>
-            <span class="acceso-desc">Registrar una nueva venta</span>
-        </a>
-
+    @if (cargando)
+    {
+        <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="my-6 rounded-lg" />
+    }
+    else
+    {
+        @* Sección de Tarjetas de Resumen *@
         @if (esAdministrador)
         {
-            <a class="acceso-card" href="productos">
-                <span class="acceso-nombre">Productos</span>
-                <span class="acceso-desc">Ver y editar el catálogo</span>
-            </a>
-            <a class="acceso-card" href="lotes">
-                <span class="acceso-nombre">Lotes</span>
-                <span class="acceso-desc">Controlar vencimientos</span>
-            </a>
-            <a class="acceso-card" href="alertas">
-                <span class="acceso-nombre">Alertas</span>
-                <span class="acceso-desc">Revisar pendientes</span>
-            </a>
+            <MudText Typo="Typo.subtitle2" Class="fw-bold mb-3" Style="color: #6c757d; letter-spacing: 0.5px;">
+                MÉTRICAS DEL INVENTARIO
+            </MudText>
+
+            <MudGrid Class="mb-6">
+                <MudItem xs="12" sm="6" md="3">
+                    <MudPaper Elevation="2" Class="pa-4 rounded-lg d-flex align-center" Style="border-left: 4px solid #f38218; background: #ffffff;">
+                        <MudAvatar Style="background-color: #fff3e0; color: #f38218;" Class="mr-3" Size="Size.Large">
+                            <MudIcon Icon="@Icons.Material.Filled.Warning" />
+                        </MudAvatar>
+                        <div>
+                            <MudText Typo="Typo.h5" Class="fw-bold" Style="color: #2b2b2b;">@stockBajoCount</MudText>
+                            <MudText Typo="Typo.caption" Style="color: #6c757d;">Stock Bajo</MudText>
+                        </div>
+                    </MudPaper>
+                </MudItem>
+
+                <MudItem xs="12" sm="6" md="3">
+                    <MudPaper Elevation="2" Class="pa-4 rounded-lg d-flex align-center" Style="border-left: 4px solid #ff9800; background: #ffffff;">
+                        <MudAvatar Style="background-color: #fff8e1; color: #ff9800;" Class="mr-3" Size="Size.Large">
+                            <MudIcon Icon="@Icons.Material.Filled.AccessTime" />
+                        </MudAvatar>
+                        <div>
+                            <MudText Typo="Typo.h5" Class="fw-bold" Style="color: #2b2b2b;">@porVencerCount</MudText>
+                            <MudText Typo="Typo.caption" Style="color: #6c757d;">Por Vencer</MudText>
+                        </div>
+                    </MudPaper>
+                </MudItem>
+
+                <MudItem xs="12" sm="6" md="3">
+                    <MudPaper Elevation="2" Class="pa-4 rounded-lg d-flex align-center" Style="border-left: 4px solid #f44336; background: #ffffff;">
+                        <MudAvatar Style="background-color: #ffebee; color: #f44336;" Class="mr-3" Size="Size.Large">
+                            <MudIcon Icon="@Icons.Material.Filled.HighlightOff" />
+                        </MudAvatar>
+                        <div>
+                            <MudText Typo="Typo.h5" Class="fw-bold" Style="color: #2b2b2b;">@vencidosCount</MudText>
+                            <MudText Typo="Typo.caption" Style="color: #6c757d;">Lotes Vencidos</MudText>
+                        </div>
+                    </MudPaper>
+                </MudItem>
+
+                <MudItem xs="12" sm="6" md="3">
+                    <MudPaper Elevation="2" Class="pa-4 rounded-lg d-flex align-center" Style="border-left: 4px solid #6b2181; background: #ffffff;">
+                        <MudAvatar Style="background-color: #f3e5f5; color: #6b2181;" Class="mr-3" Size="Size.Large">
+                            <MudIcon Icon="@Icons.Material.Filled.Inventory2" />
+                        </MudAvatar>
+                        <div>
+                            <MudText Typo="Typo.h5" Class="fw-bold" Style="color: #2b2b2b;">@totalProductos</MudText>
+                            <MudText Typo="Typo.caption" Style="color: #6c757d;">Catálogo Total</MudText>
+                        </div>
+                    </MudPaper>
+                </MudItem>
+            </MudGrid>
         }
-    </div>
-</section>
+
+        @* Accesos Rápidos Interactivos *@
+        <MudText Typo="Typo.subtitle2" Class="fw-bold mb-3" Style="color: #6c757d; letter-spacing: 0.5px;">
+            ACCESOS RÁPIDOS
+        </MudText>
+
+        <MudGrid>
+            <MudItem xs="12" sm="6" md="3">
+                <MudPaper Elevation="2" Class="pa-4 rounded-lg pos-action-card" @onclick='() => NavTo("punto-venta")'>
+                    <div class="d-flex align-center">
+                        <MudAvatar Style="background-color: #6b2181; color: #ffffff;" Class="mr-3">
+                            <MudIcon Icon="@Icons.Material.Filled.ShoppingCart" />
+                        </MudAvatar>
+                        <div>
+                            <MudText Typo="Typo.subtitle2" Class="fw-bold" Style="color: #2b2b2b;">Punto de Venta</MudText>
+                            <MudText Typo="Typo.caption" Style="color: #6c757d;">Registrar ventas</MudText>
+                        </div>
+                    </div>
+                </MudPaper>
+            </MudItem>
+
+            @if (esAdministrador)
+            {
+                <MudItem xs="12" sm="6" md="3">
+                    <MudPaper Elevation="2" Class="pa-4 rounded-lg pos-action-card" @onclick='() => NavTo("productos")'>
+                        <div class="d-flex align-center">
+                            <MudAvatar Style="background-color: #f38218; color: #ffffff;" Class="mr-3">
+                                <MudIcon Icon="@Icons.Material.Filled.Category" />
+                            </MudAvatar>
+                            <div>
+                                <MudText Typo="Typo.subtitle2" Class="fw-bold" Style="color: #2b2b2b;">Productos</MudText>
+                                <MudText Typo="Typo.caption" Style="color: #6c757d;">Gestionar inventario</MudText>
+                            </div>
+                        </div>
+                    </MudPaper>
+                </MudItem>
+
+                <MudItem xs="12" sm="6" md="3">
+                    <MudPaper Elevation="2" Class="pa-4 rounded-lg pos-action-card" @onclick='() => NavTo("lotes")'>
+                        <div class="d-flex align-center">
+                            <MudAvatar Style="background-color: #0288d1; color: #ffffff;" Class="mr-3">
+                                <MudIcon Icon="@Icons.Material.Filled.Event" />
+                            </MudAvatar>
+                            <div>
+                                <MudText Typo="Typo.subtitle2" Class="fw-bold" Style="color: #2b2b2b;">Lotes</MudText>
+                                <MudText Typo="Typo.caption" Style="color: #6c757d;">Vencimientos y stock</MudText>
+                            </div>
+                        </div>
+                    </MudPaper>
+                </MudItem>
+
+                <MudItem xs="12" sm="6" md="3">
+                    <MudPaper Elevation="2" Class="pa-4 rounded-lg pos-action-card" @onclick='() => NavTo("alertas")'>
+                        <div class="d-flex align-center">
+                            <MudAvatar Style="background-color: #d32f2f; color: #ffffff;" Class="mr-3">
+                                <MudIcon Icon="@Icons.Material.Filled.Notifications" />
+                            </MudAvatar>
+                            <div>
+                                <MudText Typo="Typo.subtitle2" Class="fw-bold" Style="color: #2b2b2b;">Alertas</MudText>
+                                <MudText Typo="Typo.caption" Style="color: #6c757d;">Notificaciones activas</MudText>
+                            </div>
+                        </div>
+                    </MudPaper>
+                </MudItem>
+            }
+        </MudGrid>
+    }
+</div>
+
+<style>
+    .pos-action-card {
+        cursor: pointer;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        border: 1px solid #e0e0e0;
+        background: #ffffff;
+    }
+    .pos-action-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
+    }
+</style>
 
 @code {
+    @inject NavigationManager NavManager
+
     private bool cargando = true;
     private int stockBajoCount;
     private int porVencerCount;
@@ -70,35 +186,45 @@
     private int totalProductos;
     private string saludo = "";
     private string fechaFormateada = "";
-
     private bool esAdministrador = false;
 
     protected override async Task OnInitializedAsync()
     {
-        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
-        esAdministrador = authState.User.IsInRole("Administrador");
-
-        var hora = DateTime.Now.Hour;
-        saludo = hora < 12 ? "Buenos días" : hora < 19 ? "Buenas tardes" : "Buenas noches";
-
-        fechaFormateada = DateTime.Now.ToString("dddd d 'de' MMMM", new System.Globalization.CultureInfo("es-ES"));
-        fechaFormateada = char.ToUpper(fechaFormateada[0]) + fechaFormateada.Substring(1);
-
-        if (esAdministrador)
+        try
         {
-            var productos = await ProductoSvc.ObtenerTodosAsync();
-            totalProductos = productos.Count;
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            esAdministrador = authState.User.IsInRole("Administrador");
 
-            var stockBajo = await ProductoSvc.ObtenerStockBajoAsync();
-            stockBajoCount = stockBajo.Count;
+            var hora = DateTime.Now.Hour;
+            saludo = hora < 12 ? "¡Buenos días!" : hora < 19 ? "¡Buenas tardes!" : "¡Buenas noches!";
 
-            var porVencer = await LoteSvc.ObtenerProximosAVencerAsync();
-            porVencerCount = porVencer.Count;
+            fechaFormateada = DateTime.Now.ToString("dddd, d 'de' MMMM 'de' yyyy", new System.Globalization.CultureInfo("es-ES"));
+            fechaFormateada = char.ToUpper(fechaFormateada[0]) + fechaFormateada.Substring(1);
 
-            var vencidos = await LoteSvc.ObtenerVencidosAsync();
-            vencidosCount = vencidos.Count;
+            if (esAdministrador)
+            {
+                var productosTask = ProductoSvc.ObtenerTodosAsync();
+                var stockBajoTask = ProductoSvc.ObtenerStockBajoAsync();
+                var porVencerTask = LoteSvc.ObtenerProximosAVencerAsync();
+                var vencidosTask = LoteSvc.ObtenerVencidosAsync();
+
+                await Task.WhenAll(productosTask, stockBajoTask, porVencerTask, vencidosTask);
+
+                totalProductos = (await productosTask)?.Count ?? 0;
+                stockBajoCount = (await stockBajoTask)?.Count ?? 0;
+                porVencerCount = (await porVencerTask)?.Count ?? 0;
+                vencidosCount = (await vencidosTask)?.Count ?? 0;
+            }
         }
-
-        cargando = false;
+        catch
+        {
+            // Carga segura ante fallos
+        }
+        finally
+        {
+            cargando = false;
+        }
     }
+
+    private void NavTo(string path) => NavManager.NavigateTo(path);
 }
