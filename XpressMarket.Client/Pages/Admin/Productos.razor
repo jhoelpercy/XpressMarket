@@ -3,203 +3,219 @@
 @attribute [Authorize(Roles = "Administrador")]
 @inject ProductoService ProductoSvc
 @inject CategoriaService CategoriaSvc
-@inject NavigationManager NavManager
+@inject ISnackbar Snackbar
 @using XpressMarket.Shared.Models
 @using XpressMarket.Shared.Extensions
 
 <PageTitle>Productos - XpressMarket</PageTitle>
 
-<div class="container-fluid px-0">
-    <!-- Header de Sección -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
+<div class="pa-4 pa-md-6">
+
+    <MudPaper Elevation="0" Class="pa-6 mb-6 rounded-xl d-flex justify-between align-center"
+              Style="background: linear-gradient(135deg, #4a1458 0%, #6b2181 100%); color: #ffffff; border: 1px solid rgba(255,255,255,0.1);">
         <div>
-            <h3 class="fw-bold mb-1 text-dark">Gestión de Productos</h3>
-            <p class="text-muted small mb-0">Administra el catálogo de productos, precios y niveles de stock.</p>
+            <div class="d-flex align-center gap-2 mb-2">
+                <MudChip T="string" Size="Size.Small" Variant="Variant.Filled"
+                         Style="background-color: rgba(243, 130, 24, 0.2); color: #f38218;"
+                         Class="fw-bold">
+                    Catálogo
+                </MudChip>
+            </div>
+            <MudText Typo="Typo.h4" Class="fw-bold mb-1" Style="color: #ffffff; text-shadow: 0px 2px 4px rgba(0,0,0,0.2);">
+                Gestión de Productos
+            </MudText>
+            <MudText Typo="Typo.body2" Style="color: rgba(255, 255, 255, 0.85);">
+                Administra catálogo, precios y niveles de stock.
+            </MudText>
         </div>
-        <button class="btn btn-primary shadow-sm d-flex align-items-center gap-2 px-3 py-2" @onclick="AbrirFormularioNuevo">
-            <i class="bi bi-plus-lg fs-6"></i>
-            <span class="fw-semibold">Nuevo Producto</span>
-        </button>
-    </div>
+        <div class="d-none d-md-block">
+            <MudIcon Icon="@Icons.Material.Filled.Inventory2" Style="font-size: 4.5rem; color: rgba(255,255,255,0.15);" />
+        </div>
+    </MudPaper>
 
-    <!-- Contenido Principal -->
-    @if (cargando)
-    {
-        <div class="card border-0 shadow-sm rounded-3">
-            <div class="card-body text-center py-5">
-                <div class="spinner-border text-primary mb-3" role="status"></div>
-                <p class="text-muted mb-0">Cargando productos...</p>
-            </div>
+    <MudPaper Elevation="2" Class="pa-5 rounded-xl">
+        <div class="d-flex justify-between align-center mb-4">
+            <MudText Typo="Typo.h6" Class="fw-bold" Style="color: #2b2b2b;">Listado de Productos</MudText>
+            <MudButton Variant="Variant.Filled"
+                       Style="background-color: #6b2181; color: #ffffff; font-weight: bold;"
+                       StartIcon="@Icons.Material.Filled.Add" OnClick="AbrirFormularioNuevo" Class="rounded-lg">
+                Nuevo Producto
+            </MudButton>
         </div>
-    }
-    else if (productos == null || !productos.Any())
-    {
-        <div class="card border-0 shadow-sm rounded-3">
-            <div class="card-body text-center py-5">
-                <i class="bi bi-box-seam display-4 text-muted mb-3 d-block"></i>
-                <h5 class="text-secondary fw-normal">No hay productos registrados</h5>
-                <p class="text-muted small mb-3">Comienza agregando un nuevo producto al catálogo.</p>
-                <button class="btn btn-outline-primary btn-sm" @onclick="AbrirFormularioNuevo">
-                    <i class="bi bi-plus-lg me-1"></i> Crear primer producto
-                </button>
+
+        @if (cargando)
+        {
+            <div class="d-flex justify-center pa-6">
+                <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
             </div>
-        </div>
-    }
-    else
-    {
-        <div class="card border-0 shadow-sm rounded-3">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                    <thead class="bg-light text-secondary small text-uppercase fw-semibold border-bottom">
-                        <tr>
-                            <th class="ps-4 py-3">Nombre</th>
-                            <th class="py-3">Categoría</th>
-                            <th class="py-3">Precio Venta</th>
-                            <th class="py-3 text-center">Stock Actual</th>
-                            <th class="py-3 text-center">Stock Mínimo</th>
-                            <th class="py-3">Estado</th>
-                            <th class="pe-4 py-3 text-end">Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody class="border-top-0">
-                        @foreach (var producto in productos)
+        }
+        else if (productos == null || !productos.Any())
+        {
+            <div class="d-flex flex-column align-center pa-8">
+                <MudIcon Icon="@Icons.Material.Filled.Inventory2" Style="font-size: 4rem; color: #adb5bd;" />
+                <MudText Typo="Typo.h6" Class="fw-normal mt-3" Style="color: #6c757d;">
+                    No hay productos registrados
+                </MudText>
+                <MudButton Variant="Variant.Outlined" Color="Color.Primary" Class="mt-3"
+                           StartIcon="@Icons.Material.Filled.Add" OnClick="AbrirFormularioNuevo">
+                    Crear primer producto
+                </MudButton>
+            </div>
+        }
+        else
+        {
+            <MudTable Items="@productos" Hover="true" Dense="true" Elevation="0" Class="rounded-lg">
+                <HeaderContent>
+                    <MudTh><MudText Typo="Typo.subtitle2" Class="fw-bold">Nombre</MudText></MudTh>
+                    <MudTh><MudText Typo="Typo.subtitle2" Class="fw-bold">Categoría</MudText></MudTh>
+                    <MudTh><MudText Typo="Typo.subtitle2" Class="fw-bold">Precio Venta</MudText></MudTh>
+                    <MudTh Class="text-center"><MudText Typo="Typo.subtitle2" Class="fw-bold">Stock Actual</MudText></MudTh>
+                    <MudTh Class="text-center"><MudText Typo="Typo.subtitle2" Class="fw-bold">Stock Mín.</MudText></MudTh>
+                    <MudTh><MudText Typo="Typo.subtitle2" Class="fw-bold">Estado</MudText></MudTh>
+                    <MudTh Class="text-end"><MudText Typo="Typo.subtitle2" Class="fw-bold">Acciones</MudText></MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Nombre">
+                        <MudText Typo="Typo.body1" Class="fw-bold">@context.Nombre</MudText>
+                    </MudTd>
+                    <MudTd DataLabel="Categoría">
+                        <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined"
+                                 Color="Color.Primary" Icon="@Icons.Material.Filled.Category">
+                            @(context.Categoria?.Nombre ?? "Sin categoría")
+                        </MudChip>
+                    </MudTd>
+                    <MudTd DataLabel="Precio Venta">
+                        <MudText Typo="Typo.body1" Class="fw-bold" Style="color: #6b2181;">
+                            @context.PrecioVenta.Bs()
+                        </MudText>
+                    </MudTd>
+                    <MudTd DataLabel="Stock Actual" Class="text-center">
+                        <MudText Typo="Typo.body1" Class="fw-bold">@context.StockActual</MudText>
+                    </MudTd>
+                    <MudTd DataLabel="Stock Mín." Class="text-center">
+                        <MudText Typo="Typo.body2" Style="color: #6c757d;">@context.StockMinimo</MudText>
+                    </MudTd>
+                    <MudTd DataLabel="Estado">
+                        @if (context.StockBajo)
                         {
-                            <tr class="@(producto.StockBajo ? "table-warning bg-opacity-25" : "")">
-                                <td class="ps-4 fw-semibold text-dark">@producto.Nombre</td>
-                                <td class="text-muted small">@(producto.Categoria?.Nombre ?? "-")</td>
-                                <td class="fw-semibold">@producto.PrecioVenta.Bs()</td>
-                                <td class="text-center fw-semibold">@producto.StockActual</td>
-                                <td class="text-center text-muted small">@producto.StockMinimo</td>
-                                <td>
-                                    @if (producto.StockBajo)
-                                    {
-                                        <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2 py-1 rounded-pill">
-                                            <i class="bi bi-exclamation-triangle me-1"></i>Stock Bajo
-                                        </span>
-                                    }
-                                    else
-                                    {
-                                        <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 rounded-pill">
-                                            <i class="bi bi-check-circle me-1"></i>OK
-                                        </span>
-                                    }
-                                </td>
-                                <td class="pe-4 text-end">
-                                    <div class="btn-group btn-group-sm" role="group">
-                                        <button class="btn btn-outline-secondary" @onclick="() => AbrirFormularioEditar(producto)" title="Editar">
-                                            <i class="bi bi-pencil"></i>
-                                        </button>
-                                        <button class="btn btn-outline-danger" @onclick="() => EliminarProducto(producto.Id)" title="Eliminar">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
+                            <MudChip T="string" Size="Size.Small" Color="Color.Warning" Variant="Variant.Text"
+                                     Icon="@Icons.Material.Filled.Warning">
+                                Stock Bajo
+                            </MudChip>
                         }
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    }
-
-    <!-- Modal Formulario -->
-    @if (mostrarFormulario)
-    {
-        <div class="modal fade show d-block tab-modal-backdrop" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
-            <div class="modal-dialog modal-lg modal-dialog-centered">
-                <div class="modal-content border-0 shadow-lg rounded-3">
-                    <div class="modal-header bg-light border-bottom py-3">
-                        <h5 class="modal-title fw-bold text-dark">
-                            <i class="bi bi-box-seam me-2 text-primary"></i>
-                            @(productoEditando.Id == 0 ? "Nuevo Producto" : "Editar Producto")
-                        </h5>
-                        <button type="button" class="btn-close" @onclick="CerrarFormulario"></button>
-                    </div>
-
-                    <EditForm Model="productoEditando" OnValidSubmit="GuardarProducto">
-                        <div class="modal-body p-4">
-                            <DataAnnotationsValidator />
-                            <ValidationSummary class="alert alert-danger p-2 small mb-3" />
-
-                            <div class="mb-3">
-                                <label class="form-label fw-semibold small text-secondary">Nombre</label>
-                                <InputText class="form-control" @bind-Value="productoEditando.Nombre" placeholder="Ej. Galletas de Chocolate 100g" />
-                            </div>
-
-                            <div class="mb-3">
-                                <label class="form-label fw-semibold small text-secondary">Descripción</label>
-                                <InputTextArea class="form-control" rows="2" @bind-Value="productoEditando.Descripcion" placeholder="Descripción opcional del producto..." />
-                            </div>
-
-                            <div class="row g-3 mb-3">
-                                <div class="col-md-6">
-                                    <label class="form-label fw-semibold small text-secondary">Categoría</label>
-                                    <InputSelect class="form-select" @bind-Value="productoEditando.CategoriaId">
-                                        <option value="0">-- Seleccione --</option>
-                                        @if (categorias != null)
-                                        {
-                                            @foreach (var cat in categorias)
-                                            {
-                                                <option value="@cat.Id">@cat.Nombre</option>
-                                            }
-                                        }
-                                    </InputSelect>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label fw-semibold small text-secondary">Código de Barras</label>
-                                    <InputText class="form-control" @bind-Value="productoEditando.CodigoBarras" placeholder="Ej. 7791234567890" />
-                                </div>
-                            </div>
-
-                            <div class="row g-3 mb-3">
-                                <div class="col-md-6">
-                                    <label class="form-label fw-semibold small text-secondary">Precio Costo</label>
-                                    @if (productoEditando.Id == 0)
-                                    {
-                                        <div class="input-group">
-                                            <span class="input-group-text">Bs</span>
-                                            <InputNumber class="form-control" @bind-Value="productoEditando.PrecioCosto" />
-                                        </div>
-                                        <div class="form-text small">Costo inicial estimado (se actualizará automáticamente con cada lote registrado).</div>
-                                    }
-                                    else
-                                    {
-                                        <input class="form-control bg-light" value="@($"{productoEditando.PrecioCosto.ToString("N2")} Bs (solo lectura)")" disabled />
-                                        <div class="form-text small">Se actualiza únicamente al registrar un nuevo lote.</div>
-                                    }
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label fw-semibold small text-secondary">Precio Venta</label>
-                                    <div class="input-group">
-                                        <span class="input-group-text">Bs</span>
-                                        <InputNumber class="form-control" @bind-Value="productoEditando.PrecioVenta" />
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="row g-3 mb-3">
-                                <div class="col-md-6">
-                                    <label class="form-label fw-semibold small text-secondary">Stock Actual</label>
-                                    <input class="form-control bg-light" value="@($"{productoEditando.StockActual} unidades (solo lectura)")" disabled />
-                                    <div class="form-text small">Se actualiza automáticamente al registrar o vender lotes en la sección Lotes.</div>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label fw-semibold small text-secondary">Stock Mínimo</label>
-                                    <InputNumber class="form-control" @bind-Value="productoEditando.StockMinimo" />
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="modal-footer bg-light border-top py-2 px-4">
-                            <button type="button" class="btn btn-outline-secondary px-3" @onclick="CerrarFormulario">Cancelar</button>
-                            <button type="submit" class="btn btn-primary px-4 fw-semibold">Guardar Producto</button>
-                        </div>
-                    </EditForm>
-                </div>
-            </div>
-        </div>
-    }
+                        else
+                        {
+                            <MudChip T="string" Size="Size.Small" Color="Color.Success" Variant="Variant.Text"
+                                     Icon="@Icons.Material.Filled.CheckCircle">
+                                OK
+                            </MudChip>
+                        }
+                    </MudTd>
+                    <MudTd DataLabel="Acciones" Class="text-end">
+                        <MudStack Row="true" Justify="Justify.FlexEnd" Spacing="1">
+                            <MudTooltip Text="Editar">
+                                <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Info"
+                                               Size="Size.Small" Variant="Variant.Outlined"
+                                               OnClick="() => AbrirFormularioEditar(context)" />
+                            </MudTooltip>
+                            <MudTooltip Text="Eliminar">
+                                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error"
+                                               Size="Size.Small" Variant="Variant.Outlined"
+                                               OnClick="() => EliminarProducto(context.Id)" />
+                            </MudTooltip>
+                        </MudStack>
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+        }
+    </MudPaper>
 </div>
+
+<MudDialog @bind-IsVisible="mostrarFormulario" Options="dialogOptions">
+    <TitleContent>
+        <MudText Typo="Typo.h6" Class="fw-bold" Style="color: #6b2181;">
+            <MudIcon Icon="@Icons.Material.Filled.Inventory2" Class="mr-2" />
+            @(productoEditando.Id == 0 ? "Nuevo Producto" : "Editar Producto")
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        <EditForm Model="productoEditando" OnValidSubmit="GuardarProducto">
+            <DataAnnotationsValidator />
+            <ValidationSummary class="alert alert-danger p-2 small mb-3" />
+
+            <MudTextField Label="Nombre" @bind-Value="productoEditando.Nombre"
+                          Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-3" />
+            <MudTextField Label="Descripción" @bind-Value="productoEditando.Descripcion"
+                          Lines="2" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-3" />
+
+            <MudGrid>
+                <MudItem xs="12" md="6">
+                    <MudSelect T="int" Label="Categoría" @bind-Value="productoEditando.CategoriaId"
+                               Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-3">
+                        <MudSelectItem T="int" Value="0">-- Seleccione --</MudSelectItem>
+                        @if (categorias != null)
+                        {
+                            @foreach (var cat in categorias)
+                            {
+                                <MudSelectItem T="int" Value="@cat.Id">@cat.Nombre</MudSelectItem>
+                            }
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudTextField Label="Código de Barras" @bind-Value="productoEditando.CodigoBarras"
+                                  Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-3" />
+                </MudItem>
+
+                <MudItem xs="12" md="6">
+                    @if (productoEditando.Id == 0)
+                    {
+                        <MudNumericField @bind-Value="productoEditando.PrecioCosto"
+                                         Label="Precio Costo (Bs)"
+                                         Variant="Variant.Outlined" Margin="Margin.Dense"
+                                         HelperText="Se actualiza al registrar lotes" />
+                    }
+                    else
+                    {
+                        <MudTextField Label="Precio Costo (Bs)"
+                                      Value="@($"{productoEditando.PrecioCosto:N2} Bs")"
+                                      ReadOnly="true" Variant="Variant.Outlined"
+                                      Margin="Margin.Dense"
+                                      HelperText="Se actualiza al registrar un nuevo lote" />
+                    }
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudNumericField @bind-Value="productoEditando.PrecioVenta"
+                                     Label="Precio Venta (Bs)"
+                                     Variant="Variant.Outlined" Margin="Margin.Dense" />
+                </MudItem>
+
+                <MudItem xs="12" md="6">
+                    <MudTextField Label="Stock Actual"
+                                  Value="@($"{productoEditando.StockActual} unidades")"
+                                  ReadOnly="true" Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  HelperText="Se actualiza al registrar o vender lotes" />
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudNumericField @bind-Value="productoEditando.StockMinimo"
+                                     Label="Stock Mínimo"
+                                     Variant="Variant.Outlined" Margin="Margin.Dense" />
+                </MudItem>
+            </MudGrid>
+
+            <div class="d-flex justify-end gap-2 mt-4">
+                <MudButton OnClick="CerrarFormulario" Variant="Variant.Outlined" Color="Color.Default">
+                    Cancelar
+                </MudButton>
+                <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled"
+                           Style="background-color: #6b2181; color: #ffffff;">
+                    Guardar Producto
+                </MudButton>
+            </div>
+        </EditForm>
+    </DialogContent>
+</MudDialog>
 
 @code {
     private List<Producto>? productos;
@@ -208,10 +224,13 @@
     private bool mostrarFormulario = false;
     private Producto productoEditando = new();
 
-    protected override async Task OnInitializedAsync()
+    private DialogOptions dialogOptions = new()
     {
-        await CargarDatos();
-    }
+        CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true,
+        BackdropClick = false, CloseOnEscapeKey = false
+    };
+
+    protected override async Task OnInitializedAsync() => await CargarDatos();
 
     private async Task CargarDatos()
     {
@@ -227,41 +246,32 @@
         mostrarFormulario = true;
     }
 
-    private void AbrirFormularioEditar(Producto producto)
+    private void AbrirFormularioEditar(Producto p)
     {
-        // Se clona para no modificar la lista en pantalla hasta guardar
         productoEditando = new Producto
         {
-            Id = producto.Id,
-            Nombre = producto.Nombre,
-            Descripcion = producto.Descripcion,
-            PrecioVenta = producto.PrecioVenta,
-            PrecioCosto = producto.PrecioCosto,
-            StockActual = producto.StockActual,
-            StockMinimo = producto.StockMinimo,
-            CodigoBarras = producto.CodigoBarras,
-            Activo = producto.Activo,
-            CategoriaId = producto.CategoriaId
+            Id = p.Id, Nombre = p.Nombre, Descripcion = p.Descripcion,
+            PrecioVenta = p.PrecioVenta, PrecioCosto = p.PrecioCosto,
+            StockActual = p.StockActual, StockMinimo = p.StockMinimo,
+            CodigoBarras = p.CodigoBarras, Activo = p.Activo, CategoriaId = p.CategoriaId
         };
         mostrarFormulario = true;
     }
 
-    private void CerrarFormulario()
-    {
-        mostrarFormulario = false;
-    }
+    private void CerrarFormulario() => mostrarFormulario = false;
 
     private async Task GuardarProducto()
     {
         if (productoEditando.Id == 0)
         {
             await ProductoSvc.CrearAsync(productoEditando);
+            Snackbar.Add("Producto creado", Severity.Success);
         }
         else
         {
             await ProductoSvc.ActualizarAsync(productoEditando.Id, productoEditando);
+            Snackbar.Add("Producto actualizado", Severity.Success);
         }
-
         mostrarFormulario = false;
         await CargarDatos();
     }
@@ -269,6 +279,7 @@
     private async Task EliminarProducto(int id)
     {
         await ProductoSvc.EliminarAsync(id);
+        Snackbar.Add("Producto eliminado", Severity.Warning);
         await CargarDatos();
     }
 }

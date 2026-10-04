@@ -4,280 +4,315 @@
 @inject LoteService LoteSvc
 @inject ProductoService ProductoSvc
 @inject ProveedorService ProveedorSvc
+@inject ISnackbar Snackbar
 @using XpressMarket.Shared.Models
 @using XpressMarket.Shared.Extensions
 
 <PageTitle>Lotes - XpressMarket</PageTitle>
 
-<div class="container-fluid px-0">
-    <!-- Header de Sección -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
+<div class="pa-4 pa-md-6">
+
+    <MudPaper Elevation="0" Class="pa-6 mb-6 rounded-xl d-flex justify-between align-center"
+              Style="background: linear-gradient(135deg, #4a1458 0%, #6b2181 100%); color: #ffffff; border: 1px solid rgba(255,255,255,0.1);">
         <div>
-            <h3 class="fw-bold mb-1 text-dark">Gestión de Lotes</h3>
-            <p class="text-muted small mb-0">Administra las entradas, vencimientos y stock por lote de los productos.</p>
+            <div class="d-flex align-center gap-2 mb-2">
+                <MudChip T="string" Size="Size.Small" Variant="Variant.Filled"
+                         Style="background-color: rgba(243, 130, 24, 0.2); color: #f38218;"
+                         Class="fw-bold">
+                    Inventario
+                </MudChip>
+            </div>
+            <MudText Typo="Typo.h4" Class="fw-bold mb-1" Style="color: #ffffff; text-shadow: 0px 2px 4px rgba(0,0,0,0.2);">
+                Gestión de Lotes
+            </MudText>
+            <MudText Typo="Typo.body2" Style="color: rgba(255, 255, 255, 0.85);">
+                Administra entradas, vencimientos y stock por lote.
+            </MudText>
         </div>
-        <button class="btn btn-primary shadow-sm d-flex align-items-center gap-2 px-3 py-2" @onclick="AbrirFormularioNuevo">
-            <i class="bi bi-plus-lg fs-6"></i>
-            <span class="fw-semibold">Nuevo Lote</span>
-        </button>
-    </div>
+        <div class="d-none d-md-block">
+            <MudIcon Icon="@Icons.Material.Filled.QrCodeScanner" Style="font-size: 4.5rem; color: rgba(255,255,255,0.15);" />
+        </div>
+    </MudPaper>
 
-    <!-- Contenido Principal -->
-    @if (cargando)
-    {
-        <div class="card border-0 shadow-sm rounded-3">
-            <div class="card-body text-center py-5">
-                <div class="spinner-border text-primary mb-3" role="status"></div>
-                <p class="text-muted mb-0">Cargando lotes...</p>
-            </div>
+    <MudPaper Elevation="2" Class="pa-5 rounded-xl">
+        <div class="d-flex justify-between align-center mb-4">
+            <MudText Typo="Typo.h6" Class="fw-bold" Style="color: #2b2b2b;">Listado de Lotes</MudText>
+            <MudButton Variant="Variant.Filled"
+                       Style="background-color: #6b2181; color: #ffffff; font-weight: bold;"
+                       StartIcon="@Icons.Material.Filled.Add" OnClick="AbrirFormularioNuevo" Class="rounded-lg">
+                Nuevo Lote
+            </MudButton>
         </div>
-    }
-    else if (lotes == null || !lotes.Any())
-    {
-        <div class="card border-0 shadow-sm rounded-3">
-            <div class="card-body text-center py-5">
-                <i class="bi bi-boxes display-4 text-muted mb-3 d-block"></i>
-                <h5 class="text-secondary fw-normal">No hay lotes registrados</h5>
-                <p class="text-muted small mb-3">Comienza creando un nuevo lote para gestionar el inventario.</p>
-                <button class="btn btn-outline-primary btn-sm" @onclick="AbrirFormularioNuevo">
-                    <i class="bi bi-plus-lg me-1"></i> Crear primer lote
-                </button>
+
+        @if (cargando)
+        {
+            <div class="d-flex justify-center pa-6">
+                <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
             </div>
-        </div>
-    }
-    else
-    {
-        <div class="card border-0 shadow-sm rounded-3">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                    <thead class="bg-light text-secondary small text-uppercase fw-semibold border-bottom">
-                        <tr>
-                            <th class="ps-4 py-3">N° Lote</th>
-                            <th class="py-3">Producto</th>
-                            <th class="py-3">Registrado Por</th>
-                            <th class="py-3">Proveedor</th>
-                            <th class="py-3">Fecha Vencimiento</th>
-                            <th class="py-3 text-center">Cantidad Actual</th>
-                            <th class="py-3">Estado</th>
-                            <th class="pe-4 py-3 text-end">Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody class="border-top-0">
-                        @foreach (var lote in lotes)
+        }
+        else if (lotes == null || !lotes.Any())
+        {
+            <div class="d-flex flex-column align-center pa-8">
+                <MudIcon Icon="@Icons.Material.Filled.Inventory" Style="font-size: 4rem; color: #adb5bd;" />
+                <MudText Typo="Typo.h6" Class="fw-normal mt-3" Style="color: #6c757d;">
+                    No hay lotes registrados
+                </MudText>
+                <MudButton Variant="Variant.Outlined" Color="Color.Primary" Class="mt-3"
+                           StartIcon="@Icons.Material.Filled.Add" OnClick="AbrirFormularioNuevo">
+                    Crear primer lote
+                </MudButton>
+            </div>
+        }
+        else
+        {
+            <MudTable Items="@lotes" Hover="true" Dense="true" Elevation="0" Class="rounded-lg">
+                <HeaderContent>
+                    <MudTh><MudText Typo="Typo.subtitle2" Class="fw-bold">N° Lote</MudText></MudTh>
+                    <MudTh><MudText Typo="Typo.subtitle2" Class="fw-bold">Producto</MudText></MudTh>
+                    <MudTh><MudText Typo="Typo.subtitle2" Class="fw-bold">Registrado Por</MudText></MudTh>
+                    <MudTh><MudText Typo="Typo.subtitle2" Class="fw-bold">Proveedor</MudText></MudTh>
+                    <MudTh><MudText Typo="Typo.subtitle2" Class="fw-bold">Vencimiento</MudText></MudTh>
+                    <MudTh Class="text-center"><MudText Typo="Typo.subtitle2" Class="fw-bold">Cantidad</MudText></MudTh>
+                    <MudTh><MudText Typo="Typo.subtitle2" Class="fw-bold">Estado</MudText></MudTh>
+                    <MudTh Class="text-end"><MudText Typo="Typo.subtitle2" Class="fw-bold">Acciones</MudText></MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="N° Lote">
+                        <MudText Typo="Typo.body1" Class="fw-bold" Style="color: #6b2181;">
+                            @context.NumeroLote
+                        </MudText>
+                    </MudTd>
+                    <MudTd DataLabel="Producto">
+                        <MudText Typo="Typo.body2">@(context.Producto?.Nombre ?? "-")</MudText>
+                    </MudTd>
+                    <MudTd DataLabel="Registrado Por">
+                        <MudText Typo="Typo.body2" Style="color: #6c757d;">
+                            @(context.RegistradoPorNombre ?? "-")
+                        </MudText>
+                    </MudTd>
+                    <MudTd DataLabel="Proveedor">
+                        <MudText Typo="Typo.body2" Style="color: #6c757d;">
+                            @(context.Proveedor?.Nombre ?? "-")
+                        </MudText>
+                    </MudTd>
+                    <MudTd DataLabel="Vencimiento">
+                        <MudText Typo="Typo.body2">@context.FechaVencimiento.ToString("dd/MM/yyyy")</MudText>
+                    </MudTd>
+                    <MudTd DataLabel="Cantidad" Class="text-center">
+                        <MudText Typo="Typo.body1" Class="fw-bold">@context.CantidadActual</MudText>
+                    </MudTd>
+                    <MudTd DataLabel="Estado">
+                        @if (context.Vencido)
                         {
-                            <tr class="@ClaseEstado(lote)">
-                                <td class="ps-4 fw-semibold text-dark">@lote.NumeroLote</td>
-                                <td class="fw-medium">@(lote.Producto?.Nombre ?? "-")</td>
-                                <td class="text-muted small">@(lote.RegistradoPorNombre ?? "-")</td>
-                                <td class="text-muted small">@(lote.Proveedor?.Nombre ?? "-")</td>
-                                <td>@lote.FechaVencimiento.ToString("dd/MM/yyyy")</td>
-                                <td class="text-center fw-semibold">@lote.CantidadActual</td>
-                                <td>
-                                    @if (lote.Vencido)
-                                    {
-                                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1 rounded-pill">
-                                            <i class="bi bi-exclamation-octagon me-1"></i>Vencido
-                                        </span>
-                                    }
-                                    else if (lote.ProximoAVencer)
-                                    {
-                                        <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2 py-1 rounded-pill">
-                                            <i class="bi bi-clock-history me-1"></i>Vence en @lote.DiasParaVencer días
-                                        </span>
-                                    }
-                                    else
-                                    {
-                                        <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 rounded-pill">
-                                            <i class="bi bi-check-circle me-1"></i>OK
-                                        </span>
-                                    }
-                                </td>
-                                <td class="pe-4 text-end">
-                                    <div class="btn-group btn-group-sm" role="group">
-                                        <button class="btn btn-outline-secondary" @onclick="() => AbrirFormularioEditar(lote)" title="Editar">
-                                            <i class="bi bi-pencil"></i>
-                                        </button>
-                                        <button class="btn btn-outline-danger" @onclick="() => EliminarLote(lote.Id)" title="Eliminar">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
+                            <MudChip T="string" Size="Size.Small" Color="Color.Error" Variant="Variant.Text"
+                                     Icon="@Icons.Material.Filled.Error">
+                                Vencido
+                            </MudChip>
                         }
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    }
-
-    <!-- Modal Formulario -->
-    @if (mostrarFormulario)
-    {
-        <div class="modal fade show d-block tab-modal-backdrop" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
-            <div class="modal-dialog modal-lg modal-dialog-centered">
-                <div class="modal-content border-0 shadow-lg rounded-3">
-                    <div class="modal-header bg-light border-bottom py-3">
-                        <h5 class="modal-title fw-bold text-dark">
-                            <i class="bi bi-box-seam me-2 text-primary"></i>
-                            @(loteEditando.Id == 0 ? "Nuevo Lote" : "Editar Lote")
-                        </h5>
-                        <button type="button" class="btn-close" @onclick="CerrarFormulario"></button>
-                    </div>
-
-                    <EditForm Model="loteEditando" OnValidSubmit="GuardarLote">
-                        <div class="modal-body p-4">
-                            <DataAnnotationsValidator />
-                            <ValidationSummary class="alert alert-danger p-2 small mb-3" />
-
-                            <div class="row g-3 mb-3">
-                                <div class="col-md-6">
-                                    <label class="form-label fw-semibold small text-secondary">Número de Lote</label>
-                                    <InputText class="form-control" @bind-Value="loteEditando.NumeroLote" placeholder="Ej. LOT-2024-001" />
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label fw-semibold small text-secondary">Proveedor (opcional)</label>
-                                    <InputSelect class="form-select" @bind-Value="proveedorSeleccionado">
-                                        <option value="0">-- Sin proveedor --</option>
-                                        @if (proveedores != null)
-                                        {
-                                            @foreach (var prov in proveedores)
-                                            {
-                                                <option value="@prov.Id">@prov.Nombre</option>
-                                            }
-                                        }
-                                    </InputSelect>
-                                </div>
-                            </div>
-
-                            <div class="mb-3">
-                                <label class="form-label fw-semibold small text-secondary">Producto</label>
-                                @if (loteEditando.Id > 0)
-                                {
-                                    <input class="form-control bg-light" value="@productoSeleccionadoNombre" disabled />
-                                }
-                                else if (productoSeleccionadoNombre != null)
-                                {
-                                    <div class="alert alert-secondary d-flex justify-content-between align-items-center py-2 px-3 mb-0 rounded-3">
-                                        <span class="fw-semibold text-dark"><i class="bi bi-box me-2"></i>@productoSeleccionadoNombre</span>
-                                        <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="QuitarProductoSeleccionado">
-                                            Cambiar
-                                        </button>
-                                    </div>
-                                }
-                                else
-                                {
-                                    <BuscadorProducto ProductoSeleccionado="SeleccionarProductoParaLote" />
-                                }
-                            </div>
-
-                            <div class="row g-3 mb-3">
-                                <div class="col-md-6">
-                                    <label class="form-label fw-semibold small text-secondary">Fecha de Ingreso</label>
-                                    <InputDate class="form-control" @bind-Value="loteEditando.FechaIngreso" />
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label fw-semibold small text-secondary">Fecha de Vencimiento</label>
-                                    <InputDate class="form-control" @bind-Value="loteEditando.FechaVencimiento" />
-                                </div>
-                            </div>
-
-                            <div class="row g-3 mb-3">
-                                @if (loteEditando.Id == 0)
-                                {
-                                    <div class="col-12">
-                                        <label class="form-label fw-semibold small text-secondary">Cantidad Inicial</label>
-                                        <InputNumber class="form-control" @bind-Value="loteEditando.CantidadInicial" />
-                                        <div class="form-text small">La cantidad actual quedará igual a la inicial.</div>
-                                    </div>
-                                }
-                                else
-                                {
-                                    <div class="col-md-6">
-                                        <label class="form-label fw-semibold small text-secondary">Cantidad Inicial (histórico)</label>
-                                        <input class="form-control bg-light" value="@loteEditando.CantidadInicial" disabled />
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label fw-semibold small text-secondary">Cantidad Actual</label>
-                                        <InputNumber class="form-control" @bind-Value="loteEditando.CantidadActual" />
-                                        <div class="form-text small">Ajusta solo para corregir el conteo físico real.</div>
-                                    </div>
-                                }
-                            </div>
-
-                            <div class="mb-3">
-                                <label class="form-label fw-semibold small text-secondary">Precio Costo de este Lote</label>
-                                <div class="input-group">
-                                    <span class="input-group-text">Bs</span>
-                                    <InputNumber class="form-control" Value="loteEditando.PrecioCosto" ValueChanged="@((decimal v) => OnPrecioCostoCambiado(v))" ValueExpression="@(() => loteEditando.PrecioCosto)" />
-                                </div>
-                            </div>
-
-                            @if (loteEditando.ProductoId > 0)
-                            {
-                                <div class="card border-info-subtle bg-info-subtle bg-opacity-10 rounded-3 p-3 mb-3">
-                                    <h6 class="fw-bold text-info-emphasis mb-2"><i class="bi bi-info-circle me-2"></i>Estado actual del Producto</h6>
-                                    <ul class="list-unstyled mb-2 small text-secondary">
-                                        <li><strong>Costo de compra actual:</strong> @costoActualProducto.ToString("N2") Bs</li>
-                                        <li><strong>Precio de venta actual:</strong> @precioVentaActualProducto.ToString("N2") Bs</li>
-                                    </ul>
-
-                                    @if (loteEditando.PrecioCosto > precioVentaActualProducto && loteEditando.PrecioCosto > 0)
-                                    {
-                                        <div class="alert alert-danger py-2 mb-2 small fw-semibold">
-                                            <i class="bi bi-exclamation-triangle me-1"></i> El costo ingresado (@loteEditando.PrecioCosto.ToString("N2") Bs) supera el precio de venta actual (@precioVentaActualProducto.ToString("N2") Bs).
-                                        </div>
-                                    }
-
-                                    <div class="mt-2">
-                                        <label class="form-label fw-bold small text-dark">Nuevo Precio de Venta Sugerido (30% Margen):</label>
-                                        <div class="input-group input-group-sm">
-                                            <span class="input-group-text">Bs</span>
-                                            <InputNumber class="form-control" @bind-Value="nuevoPrecioVentaSugerido" />
-                                        </div>
-                                        <div class="form-text small">Puedes modificar este precio si deseas ajustar el valor comercial de la tienda.</div>
-                                    </div>
-                                </div>
-                            }
-
-                            @if (mostrarConfirmacionCosto)
-                            {
-                                <div class="card border-warning-subtle bg-warning-subtle bg-opacity-10 rounded-3 p-3">
-                                    <p class="small text-dark mb-2">
-                                        El costo actual del producto es <strong>@costoActualProducto.ToString("N2") Bs</strong> y el precio de venta es <strong>@precioVentaActualProducto.ToString("N2") Bs</strong>.
-                                    </p>
-                                    <p class="small text-dark mb-2">
-                                        Este lote se registró con un costo de <strong>@loteEditando.PrecioCosto.ToString("N2") Bs</strong>, sugerido a <strong>@(nuevoPrecioVentaSugerido?.ToString("N2") ?? "-") Bs</strong>.
-                                    </p>
-                                    <p class="small fw-bold text-dark mb-3">¿Deseas actualizar el producto con estos nuevos valores?</p>
-
-                                    <div class="d-flex gap-2 flex-wrap">
-                                        <button type="button" class="btn btn-success btn-sm" @onclick="() => GuardarLoteConfirmado(true)">
-                                            Sí, actualizar
-                                        </button>
-                                        <button type="button" class="btn btn-outline-secondary btn-sm" @onclick="() => GuardarLoteConfirmado(false)">
-                                            No, mantener actuales
-                                        </button>
-                                        <button type="button" class="btn btn-link btn-sm text-decoration-none" @onclick="() => mostrarConfirmacionCosto = false">
-                                            Editar valor
-                                        </button>
-                                    </div>
-                                </div>
-                            }
-                        </div>
-
-                        <div class="modal-footer bg-light border-top py-2 px-4">
-                            @if (!mostrarConfirmacionCosto)
-                            {
-                                <button type="button" class="btn btn-outline-secondary px-3" @onclick="CerrarFormulario">Cancelar</button>
-                                <button type="submit" class="btn btn-primary px-4 fw-semibold">Guardar Lote</button>
-                            }
-                        </div>
-                    </EditForm>
-                </div>
-            </div>
-        </div>
-    }
+                        else if (context.ProximoAVencer)
+                        {
+                            <MudChip T="string" Size="Size.Small" Color="Color.Warning" Variant="Variant.Text"
+                                     Icon="@Icons.Material.Filled.AccessTime">
+                                Vence en @context.DiasParaVencer días
+                            </MudChip>
+                        }
+                        else
+                        {
+                            <MudChip T="string" Size="Size.Small" Color="Color.Success" Variant="Variant.Text"
+                                     Icon="@Icons.Material.Filled.CheckCircle">
+                                OK
+                            </MudChip>
+                        }
+                    </MudTd>
+                    <MudTd DataLabel="Acciones" Class="text-end">
+                        <MudStack Row="true" Justify="Justify.FlexEnd" Spacing="1">
+                            <MudTooltip Text="Editar">
+                                <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Info"
+                                               Size="Size.Small" Variant="Variant.Outlined"
+                                               OnClick="() => AbrirFormularioEditar(context)" />
+                            </MudTooltip>
+                            <MudTooltip Text="Eliminar">
+                                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error"
+                                               Size="Size.Small" Variant="Variant.Outlined"
+                                               OnClick="() => EliminarLote(context.Id)" />
+                            </MudTooltip>
+                        </MudStack>
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+        }
+    </MudPaper>
 </div>
+
+<MudDialog @bind-IsVisible="mostrarFormulario" Options="dialogOptions">
+    <TitleContent>
+        <MudText Typo="Typo.h6" Class="fw-bold" Style="color: #6b2181;">
+            <MudIcon Icon="@Icons.Material.Filled.QrCodeScanner" Class="mr-2" />
+            @(loteEditando.Id == 0 ? "Nuevo Lote" : "Editar Lote")
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        <EditForm Model="loteEditando" OnValidSubmit="GuardarLote">
+            <DataAnnotationsValidator />
+            <ValidationSummary class="alert alert-danger p-2 small mb-3" />
+
+            <MudGrid>
+                <MudItem xs="12" md="6">
+                    <MudTextField Label="Número de Lote" @bind-Value="loteEditando.NumeroLote"
+                                  Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-3" />
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudSelect T="int" Label="Proveedor (opcional)" @bind-Value="proveedorSeleccionado"
+                               Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-3">
+                        <MudSelectItem T="int" Value="0">-- Sin proveedor --</MudSelectItem>
+                        @if (proveedores != null)
+                        {
+                            @foreach (var prov in proveedores)
+                            {
+                                <MudSelectItem T="int" Value="@prov.Id">@prov.Nombre</MudSelectItem>
+                            }
+                        }
+                    </MudSelect>
+                </MudItem>
+            </MudGrid>
+
+            <div class="mb-3">
+                <MudText Typo="Typo.caption" Class="fw-bold" Style="color: #6c757d;">Producto</MudText>
+                @if (loteEditando.Id > 0)
+                {
+                    <MudTextField Value="@productoSeleccionadoNombre" ReadOnly="true"
+                                  Variant="Variant.Outlined" Margin="Margin.Dense" />
+                }
+                else if (productoSeleccionadoNombre != null)
+                {
+                    <MudPaper Elevation="0" Class="pa-3 rounded-lg d-flex align-center justify-between"
+                              Style="background: #f3e5f5;">
+                        <MudText Typo="Typo.body2" Class="fw-bold" Style="color: #6b2181;">
+                            <MudIcon Icon="@Icons.Material.Filled.Inventory" Size="Size.Small" Class="mr-1" />
+                            @productoSeleccionadoNombre
+                        </MudText>
+                        <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Default"
+                                   OnClick="QuitarProductoSeleccionado">
+                            Cambiar
+                        </MudButton>
+                    </MudPaper>
+                }
+                else
+                {
+                    <BuscadorProducto ProductoSeleccionado="SeleccionarProductoParaLote" />
+                }
+            </div>
+            
+            <MudGrid>
+                <MudItem xs="12" md="6">
+                    <MudDatePicker Label="Fecha de Ingreso"
+                                   Date="FechaIngresoNullable"
+                                   DateChanged="OnFechaIngresoChanged"
+                                   Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-3" />
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudDatePicker Label="Fecha de Vencimiento"
+                                   Date="FechaVencimientoNullable"
+                                   DateChanged="OnFechaVencimientoChanged"
+                                   Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-3" />
+                </MudItem>  
+            </MudGrid>  
+
+            <MudGrid>
+                @if (loteEditando.Id == 0)
+                {
+                    <MudItem xs="12">
+                        <MudNumericField @bind-Value="loteEditando.CantidadInicial"
+                                         Label="Cantidad Inicial"
+                                         Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-3"
+                                         HelperText="La cantidad actual quedará igual a la inicial" />
+                    </MudItem>
+                }
+                else
+                {
+                    <MudItem xs="12" md="6">
+                        <MudTextField Value="@loteEditando.CantidadInicial.ToString()"
+                                      Label="Cantidad Inicial (histórico)"
+                                      ReadOnly="true" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                    </MudItem>
+                    <MudItem xs="12" md="6">
+                        <MudNumericField @bind-Value="loteEditando.CantidadActual"
+                                         Label="Cantidad Actual"
+                                         Variant="Variant.Outlined" Margin="Margin.Dense"
+                                         HelperText="Ajusta solo para correcciones físicas" />
+                    </MudItem>
+                }
+            </MudGrid>
+
+            <MudNumericField @bind-Value="loteEditando.PrecioCosto"
+                             @bind-Value:after="RecalcularSugerencia"
+                             Label="Precio Costo de este Lote (Bs)"
+                             Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-3" />
+
+            @if (loteEditando.ProductoId > 0)
+            {
+                <MudAlert Severity="Severity.Info" Variant="Variant.Outlined" Class="mb-3">
+                    <MudText Typo="Typo.subtitle2" Class="fw-bold mb-2">Estado actual del Producto</MudText>
+                    <MudText Typo="Typo.body2">Costo de compra actual: <strong>@costoActualProducto.ToString("N2") Bs</strong></MudText>
+                    <MudText Typo="Typo.body2">Precio de venta actual: <strong>@precioVentaActualProducto.ToString("N2") Bs</strong></MudText>
+
+                    @if (loteEditando.PrecioCosto > precioVentaActualProducto && loteEditando.PrecioCosto > 0)
+                    {
+                        <MudAlert Severity="Severity.Error" Variant="Variant.Text" Class="mt-2">
+                            El costo ingresado supera el precio de venta actual.
+                        </MudAlert>
+                    }
+
+                    <MudNumericField @bind-Value="nuevoPrecioVentaSugerido"
+                                     Label="Nuevo Precio de Venta Sugerido (30% Margen)"
+                                     Variant="Variant.Outlined" Margin="Margin.Dense" Class="mt-3"
+                                     HelperText="Puedes ajustar el valor comercial" />
+                </MudAlert>
+            }
+
+            @if (mostrarConfirmacionCosto)
+            {
+                <MudAlert Severity="Severity.Warning" Variant="Variant.Outlined" Class="mb-3">
+                    <MudText Typo="Typo.body2" Class="mb-2">
+                        El costo actual es <strong>@costoActualProducto.ToString("N2") Bs</strong> y el precio de venta es <strong>@precioVentaActualProducto.ToString("N2") Bs</strong>.
+                    </MudText>
+                    <MudText Typo="Typo.body2" Class="mb-2">
+                        Este lote tiene costo <strong>@loteEditando.PrecioCosto.ToString("N2") Bs</strong>, sugerido a <strong>@(nuevoPrecioVentaSugerido?.ToString("N2") ?? "-") Bs</strong>.
+                    </MudText>
+                    <MudText Typo="Typo.body2" Class="fw-bold mb-3">¿Actualizar el producto con estos valores?</MudText>
+
+                    <MudStack Row="true" Spacing="2">
+                        <MudButton Size="Size.Small" Color="Color.Success" Variant="Variant.Filled"
+                                   OnClick="() => GuardarLoteConfirmado(true)">
+                            Sí, actualizar
+                        </MudButton>
+                        <MudButton Size="Size.Small" Color="Color.Default" Variant="Variant.Outlined"
+                                   OnClick="() => GuardarLoteConfirmado(false)">
+                            No, mantener
+                        </MudButton>
+                        <MudButton Size="Size.Small" Color="Color.Default" Variant="Variant.Text"
+                                   OnClick="() => mostrarConfirmacionCosto = false">
+                            Editar
+                        </MudButton>
+                    </MudStack>
+                </MudAlert>
+            }
+
+            @if (!mostrarConfirmacionCosto)
+            {
+                <div class="d-flex justify-end gap-2 mt-4">
+                    <MudButton OnClick="CerrarFormulario" Variant="Variant.Outlined" Color="Color.Default">
+                        Cancelar
+                    </MudButton>
+                    <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled"
+                               Style="background-color: #6b2181; color: #ffffff;">
+                        Guardar Lote
+                    </MudButton>
+                </div>
+            }
+        </EditForm>
+    </DialogContent>
+</MudDialog>
 
 @code {
     private List<Lote>? lotes;
@@ -290,6 +325,13 @@
     private decimal costoActualProducto = 0;
     private decimal precioVentaActualProducto = 0;
     private decimal? nuevoPrecioVentaSugerido = null;
+    private bool mostrarConfirmacionCosto = false;
+
+    private DialogOptions dialogOptions = new()
+    {
+        CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true,
+        BackdropClick = false, CloseOnEscapeKey = false
+    };
 
     private int proveedorSeleccionado
     {
@@ -297,10 +339,7 @@
         set => loteEditando.ProveedorId = value == 0 ? null : value;
     }
 
-    protected override async Task OnInitializedAsync()
-    {
-        await CargarDatos();
-    }
+    protected override async Task OnInitializedAsync() => await CargarDatos();
 
     private async Task CargarDatos()
     {
@@ -308,13 +347,6 @@
         lotes = await LoteSvc.ObtenerTodosAsync();
         proveedores = await ProveedorSvc.ObtenerTodosAsync();
         cargando = false;
-    }
-
-    private string ClaseEstado(Lote lote)
-    {
-        if (lote.Vencido) return "table-danger bg-opacity-25";
-        if (lote.ProximoAVencer) return "table-warning bg-opacity-25";
-        return "";
     }
 
     private void AbrirFormularioNuevo()
@@ -329,6 +361,7 @@
         costoActualProducto = 0;
         precioVentaActualProducto = 0;
         nuevoPrecioVentaSugerido = null;
+        mostrarConfirmacionCosto = false;
         mostrarFormulario = true;
     }
 
@@ -340,7 +373,6 @@
         var productoActualizado = await ProductoSvc.ObtenerPorIdAsync(producto.Id);
         costoActualProducto = productoActualizado?.PrecioCosto ?? producto.PrecioCosto;
         precioVentaActualProducto = productoActualizado?.PrecioVenta ?? producto.PrecioVenta;
-
         RecalcularSugerencia();
     }
 
@@ -353,59 +385,37 @@
         nuevoPrecioVentaSugerido = null;
     }
 
-    private void OnPrecioCostoCambiado(decimal valor)
-    {
-        loteEditando.PrecioCosto = valor;
-        RecalcularSugerencia();
-    }
-
     private void RecalcularSugerencia()
     {
         if (loteEditando.PrecioCosto > 0)
-        {
             nuevoPrecioVentaSugerido = Math.Round(loteEditando.PrecioCosto * 1.30m, 2);
-        }
     }
 
     private async Task AbrirFormularioEditar(Lote lote)
     {
         loteEditando = new Lote
         {
-            Id = lote.Id,
-            NumeroLote = lote.NumeroLote,
-            ProductoId = lote.ProductoId,
-            ProveedorId = lote.ProveedorId,
-            FechaIngreso = lote.FechaIngreso,
-            FechaVencimiento = lote.FechaVencimiento,
-            CantidadInicial = lote.CantidadInicial,
-            CantidadActual = lote.CantidadActual,
-            PrecioCosto = lote.PrecioCosto,
-            Activo = lote.Activo
+            Id = lote.Id, NumeroLote = lote.NumeroLote, ProductoId = lote.ProductoId,
+            ProveedorId = lote.ProveedorId, FechaIngreso = lote.FechaIngreso,
+            FechaVencimiento = lote.FechaVencimiento, CantidadInicial = lote.CantidadInicial,
+            CantidadActual = lote.CantidadActual, PrecioCosto = lote.PrecioCosto, Activo = lote.Activo
         };
-
         productoSeleccionadoNombre = lote.Producto?.Nombre;
 
-        var productoActualizado = await ProductoSvc.ObtenerPorIdAsync(lote.ProductoId);
-        costoActualProducto = productoActualizado?.PrecioCosto ?? 0;
-        precioVentaActualProducto = productoActualizado?.PrecioVenta ?? 0;
-
+        var prod = await ProductoSvc.ObtenerPorIdAsync(lote.ProductoId);
+        costoActualProducto = prod?.PrecioCosto ?? 0;
+        precioVentaActualProducto = prod?.PrecioVenta ?? 0;
         RecalcularSugerencia();
+        mostrarConfirmacionCosto = false;
         mostrarFormulario = true;
     }
 
-    private void CerrarFormulario()
-    {
-        mostrarFormulario = false;
-    }
-
-    private bool mostrarConfirmacionCosto = false;
+    private void CerrarFormulario() => mostrarFormulario = false;
 
     private async Task GuardarLote()
     {
         if (loteEditando.Id == 0)
-        {
             loteEditando.CantidadActual = loteEditando.CantidadInicial;
-        }
 
         if (loteEditando.PrecioCosto != costoActualProducto && loteEditando.PrecioCosto > 0)
         {
@@ -413,13 +423,12 @@
             return;
         }
 
-        await GuardarLoteConfirmado(actualizarPrecios: true);
+        await GuardarLoteConfirmado(true);
     }
 
     private async Task GuardarLoteConfirmado(bool actualizarPrecios)
     {
         mostrarConfirmacionCosto = false;
-
         if (loteEditando.Id == 0)
         {
             var request = new LoteCreateRequest
@@ -429,6 +438,7 @@
                 NuevoPrecioVenta = actualizarPrecios ? nuevoPrecioVentaSugerido : null
             };
             await LoteSvc.CrearAsync(request);
+            Snackbar.Add("Lote creado", Severity.Success);
         }
         else
         {
@@ -439,6 +449,7 @@
                 NuevoPrecioVenta = actualizarPrecios ? nuevoPrecioVentaSugerido : null
             };
             await LoteSvc.ActualizarAsync(loteEditando.Id, request);
+            Snackbar.Add("Lote actualizado", Severity.Success);
         }
 
         mostrarFormulario = false;
@@ -448,6 +459,29 @@
     private async Task EliminarLote(int id)
     {
         await LoteSvc.EliminarAsync(id);
+        Snackbar.Add("Lote eliminado", Severity.Warning);
         await CargarDatos();
+    }
+// Propiedades puente para MudDatePicker (evita el error CS1503/CS1662)
+    private DateTime? FechaIngresoNullable
+    {
+        get => loteEditando.FechaIngreso;
+        set => loteEditando.FechaIngreso = value ?? DateTime.Now;
+    }
+    
+    private DateTime? FechaVencimientoNullable
+    {
+        get => loteEditando.FechaVencimiento;
+        set => loteEditando.FechaVencimiento = value ?? DateTime.Now;
+    }
+    
+    private void OnFechaIngresoChanged(DateTime? value)
+    {
+        loteEditando.FechaIngreso = value ?? DateTime.Now;
+    }
+    
+    private void OnFechaVencimientoChanged(DateTime? value)
+    {
+        loteEditando.FechaVencimiento = value ?? DateTime.Now;
     }
 }

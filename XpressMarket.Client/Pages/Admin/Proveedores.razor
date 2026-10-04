@@ -2,169 +2,182 @@
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize(Roles = "Administrador")]
 @inject ProveedorService ProveedorSvc
+@inject ISnackbar Snackbar
 @using XpressMarket.Shared.Models
-@using XpressMarket.Shared.Extensions
 
 <PageTitle>Proveedores - XpressMarket</PageTitle>
 
-<div class="container-fluid px-0">
-    <!-- Header de Sección -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
+<div class="pa-4 pa-md-6">
+
+    <MudPaper Elevation="0" Class="pa-6 mb-6 rounded-xl d-flex justify-between align-center"
+              Style="background: linear-gradient(135deg, #4a1458 0%, #6b2181 100%); color: #ffffff; border: 1px solid rgba(255,255,255,0.1);">
         <div>
-            <h3 class="fw-bold mb-1 text-dark">Gestión de Proveedores</h3>
-            <p class="text-muted small mb-0">Administra el directorio de proveedores, contactos y datos de facturación.</p>
+            <div class="d-flex align-center gap-2 mb-2">
+                <MudChip T="string" Size="Size.Small" Variant="Variant.Filled"
+                         Style="background-color: rgba(243, 130, 24, 0.2); color: #f38218;"
+                         Class="fw-bold">
+                    Directorio
+                </MudChip>
+            </div>
+            <MudText Typo="Typo.h4" Class="fw-bold mb-1" Style="color: #ffffff; text-shadow: 0px 2px 4px rgba(0,0,0,0.2);">
+                Gestión de Proveedores
+            </MudText>
+            <MudText Typo="Typo.body2" Style="color: rgba(255, 255, 255, 0.85);">
+                Administra contactos, teléfonos y datos de facturación.
+            </MudText>
         </div>
-        <button class="btn btn-primary shadow-sm d-flex align-items-center gap-2 px-3 py-2" @onclick="AbrirFormularioNuevo">
-            <i class="bi bi-person-plus-fill fs-6"></i>
-            <span class="fw-semibold">Nuevo Proveedor</span>
-        </button>
-    </div>
+        <div class="d-none d-md-block">
+            <MudIcon Icon="@Icons.Material.Filled.LocalShipping" Style="font-size: 4.5rem; color: rgba(255,255,255,0.15);" />
+        </div>
+    </MudPaper>
 
-    <!-- Contenido Principal -->
-    @if (cargando)
-    {
-        <div class="card border-0 shadow-sm rounded-3">
-            <div class="card-body text-center py-5">
-                <div class="spinner-border text-primary mb-3" role="status"></div>
-                <p class="text-muted mb-0">Cargando proveedores...</p>
-            </div>
+    <MudPaper Elevation="2" Class="pa-5 rounded-xl">
+        <div class="d-flex justify-between align-center mb-4">
+            <MudText Typo="Typo.h6" Class="fw-bold" Style="color: #2b2b2b;">Listado de Proveedores</MudText>
+            <MudButton Variant="Variant.Filled"
+                       Style="background-color: #6b2181; color: #ffffff; font-weight: bold;"
+                       StartIcon="@Icons.Material.Filled.AddBusiness"
+                       OnClick="AbrirFormularioNuevo" Class="rounded-lg">
+                Nuevo Proveedor
+            </MudButton>
         </div>
-    }
-    else if (proveedores == null || !proveedores.Any())
-    {
-        <div class="card border-0 shadow-sm rounded-3">
-            <div class="card-body text-center py-5">
-                <i class="bi bi-truck display-4 text-muted mb-3 d-block"></i>
-                <h5 class="text-secondary fw-normal">No hay proveedores registrados</h5>
-                <p class="text-muted small mb-3">Comienza agregando un nuevo proveedor para vinculadamente sus lotes.</p>
-                <button class="btn btn-outline-primary btn-sm" @onclick="AbrirFormularioNuevo">
-                    <i class="bi bi-plus-lg me-1"></i> Crear primer proveedor
-                </button>
+
+        @if (cargando)
+        {
+            <div class="d-flex justify-center pa-6">
+                <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
             </div>
-        </div>
-    }
-    else
-    {
-        <div class="card border-0 shadow-sm rounded-3">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                    <thead class="bg-light text-secondary small text-uppercase fw-semibold border-bottom">
-                        <tr>
-                            <th class="ps-4 py-3">Nombre</th>
-                            <th class="py-3">Contacto</th>
-                            <th class="py-3">Teléfono</th>
-                            <th class="py-3">Email</th>
-                            <th class="pe-4 py-3 text-end">Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody class="border-top-0">
-                        @foreach (var proveedor in proveedores)
+        }
+        else if (proveedores == null || !proveedores.Any())
+        {
+            <div class="d-flex flex-column align-center pa-8">
+                <MudIcon Icon="@Icons.Material.Filled.LocalShipping" Style="font-size: 4rem; color: #adb5bd;" />
+                <MudText Typo="Typo.h6" Class="fw-normal mt-3" Style="color: #6c757d;">
+                    No hay proveedores registrados
+                </MudText>
+                <MudButton Variant="Variant.Outlined" Color="Color.Primary" Class="mt-3"
+                           StartIcon="@Icons.Material.Filled.Add" OnClick="AbrirFormularioNuevo">
+                    Crear primer proveedor
+                </MudButton>
+            </div>
+        }
+        else
+        {
+            <MudTable Items="@proveedores" Hover="true" Dense="true" Elevation="0" Class="rounded-lg">
+                <HeaderContent>
+                    <MudTh><MudText Typo="Typo.subtitle2" Class="fw-bold">Nombre</MudText></MudTh>
+                    <MudTh><MudText Typo="Typo.subtitle2" Class="fw-bold">Contacto</MudText></MudTh>
+                    <MudTh><MudText Typo="Typo.subtitle2" Class="fw-bold">Teléfono</MudText></MudTh>
+                    <MudTh><MudText Typo="Typo.subtitle2" Class="fw-bold">Email</MudText></MudTh>
+                    <MudTh Class="text-end"><MudText Typo="Typo.subtitle2" Class="fw-bold">Acciones</MudText></MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Nombre">
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                            <MudAvatar Size="Size.Medium" Style="background-color: #f3e5f5; color: #6b2181;">
+                                <MudIcon Icon="@Icons.Material.Filled.Business" />
+                            </MudAvatar>
+                            <MudText Typo="Typo.body1" Class="fw-bold">@context.Nombre</MudText>
+                        </MudStack>
+                    </MudTd>
+                    <MudTd DataLabel="Contacto">
+                        <MudText Typo="Typo.body2" Style="color: #6c757d;">
+                            @(string.IsNullOrWhiteSpace(context.Contacto) ? "-" : context.Contacto)
+                        </MudText>
+                    </MudTd>
+                    <MudTd DataLabel="Teléfono">
+                        @if (!string.IsNullOrWhiteSpace(context.Telefono))
                         {
-                            <tr>
-                                <td class="ps-4 fw-semibold text-dark">
-                                    <div class="d-flex align-items-center gap-2">
-                                        <div class="rounded-circle bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
-                                            <i class="bi bi-building"></i>
-                                        </div>
-                                        <span>@proveedor.Nombre</span>
-                                    </div>
-                                </td>
-                                <td class="text-muted small">@(string.IsNullOrWhiteSpace(proveedor.Contacto) ? "-" : proveedor.Contacto)</td>
-                                <td class="fw-medium">
-                                    @if (!string.IsNullOrWhiteSpace(proveedor.Telefono))
-                                    {
-                                        <span class="text-dark"><i class="bi bi-telephone text-muted me-1 small"></i>@proveedor.Telefono</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="text-muted small">-</span>
-                                    }
-                                </td>
-                                <td class="text-muted small">
-                                    @if (!string.IsNullOrWhiteSpace(proveedor.Email))
-                                    {
-                                        <span class="text-dark"><i class="bi bi-envelope text-muted me-1 small"></i>@proveedor.Email</span>
-                                    }
-                                    else
-                                    {
-                                        <span>-</span>
-                                    }
-                                </td>
-                                <td class="pe-4 text-end">
-                                    <div class="btn-group btn-group-sm" role="group">
-                                        <button class="btn btn-outline-secondary" @onclick="() => AbrirFormularioEditar(proveedor)" title="Editar">
-                                            <i class="bi bi-pencil"></i>
-                                        </button>
-                                        <button class="btn btn-outline-danger" @onclick="() => EliminarProveedor(proveedor.Id)" title="Eliminar">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
+                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                <MudIcon Icon="@Icons.Material.Filled.Phone" Size="Size.Small" Style="color: #6c757d;" />
+                                <MudText Typo="Typo.body2">@context.Telefono</MudText>
+                            </MudStack>
                         }
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    }
-
-    <!-- Modal Formulario -->
-    @if (mostrarFormulario)
-    {
-        <div class="modal fade show d-block tab-modal-backdrop" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
-            <div class="modal-dialog modal-lg modal-dialog-centered">
-                <div class="modal-content border-0 shadow-lg rounded-3">
-                    <div class="modal-header bg-light border-bottom py-3">
-                        <h5 class="modal-title fw-bold text-dark">
-                            <i class="bi bi-truck me-2 text-primary"></i>
-                            @(proveedorEditando.Id == 0 ? "Nuevo Proveedor" : "Editar Proveedor")
-                        </h5>
-                        <button type="button" class="btn-close" @onclick="CerrarFormulario"></button>
-                    </div>
-
-                    <EditForm Model="proveedorEditando" OnValidSubmit="GuardarProveedor">
-                        <div class="modal-body p-4">
-                            <DataAnnotationsValidator />
-                            <ValidationSummary class="alert alert-danger p-2 small mb-3" />
-
-                            <div class="row g-3 mb-3">
-                                <div class="col-md-6">
-                                    <label class="form-label fw-semibold small text-secondary">Nombre de la Empresa</label>
-                                    <InputText class="form-control" @bind-Value="proveedorEditando.Nombre" placeholder="Ej. Distribuidora Central S.R.L." />
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label fw-semibold small text-secondary">Persona de Contacto</label>
-                                    <InputText class="form-control" @bind-Value="proveedorEditando.Contacto" placeholder="Ej. Carlos Mendoza" />
-                                </div>
-                            </div>
-
-                            <div class="row g-3 mb-3">
-                                <div class="col-md-6">
-                                    <label class="form-label fw-semibold small text-secondary">Teléfono</label>
-                                    <InputText class="form-control" @bind-Value="proveedorEditando.Telefono" placeholder="Ej. +591 70012345" />
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label fw-semibold small text-secondary">Correo Electrónico</label>
-                                    <InputText class="form-control" @bind-Value="proveedorEditando.Email" placeholder="contacto@proveedor.com" />
-                                </div>
-                            </div>
-
-                            <div class="mb-3">
-                                <label class="form-label fw-semibold small text-secondary">Dirección / Ubicación</label>
-                                <InputTextArea class="form-control" rows="2" @bind-Value="proveedorEditando.Direccion" placeholder="Dirección comercial o de depósito..." />
-                            </div>
-                        </div>
-
-                        <div class="modal-footer bg-light border-top py-2 px-4">
-                            <button type="button" class="btn btn-outline-secondary px-3" @onclick="CerrarFormulario">Cancelar</button>
-                            <button type="submit" class="btn btn-primary px-4 fw-semibold">Guardar Proveedor</button>
-                        </div>
-                    </EditForm>
-                </div>
-            </div>
-        </div>
-    }
+                        else
+                        {
+                            <MudText Typo="Typo.body2" Style="color: #adb5bd;">-</MudText>
+                        }
+                    </MudTd>
+                    <MudTd DataLabel="Email">
+                        @if (!string.IsNullOrWhiteSpace(context.Email))
+                        {
+                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                <MudIcon Icon="@Icons.Material.Filled.Email" Size="Size.Small" Style="color: #6c757d;" />
+                                <MudText Typo="Typo.body2">@context.Email</MudText>
+                            </MudStack>
+                        }
+                        else
+                        {
+                            <MudText Typo="Typo.body2" Style="color: #adb5bd;">-</MudText>
+                        }
+                    </MudTd>
+                    <MudTd DataLabel="Acciones" Class="text-end">
+                        <MudStack Row="true" Justify="Justify.FlexEnd" Spacing="1">
+                            <MudTooltip Text="Editar">
+                                <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Info"
+                                               Size="Size.Small" Variant="Variant.Outlined"
+                                               OnClick="() => AbrirFormularioEditar(context)" />
+                            </MudTooltip>
+                            <MudTooltip Text="Eliminar">
+                                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error"
+                                               Size="Size.Small" Variant="Variant.Outlined"
+                                               OnClick="() => EliminarProveedor(context.Id)" />
+                            </MudTooltip>
+                        </MudStack>
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+        }
+    </MudPaper>
 </div>
+
+<MudDialog @bind-IsVisible="mostrarFormulario" Options="dialogOptions">
+    <TitleContent>
+        <MudText Typo="Typo.h6" Class="fw-bold" Style="color: #6b2181;">
+            <MudIcon Icon="@Icons.Material.Filled.LocalShipping" Class="mr-2" />
+            @(proveedorEditando.Id == 0 ? "Nuevo Proveedor" : "Editar Proveedor")
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        <EditForm Model="proveedorEditando" OnValidSubmit="GuardarProveedor">
+            <DataAnnotationsValidator />
+            <ValidationSummary class="alert alert-danger p-2 small mb-3" />
+
+            <MudGrid>
+                <MudItem xs="12" md="6">
+                    <MudTextField Label="Nombre de la Empresa" @bind-Value="proveedorEditando.Nombre"
+                                  Variant="Variant.Outlined" Margin="Margin.Dense" />
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudTextField Label="Persona de Contacto" @bind-Value="proveedorEditando.Contacto"
+                                  Variant="Variant.Outlined" Margin="Margin.Dense" />
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudTextField Label="Teléfono" @bind-Value="proveedorEditando.Telefono"
+                                  Variant="Variant.Outlined" Margin="Margin.Dense" />
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudTextField Label="Correo Electrónico" @bind-Value="proveedorEditando.Email"
+                                  Variant="Variant.Outlined" Margin="Margin.Dense" />
+                </MudItem>
+                <MudItem xs="12">
+                    <MudTextField Label="Dirección / Ubicación" @bind-Value="proveedorEditando.Direccion"
+                                  Lines="2" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                </MudItem>
+            </MudGrid>
+
+            <div class="d-flex justify-end gap-2 mt-4">
+                <MudButton OnClick="CerrarFormulario" Variant="Variant.Outlined" Color="Color.Default">
+                    Cancelar
+                </MudButton>
+                <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled"
+                           Style="background-color: #6b2181; color: #ffffff;">
+                    Guardar
+                </MudButton>
+            </div>
+        </EditForm>
+    </DialogContent>
+</MudDialog>
 
 @code {
     private List<Proveedor>? proveedores;
@@ -172,10 +185,13 @@
     private bool mostrarFormulario = false;
     private Proveedor proveedorEditando = new();
 
-    protected override async Task OnInitializedAsync()
+    private DialogOptions dialogOptions = new()
     {
-        await CargarDatos();
-    }
+        CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true,
+        BackdropClick = false, CloseOnEscapeKey = false
+    };
+
+    protected override async Task OnInitializedAsync() => await CargarDatos();
 
     private async Task CargarDatos()
     {
@@ -190,37 +206,31 @@
         mostrarFormulario = true;
     }
 
-    private void AbrirFormularioEditar(Proveedor proveedor)
+    private void AbrirFormularioEditar(Proveedor p)
     {
         proveedorEditando = new Proveedor
         {
-            Id = proveedor.Id,
-            Nombre = proveedor.Nombre,
-            Contacto = proveedor.Contacto,
-            Telefono = proveedor.Telefono,
-            Email = proveedor.Email,
-            Direccion = proveedor.Direccion,
-            Activo = proveedor.Activo
+            Id = p.Id, Nombre = p.Nombre, Contacto = p.Contacto,
+            Telefono = p.Telefono, Email = p.Email,
+            Direccion = p.Direccion, Activo = p.Activo
         };
         mostrarFormulario = true;
     }
 
-    private void CerrarFormulario()
-    {
-        mostrarFormulario = false;
-    }
+    private void CerrarFormulario() => mostrarFormulario = false;
 
     private async Task GuardarProveedor()
     {
         if (proveedorEditando.Id == 0)
         {
             await ProveedorSvc.CrearAsync(proveedorEditando);
+            Snackbar.Add("Proveedor creado", Severity.Success);
         }
         else
         {
             await ProveedorSvc.ActualizarAsync(proveedorEditando.Id, proveedorEditando);
+            Snackbar.Add("Proveedor actualizado", Severity.Success);
         }
-
         mostrarFormulario = false;
         await CargarDatos();
     }
@@ -228,6 +238,7 @@
     private async Task EliminarProveedor(int id)
     {
         await ProveedorSvc.EliminarAsync(id);
+        Snackbar.Add("Proveedor eliminado", Severity.Warning);
         await CargarDatos();
     }
 }
