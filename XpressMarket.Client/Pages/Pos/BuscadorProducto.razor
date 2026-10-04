@@ -1,0 +1,43 @@
+﻿@inject ProductoService ProductoSvc
+
+<MudAutocomplete T="Producto" 
+                  Label="Buscar producto por nombre, descripción o código..." 
+                  Value="productoSeleccionado"
+                  ValueChanged="OnProductoSelected"
+                  SearchFunc="BuscarProductosAsync" 
+                  ToStringFunc="@(p => p != null ? $"{p.CodigoBarras} - {p.Nombre} (Stock: {p.StockActual})" : string.Empty)"
+                  ResetValueOnEmptyText="true"
+                  CoerceText="true"
+                  Clearable="true"
+                  Variant="Variant.Outlined"
+                  AdornmentIcon="@Icons.Material.Filled.Search" />
+
+@code {
+    [Parameter] public EventCallback<Producto> OnProductoAgregado { get; set; }
+    
+    private Producto? productoSeleccionado;
+
+    private async Task<IEnumerable<Producto>> BuscarProductosAsync(string valor, CancellationToken token)
+    {
+        var productos = await ProductoSvc.ObtenerTodosAsync();
+        
+        if (string.IsNullOrWhiteSpace(valor))
+        {
+            return productos.Where(p => p.Activo);
+        }
+
+        return productos.Where(p => p.Activo && 
+            (p.Nombre.Contains(valor, StringComparison.OrdinalIgnoreCase) || 
+             (!string.IsNullOrEmpty(p.CodigoBarras) && p.CodigoBarras.Contains(valor, StringComparison.OrdinalIgnoreCase))));
+    }
+
+    private async Task OnProductoSelected(Producto producto)
+    {
+        if (producto != null)
+        {
+            productoSeleccionado = producto;
+            await OnProductoAgregado.InvokeAsync(producto);
+            productoSeleccionado = null; 
+        }
+    }
+}

@@ -78,5 +78,9 @@ namespace XpressMarket.Client.Services
             return await _http.GetFromJsonAsync<List<PeriodoResumen>>(
                 $"{RutaBase}/reporte-periodo?desde={desde:yyyy-MM-dd}&hasta={hasta:yyyy-MM-dd}&agrupacion={agrupacion}") ?? new();
         }
+        public async Task<Venta?> ObtenerPorIdAsync(int id)
+        {
+            return await _http.GetFromJsonAsync<Venta>($"api/ventas/{id}");
+        }
     }
 }

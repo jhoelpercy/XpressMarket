@@ -1,0 +1,157 @@
+﻿@page "/comprobante-venta/{VentaId:int}"
+@using Microsoft.AspNetCore.Authorization
+@using XpressMarket.Shared.Models
+@attribute [Authorize]
+@inject VentaService VentaSvc
+@inject NavigationManager NavManager
+@inject IJSRuntime JS
+@inject HttpClient Http
+
+<PageTitle>XpressMarket - Comprobante de Venta</PageTitle>
+
+<div class="d-flex justify-center pa-4 pa-md-6">
+    <MudPaper Elevation="3" Class="pa-6 rounded-xl" Style="width: 100%; max-width: 450px; background: #ffffff; border: 1px solid #e0e0e0;">
+        
+        @* Encabezado del Ticket *@
+        <div class="text-center mb-4">
+            <img src="images/icon.png" alt="XpressMarket Logo" style="width: 48px; height: 48px; margin-bottom: 8px;" />
+            <MudText Typo="Typo.h5" Class="fw-bold" Style="color: #6b2181;">
+                <span style="color: #f38218;">Xpress</span>Market
+            </MudText>
+            <MudText Typo="Typo.caption" Style="color: #666;">Supermercado y Minimarket</MudText>
+            <MudText Typo="Typo.caption" Display="Display.Block" Style="color: #666;">NIT: 1234567890123 - Sucursal N° 1</MudText>
+            <MudText Typo="Typo.caption" Display="Display.Block" Style="color: #666;">La Paz, Bolivia</MudText>
+        </div>
+
+        <MudDivider Class="my-3" />
+
+        @* Datos Generales de la Venta *@
+        @if (venta != null)
+        {
+            <div class="mb-3" style="font-size: 0.85rem;">
+                <div class="d-flex justify-between">
+                    <span><strong>N° Ticket:</strong> @venta.Id.ToString("D6")</span>
+                    <span><strong>Fecha:</strong> @venta.FechaVenta.ToString("dd/MM/yyyy HH:mm")</span>
+                </div>
+                <div class="d-flex justify-between">
+                    <span><strong>Cajero(a):</strong> @venta.NombreUsuario</span>
+                    <span><strong>Estado:</strong> @venta.Estado</span>
+                </div>
+            </div>
+
+            <MudDivider Class="my-2" />
+
+            @* Detalle de Productos *@
+            <div class="mb-4">
+                <MudText Typo="Typo.subtitle2" Class="fw-bold mb-2" Style="color: #333;">Detalle de Productos</MudText>
+                @foreach (var item in venta.Detalles)
+                {
+                    <div class="mb-2" style="font-size: 0.85rem;">
+                        <div class="d-flex justify-between">
+                            <span style="font-weight: 500;">@item.NombreProducto</span>
+                            <span>Bs. @item.Subtotal.ToString("N2")</span>
+                        </div>
+                        <div class="d-flex justify-between text-muted" style="font-size: 0.75rem;">
+                            <span>@item.Cantidad x Bs. @item.PrecioUnitario.ToString("N2")</span>
+                            @if (item.Descuento > 0)
+                            {
+                                <span style="color: #d32f2f;">Desc: -Bs. @item.Descuento.ToString("N2")</span>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <MudDivider Class="my-2" />
+
+            @* Totales *@
+            <div class="mb-4" style="font-size: 0.9rem;">
+                <div class="d-flex justify-between">
+                    <span>Subtotal:</span>
+                    <span>Bs. @venta.Subtotal.ToString("N2")</span>
+                </div>
+                @if (venta.Descuento > 0)
+                {
+                    <div class="d-flex justify-between" style="color: #d32f2f;">
+                        <span>Descuentos:</span>
+                        <span>-Bs. @venta.Descuento.ToString("N2")</span>
+                    </div>
+                }
+                <div class="d-flex justify-between mt-1" style="font-size: 1.1rem; font-weight: bold; color: #4a1458;">
+                    <span>TOTAL A PAGAR:</span>
+                    <span>Bs. @venta.Total.ToString("N2")</span>
+                </div>
+            </div>
+
+            @* Pie de Página *@
+            <div class="text-center mt-4" style="font-size: 0.75rem; color: #777;">
+                <p class="mb-1">¡Gracias por su compra en XpressMarket!</p>
+                <p class="mb-0">"Conserve este ticket para cualquier cambio o devolución dentro de los 5 días hábiles."</p>
+            </div>
+
+            @* Botones de Acción *@
+            <div class="d-flex gap-2 mt-6">
+                <MudButton Variant="Variant.Outlined" Color="Color.Primary" FullWidth="true" OnClick="Imprimir">
+                    Imprimir Ticket (Térmico)
+                </MudButton>
+                <MudButton Variant="Variant.Filled" Style="background-color: #6b2181; color: white;" FullWidth="true" OnClick="Volver">
+                    Nueva Venta
+                </MudButton>
+            </div>
+        }
+        else
+        {
+            <div class="d-flex justify-center pa-6">
+                <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+            </div>
+        }
+    </MudPaper>
+</div>
+
+@code {
+    [Parameter] public int VentaId { get; set; }
+    private Venta? venta;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            venta = await VentaSvc.ObtenerPorIdAsync(VentaId);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error al cargar el comprobante: {ex.Message}");
+        }
+    }
+
+    private async Task Imprimir()
+    {
+        try
+        {
+            // Descarga el PDF usando HttpClient (envía el token JWT correctamente)
+            var response = await Http.GetAsync($"api/ventas/{VentaId}/ticket-pdf");
+
+            if (response.IsSuccessStatusCode)
+            {
+                var pdfBytes = await response.Content.ReadAsByteArrayAsync();
+                var base64 = Convert.ToBase64String(pdfBytes);
+
+                // Llama a la función de JavaScript para abrir el PDF de forma segura
+                await JS.InvokeVoidAsync("abrirPdfDesdeBase64", base64, $"Ticket_{VentaId}.pdf");
+            }
+            else
+            {
+                Console.WriteLine("No se pudo generar el ticket en el servidor.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error al imprimir: {ex.Message}");
+        }
+    }
+
+    private void Volver()
+    {
+        NavManager.NavigateTo("/punto-venta");
+    }
+}

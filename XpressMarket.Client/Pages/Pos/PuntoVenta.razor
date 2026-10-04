@@ -1,15 +1,8 @@
 ﻿@page "/punto-venta"
 @using Microsoft.AspNetCore.Authorization
-@using XpressMarket.Shared.Models
-@using XpressMarket.Shared.Extensions
 @attribute [Authorize]
-
 @inject VentaService VentaSvc
-@inject ProductoService ProductoSvc
-@inject IJSRuntime JS
-@inject AuthenticationStateProvider AuthStateProvider
-@inject ISnackbar Snackbar
-@inject HttpClient Http
+@inject NavigationManager NavManager
 
 <PageTitle>Punto de Venta - XpressMarket</PageTitle>
 
@@ -24,228 +17,45 @@
         </MudChip>
     </div>
 
-    @if (ultimaVentaId.HasValue)
-    {
-        <div class="alert alert-success d-flex align-items-center justify-content-between mb-4 p-3 rounded" style="background-color: #00c853; color: white;">
-            <div class="d-flex align-items-center gap-2">
-                <i class="bi bi-check-circle-fill fs-5"></i>
-                <span class="fw-bold">¡Venta N° @ultimaVentaId.Value registrada con éxito!</span>
-            </div>
-            <button class="btn btn-outline-light btn-sm fw-bold d-flex align-items-center gap-1" @onclick="DescargarComprobante">
-                <i class="bi bi-file-earmark-pdf-fill"></i> DESCARGAR COMPROBANTE PDF
-            </button>
-        </div>
-    }
-
-    @if (mensajeError != null)
-    {
-        <MudAlert Severity="Severity.Error" Variant="Variant.Filled" Class="mb-4 rounded-lg" Dense="true" OnClose="@(() => mensajeError = null)">
-            @mensajeError
-        </MudAlert>
-    }
-
     <MudGrid Spacing="4">
         <MudItem xs="12" lg="8">
             <MudPaper Elevation="2" Class="pa-4 mb-4 rounded-lg">
-                <MudText Typo="Typo.subtitle2" Class="fw-bold mb-2" Style="color: #4a4a4a;">BÚSQUEDA DE PRODUCTOS</MudText>
-                
-                <MudAutocomplete T="Producto"
-                                 Placeholder="Buscar producto por nombre o código de barras..."
-                                 SearchFunc="BuscarProductos"
-                                 ToStringFunc="@(p => p?.Nombre ?? string.Empty)"
-                                 ValueChanged="AgregarProductoAlCarrito"
-                                 ResetValueOnSelected="true"
-                                 SelectValueOnTab="true"
-                                 CoerceValue="false"
-                                 MinCharacters="1"
-                                 AdornmentIcon="@Icons.Material.Filled.Search"
-                                 AdornmentColor="Color.Primary"
-                                 Variant="Variant.Outlined"
-                                 Dense="true">
-                    <ItemTemplate Context="prod">
-                        <div class="d-flex align-center py-1">
-                            <MudAvatar Style="background-color: #f8f9fa; border: 1px solid #e0e0e0;" Size="Size.Medium" Class="mr-3" Square="true">
-                                <MudIcon Icon="@Icons.Material.Filled.Inventory2" Style="color: #6b2181;" />
-                            </MudAvatar>
-                            <div class="d-flex flex-column">
-                                <MudText Typo="Typo.body2" Class="fw-bold">@prod.Nombre</MudText>
-                                <MudText Typo="Typo.caption" Style="color: #6c757d;">
-                                    Precio: <strong style="color: #6b2181;">Bs. @prod.PrecioVenta.ToString("N2")</strong> | Stock: @prod.StockActual
-                                </MudText>
-                            </div>
-                        </div>
-                    </ItemTemplate>
-                </MudAutocomplete>
+                <BuscadorProducto OnProductoAgregado="AgregarAlCarrito" />
             </MudPaper>
 
             <MudPaper Elevation="2" Class="pa-4 rounded-lg">
-                <div class="d-flex align-center justify-between mb-3">
-                    <MudText Typo="Typo.subtitle1" Class="fw-bold" Style="color: #6b2181;">
-                        Carrito de Compras (@carrito.Sum(i => i.Cantidad) ítems)
-                    </MudText>
-                    @if (carrito.Any())
-                    {
-                        <MudButton Variant="Variant.Text" Color="Color.Error" StartIcon="@Icons.Material.Filled.DeleteSweep" Size="Size.Small" OnClick="@(() => carrito.Clear())">
-                            Vaciar Carrito
-                        </MudButton>
-                    }
-                </div>
-
-                @if (carrito.Any())
-                {
-                    <MudTable Items="@carrito" Hover="true" Dense="true" Elevation="0">
-                        <HeaderContent>
-                            <MudTh>Producto</MudTh>
-                            <MudTh Style="text-align: right;">Precio Unit.</MudTh>
-                            <MudTh Style="text-align: center; width: 140px;">Cantidad</MudTh>
-                            <MudTh Style="text-align: right;">Subtotal</MudTh>
-                            <MudTh Style="text-align: center; width: 60px;"></MudTh>
-                        </HeaderContent>
-                        <RowTemplate>
-                            <MudTd DataLabel="Producto">
-                                <MudText Typo="Typo.body2" Class="fw-bold" Style="color: #2b2b2b;">@context.NombreProducto</MudText>
-                            </MudTd>
-                            <MudTd DataLabel="Precio Unit." Style="text-align: right;">Bs. @context.PrecioUnitario.ToString("N2")</MudTd>
-                            <MudTd DataLabel="Cantidad" Style="text-align: center;">
-                                <div class="d-flex align-center justify-center gap-1">
-                                    <MudIconButton Icon="@Icons.Material.Filled.Remove" Size="Size.Small" Variant="Variant.Outlined" OnClick="@(() => DisminuirCantidad(context))" />
-                                    <input type="number" class="pos-qty-input" min="1" value="@context.Cantidad" @onchange="(e) => CambiarCantidad(context, e.Value)" />
-                                    <MudIconButton Icon="@Icons.Material.Filled.Add" Size="Size.Small" Variant="Variant.Outlined" OnClick="@(() => AumentarCantidad(context))" />
-                                </div>
-                            </MudTd>
-                            <MudTd DataLabel="Subtotal" Style="text-align: right;">
-                                <MudText Typo="Typo.body2" Class="fw-bold" Style="color: #6b2181;">
-                                    Bs. @(((context.Cantidad * context.PrecioUnitario) - context.Descuento).ToString("N2"))
-                                </MudText>
-                            </MudTd>
-                            <MudTd DataLabel="Acciones" Style="text-align: center;">
-                                <MudIconButton Icon="@Icons.Material.Filled.DeleteOutline" Color="Color.Error" Size="Size.Small" OnClick="() => QuitarDelCarrito(context)" />
-                            </MudTd>
-                        </RowTemplate>
-                    </MudTable>
-                }
-                else
-                {
-                    <div class="d-flex flex-column align-center justify-center pa-8 text-center">
-                        <MudIcon Icon="@Icons.Material.Filled.RemoveShoppingCart" Style="font-size: 3rem; color: #ccc;" Class="mb-2" />
-                        <MudText Typo="Typo.body1" Style="color: #888;">El carrito está vacío</MudText>
-                        <MudText Typo="Typo.caption" Style="color: #aaa;">Utiliza el buscador superior para agregar productos a la venta</MudText>
-                    </div>
-                }
+                <TablaCarrito Carrito="carrito"
+                              OnCantidadModificada="RecalcularTotales"
+                              OnEliminarItem="RemoverDelCarrito" />
             </MudPaper>
         </MudItem>
 
         <MudItem xs="12" lg="4">
-            <MudPaper Elevation="4" Class="pa-6 rounded-lg pos-summary-card">
-                <MudText Typo="Typo.h6" Class="fw-bold mb-4" Style="color: #ffffff;">Resumen de Venta</MudText>
-
-                <div class="d-flex justify-between mb-2">
-                    <MudText Typo="Typo.body2" Style="color: rgba(255,255,255,0.8);">Subtotal</MudText>
-                    <MudText Typo="Typo.body2" Class="fw-bold" Style="color: #ffffff;">Bs. @TotalCarrito.ToString("N2")</MudText>
-                </div>
-
-                <div class="d-flex justify-between mb-4">
-                    <MudText Typo="Typo.body2" Style="color: rgba(255,255,255,0.8);">Descuentos aplicados</MudText>
-                    <MudText Typo="Typo.body2" Class="fw-bold" Style="color: #f38218;">Bs. 0.00</MudText>
-                </div>
-
-                <MudDivider Style="background-color: rgba(255,255,255,0.2);" Class="my-4" />
-
-                <div class="mb-6">
-                    <MudText Typo="Typo.caption" Style="color: rgba(255,255,255,0.7);" Class="d-block text-uppercase fw-bold">TOTAL A COBRAR</MudText>
-                    <MudText Typo="Typo.h3" Class="fw-bold" Style="color: #fbf2db;">
-                        Bs. @TotalCarrito.ToString("N2")
-                    </MudText>
-                </div>
-
-                <MudButton Variant="Variant.Filled" 
-                           Style="background-color: #f38218; color: #ffffff; font-weight: 700; font-size: 1.1rem;" 
-                           FullWidth="true" 
-                           Size="Size.Large" 
-                           StartIcon="@Icons.Material.Filled.CheckCircle"
-                           OnClick="ConfirmarVenta" 
-                           Disabled="@(procesando || !carrito.Any())"
-                           Class="py-3 shadow-lg">
-                    @if (procesando)
-                    {
-                        <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
-                        <MudText Class="ms-2">Procesando Venta...</MudText>
-                    }
-                    else
-                    {
-                        <MudText>Confirmar Venta</MudText>
-                    }
-                </MudButton>
-            </MudPaper>
+            <ResumenVentaCard SubTotal="subtotal"
+                              DescuentoTotal="descuentoTotal"
+                              Total="total"
+                              OnConfirmarVenta="ProcesarPago"
+                              Procesando="procesando"
+                              TieneItems="carrito.Any()" />
         </MudItem>
     </MudGrid>
 </div>
 
-<style>
-    .pos-container { background-color: #f8f9fa; min-height: calc(100vh - 64px); }
-    .pos-summary-card { background: linear-gradient(135deg, #4a1458 0%, #6b2181 100%); color: #ffffff; position: sticky; top: 20px; }
-    .pos-qty-input { width: 45px; text-align: center; border: 1px solid #ced4da; border-radius: 4px; padding: 2px 4px; font-weight: 600; }
-    .pos-qty-input:focus { outline: none; border-color: #6b2181; }
-</style>
-
 @code {
     private List<DetalleVenta> carrito = new();
-    private List<Producto> listaProductos = new();
-    private string? mensajeError;
+    private decimal subtotal;
+    private decimal descuentoTotal;
+    private decimal total;
     private bool procesando = false;
-    private int? ultimaVentaId = null;
 
-    private decimal TotalCarrito => carrito.Sum(i => (i.Cantidad * i.PrecioUnitario) - i.Descuento);
-
-    protected override async Task OnInitializedAsync()
-    {
-        try
-        {
-            var productos = await ProductoSvc.ObtenerTodosAsync();
-            listaProductos = productos ?? new List<Producto>();
-        }
-        catch (Exception ex)
-        {
-            mensajeError = $"Error al cargar productos: {ex.Message}";
-        }
-    }
-
-    private async Task<IEnumerable<Producto>> BuscarProductos(string valor, CancellationToken token)
-    {
-        if (listaProductos == null || !listaProductos.Any())
-        {
-            try
-            {
-                var productos = await ProductoSvc.ObtenerTodosAsync();
-                listaProductos = productos?.ToList() ?? new List<Producto>();
-            }
-            catch
-            {
-                return Enumerable.Empty<Producto>();
-            }
-        }
-
-        if (string.IsNullOrWhiteSpace(valor))
-            return listaProductos.Take(10);
-
-        return listaProductos
-            .Where(p => p != null && 
-                       ((!string.IsNullOrEmpty(p.Nombre) && p.Nombre.Contains(valor, StringComparison.OrdinalIgnoreCase)) ||
-                        (!string.IsNullOrEmpty(p.CodigoBarras) && p.CodigoBarras.Contains(valor, StringComparison.OrdinalIgnoreCase))))
-            .Take(10);
-    }
-
-    private void AgregarProductoAlCarrito(Producto producto)
+    private void AgregarAlCarrito(Producto producto)
     {
         if (producto == null) return;
 
-        mensajeError = null;
-        ultimaVentaId = null;
-        var itemExistente = carrito.FirstOrDefault(i => i.ProductoId == producto.Id);
-
-        if (itemExistente != null)
+        var existente = carrito.FirstOrDefault(i => i.ProductoId == producto.Id);
+        if (existente != null)
         {
-            itemExistente.Cantidad++;
+            existente.Cantidad++;
         }
         else
         {
@@ -258,79 +68,62 @@
                 Descuento = 0
             });
         }
+        RecalcularTotales();
     }
 
-    private void AumentarCantidad(DetalleVenta item) => item.Cantidad++;
-
-    private void DisminuirCantidad(DetalleVenta item)
+    private void RemoverDelCarrito(DetalleVenta item)
     {
-        if (item.Cantidad > 1) item.Cantidad--;
-        else QuitarDelCarrito(item);
+        carrito.Remove(item);
+        RecalcularTotales();
     }
 
-    private void CambiarCantidad(DetalleVenta item, object? valor)
+    private void RecalcularTotales()
     {
-        if (int.TryParse(valor?.ToString(), out int nuevaCantidad) && nuevaCantidad > 0)
-            item.Cantidad = nuevaCantidad;
+        subtotal = carrito.Sum(i => i.Cantidad * i.PrecioUnitario);
+        descuentoTotal = carrito.Sum(i => i.Descuento);
+        total = carrito.Sum(i => i.Subtotal);
+        StateHasChanged();
     }
 
-    private void QuitarDelCarrito(DetalleVenta item) => carrito.Remove(item);
-
-    private async Task ConfirmarVenta()
+    private async Task ProcesarPago()
     {
         if (!carrito.Any()) return;
-    
-        mensajeError = null;
+
         procesando = true;
-    
         try
         {
-            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
-            var usuarioActual = authState.User;
-    
-            var venta = new Venta
+            var nuevaVenta = new Venta
             {
-                NombreUsuario = usuarioActual.Identity?.Name ?? "Desconocido",
-                UsuarioId = usuarioActual.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "0",
-                Detalles = carrito
+                FechaVenta = DateTime.Now,
+                Subtotal = subtotal,
+                Descuento = descuentoTotal,
+                Total = total,
+                Estado = EstadoVenta.Completada,
+                UsuarioId = "1",
+                NombreUsuario = "Cajero",
+                Detalles = carrito,
             };
-    
-            var response = await Http.PostAsJsonAsync("api/ventas", venta);
-    
-            if (response.IsSuccessStatusCode)
+
+            var resultado = await VentaSvc.RegistrarVentaAsync(nuevaVenta);
+
+            if (resultado.Exito && resultado.Venta != null)
             {
-                var ventaCreada = await response.Content.ReadFromJsonAsync<Venta>();
-                ultimaVentaId = ventaCreada?.Id;
                 carrito.Clear();
+                RecalcularTotales();
+                NavManager.NavigateTo($"/comprobante-venta/{resultado.Venta.Id}");
             }
             else
             {
-                mensajeError = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"Error del servidor: {resultado.Error}");
             }
         }
         catch (Exception ex)
         {
-            mensajeError = $"Error inesperado: {ex.Message}";
+            Console.WriteLine($"Error al procesar venta: {ex.Message}");
         }
         finally
         {
             procesando = false;
-        }
-    }
-
-    private async Task DescargarComprobante()
-    {
-        if (ultimaVentaId == null) return;
-    
-        try
-        {
-            var bytes = await Http.GetByteArrayAsync($"api/ventas/{ultimaVentaId.Value}/comprobante");
-            var base64 = Convert.ToBase64String(bytes);
-            await JS.InvokeVoidAsync("descargarArchivo", $"Comprobante_Venta_{ultimaVentaId}.pdf", base64);
-        }
-        catch (Exception ex)
-        {
-            mensajeError = $"Error al descargar el comprobante: {ex.Message}";
         }
     }
 }

@@ -2,9 +2,14 @@ using Microsoft.EntityFrameworkCore;
 using XpressMarket.Server.Data;
 using XpressMarket.Shared.Models;
 using QuestPDF.Infrastructure;
+using System.Globalization;
 
 System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler.DefaultOutboundClaimTypeMap.Clear();
 var builder = WebApplication.CreateBuilder(args);
+
+var cultureInfo = new CultureInfo("es-BO");
+CultureInfo.DefaultThreadCurrentCulture = cultureInfo;
+CultureInfo.DefaultThreadCurrentUICulture = cultureInfo;
 
 QuestPDF.Settings.License = LicenseType.Community;
 

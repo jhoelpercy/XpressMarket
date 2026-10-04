@@ -6,8 +6,15 @@ using XpressMarket.Client.Auth;
 using XpressMarket.Client.Services;
 using MudBlazor.Services;
 using Microsoft.Extensions.DependencyInjection;
+using System.Globalization;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
+
+
+var cultureInfo = new CultureInfo("es-BO");
+CultureInfo.DefaultThreadCurrentCulture = cultureInfo;
+CultureInfo.DefaultThreadCurrentUICulture = cultureInfo;
+
 
 builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");

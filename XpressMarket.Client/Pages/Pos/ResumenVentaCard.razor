@@ -1,0 +1,45 @@
+﻿<MudCard Elevation="2" Class="pa-4 rounded-lg">
+    <MudCardContent>
+        <MudText Typo="Typo.h6" Class="mb-4">Resumen de Venta</MudText>
+        
+        <div class="d-flex justify-space-between mb-2">
+            <MudText>Subtotal:</MudText>
+            <MudText>@SubTotal.ToString("C2")</MudText>
+        </div>
+        <div class="d-flex justify-space-between mb-2">
+            <MudText>Descuento Total:</MudText>
+            <MudText>@DescuentoTotal.ToString("C2")</MudText>
+        </div>
+        <MudDivider Class="my-2" />
+        <div class="d-flex justify-space-between mb-4">
+            <MudText Typo="Typo.subtitle1" Style="font-weight: bold;">Total:</MudText>
+            <MudText Typo="Typo.subtitle1" Color="Color.Primary" Style="font-weight: bold;">@Total.ToString("C2")</MudText>
+        </div>
+
+        <MudButton Variant="Variant.Filled" 
+                   Color="Color.Primary" 
+                   FullWidth="true" 
+                   Size="Size.Large"
+                   Disabled="@(!TieneItems || Procesando)"
+                   OnClick="OnConfirmarVenta">
+            @if (Procesando)
+            {
+                <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+                <MudText Class="ms-2">Procesando...</MudText>
+            }
+            else
+            {
+                <MudText>Procesar Venta</MudText>
+            }
+        </MudButton>
+    </MudCardContent>
+</MudCard>
+
+@code {
+    [Parameter] public decimal SubTotal { get; set; }
+    [Parameter] public decimal DescuentoTotal { get; set; }
+    [Parameter] public decimal Total { get; set; }
+    [Parameter] public bool TieneItems { get; set; }
+    [Parameter] public bool Procesando { get; set; }
+    [Parameter] public EventCallback OnConfirmarVenta { get; set; }
+}

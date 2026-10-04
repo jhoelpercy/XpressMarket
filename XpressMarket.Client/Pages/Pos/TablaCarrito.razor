@@ -1,0 +1,47 @@
+﻿<MudTable Items="Carrito" Hover="true" Dense="true" Elevation="0">
+    <HeaderContent>
+        <MudTh>Producto</MudTh>
+        <MudTh>Precio U.</MudTh>
+        <MudTh>Cantidad</MudTh>
+        <MudTh>Descuento</MudTh>
+        <MudTh>Subtotal</MudTh>
+        <MudTh></MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="Producto">@context.NombreProducto</MudTd>
+        <MudTd DataLabel="Precio U.">@context.PrecioUnitario.ToString("C2")</MudTd>
+        <MudTd DataLabel="Cantidad">
+            <MudNumericField Value="context.Cantidad" 
+                             ValueChanged="@(async (int val) => await CambiarCantidad(context, val))" 
+                             Min="1" Variant="Variant.Outlined" Style="width: 80px;" Margin="Margin.Dense" />
+        </MudTd>
+        <MudTd DataLabel="Descuento">@context.Descuento.ToString("C2")</MudTd>
+        <MudTd DataLabel="Subtotal">@context.Subtotal.ToString("C2")</MudTd>
+        <MudTd>
+            <MudIconButton Icon="@Icons.Material.Filled.Delete" 
+                           Color="Color.Error" 
+                           Size="Size.Small" 
+                           OnClick="@(async () => await EliminarItem(context))" />
+        </MudTd>
+    </RowTemplate>
+    <NoRecordsContent>
+        <MudText Align="Align.Center" Color="Color.Secondary" Class="my-4">El carrito está vacío. Busca productos arriba.</MudText>
+    </NoRecordsContent>
+</MudTable>
+
+@code {
+    [Parameter] public List<DetalleVenta> Carrito { get; set; } = new();
+    [Parameter] public EventCallback OnCantidadModificada { get; set; }
+    [Parameter] public EventCallback<DetalleVenta> OnEliminarItem { get; set; }
+
+    private async Task CambiarCantidad(DetalleVenta item, int nuevaCantidad)
+    {
+        item.Cantidad = nuevaCantidad;
+        await OnCantidadModificada.InvokeAsync();
+    }
+
+    private async Task EliminarItem(DetalleVenta item)
+    {
+        await OnEliminarItem.InvokeAsync(item);
+    }
+}

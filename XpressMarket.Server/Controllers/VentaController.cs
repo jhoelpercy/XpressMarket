@@ -30,11 +30,12 @@ namespace XpressMarket.Server.Controllers
         }
 
         [HttpGet("{id}")]
-        [Authorize(Roles = "Administrador")]
+        [Authorize]
         public async Task<ActionResult<Venta>> GetVenta(int id)
         {
             var venta = await _context.Ventas
                 .Include(v => v.Detalles)
+                    .ThenInclude(d => d.Producto)
                 .FirstOrDefaultAsync(v => v.Id == id);
 
             if (venta == null)
@@ -43,7 +44,6 @@ namespace XpressMarket.Server.Controllers
             return venta;
         }
 
-        // POST: api/ventas — Registra la venta y descuenta stock de forma transaccional (FEFO)
         [HttpPost]
         public async Task<ActionResult<Venta>> PostVenta(Venta venta)
         {
@@ -88,7 +88,6 @@ namespace XpressMarket.Server.Controllers
                         lote.CantidadActual -= descontarDeEsteLote;
                         cantidadPorDescontar -= descontarDeEsteLote;
 
-                        // Registra exactamente de qué lote salió cada unidad, para poder revertirlo si se anula
                         consumosNuevos.Add(new ConsumoLote
                         {
                             DetalleVenta = detalle,
@@ -115,10 +114,8 @@ namespace XpressMarket.Server.Controllers
                 await transaccion.RollbackAsync();
                 throw;
             }
-            
         }
 
-        // PUT: api/ventas/5/anular — anula una venta (no se borra, por trazabilidad)
         [HttpPut("{id}/anular")]
         [Authorize(Roles = "Administrador")]
         public async Task<IActionResult> AnularVenta(int id, [FromQuery] bool forzar = false)
@@ -137,7 +134,6 @@ namespace XpressMarket.Server.Controllers
                 .Where(c => detalleIds.Contains(c.DetalleVentaId))
                 .ToListAsync();
 
-            // Detecta lotes de origen que ya no existen como stock activo (dados de baja o registrados como merma)
             var advertencias = consumos
                 .Where(c => c.Lote != null && !c.Lote.Activo)
                 .Select(c => new AdvertenciaAnulacion
@@ -180,10 +176,10 @@ namespace XpressMarket.Server.Controllers
                 throw;
             }
         }
-        // GET: api/ventas/5/comprobante
-        // En VentasController.cs
-        [HttpGet("{id}/comprobante")]
-        public async Task<IActionResult> GetComprobante(int id)
+
+        [HttpGet("{id}/ticket-pdf")]
+        [Authorize] 
+        public async Task<IActionResult> GetTicketPdf(int id)
         {
             var venta = await _context.Ventas
                 .Include(v => v.Detalles)
@@ -195,21 +191,20 @@ namespace XpressMarket.Server.Controllers
 
             try
             {
-                byte[] pdfBytes = XpressMarket.Server.Services.ComprobantePdfService.Generar(venta);
-                return File(pdfBytes, "application/pdf", $"Comprobante_Venta_{venta.Id}.pdf");
+                byte[] pdfBytes = XpressMarket.Server.Services.TicketPdfService.Generar(venta);
+                return File(pdfBytes, "application/pdf", $"Ticket_{venta.Id}.pdf");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[ERROR EN GENERACIÓN PDF]: {ex.Message}");
-                return StatusCode(500, "Error interno al generar el PDF.");
+                Console.WriteLine($"[ERROR EN TICKET PDF]: {ex.Message}");
+                return StatusCode(500, "Error interno al generar el ticket PDF.");
             }
         }
-        // GET: api/ventas/reporte-utilidades?desde=2026-01-01&hasta=2026-12-31
+
         [HttpGet("reporte-utilidades")]
         [Authorize(Roles = "Administrador")]
         public async Task<ActionResult<IEnumerable<ResumenUtilidad>>> GetReporteUtilidades(
             [FromQuery] DateTime? desde, [FromQuery] DateTime? hasta)
-
         {
             var query = _context.Ventas
                 .Include(v => v.Detalles)
@@ -238,7 +233,8 @@ namespace XpressMarket.Server.Controllers
             }).ToList();
 
             return resumen;
-        }// GET: api/ventas/dashboard?dias=30
+        }
+
         [HttpGet("dashboard")]
         [Authorize(Roles = "Administrador")]
         public async Task<ActionResult<DashboardResumen>> GetDashboard([FromQuery] int dias = 30)
@@ -275,7 +271,7 @@ namespace XpressMarket.Server.Controllers
 
             var lotesPorVencer = await _context.Lotes
                 .Where(l => l.Activo && l.FechaVencimiento.Date >= DateTime.Now.Date
-                         && l.FechaVencimiento.Date <= DateTime.Now.Date.AddDays(30))
+                       && l.FechaVencimiento.Date <= DateTime.Now.Date.AddDays(30))
                 .CountAsync();
 
             return new DashboardResumen
@@ -288,16 +284,17 @@ namespace XpressMarket.Server.Controllers
                 TopProductos = topProductos
             };
         }
+
         [HttpGet("reporte-periodo")]
         [Authorize(Roles = "Administrador")]
         public async Task<ActionResult<List<PeriodoResumen>>> GetReportePeriodo(
-    [FromQuery] DateTime desde, [FromQuery] DateTime hasta, [FromQuery] string agrupacion = "dia")
+            [FromQuery] DateTime desde, [FromQuery] DateTime hasta, [FromQuery] string agrupacion = "dia")
         {
             var ventas = await _context.Ventas
                 .Include(v => v.Detalles).ThenInclude(d => d.Producto)
                 .Where(v => v.Estado == EstadoVenta.Completada
-                         && v.FechaVenta.Date >= desde.Date
-                         && v.FechaVenta.Date <= hasta.Date)
+                       && v.FechaVenta.Date >= desde.Date
+                       && v.FechaVenta.Date <= hasta.Date)
                 .ToListAsync();
 
             var cultura = CultureInfo.GetCultureInfo("es-ES");
@@ -333,13 +330,12 @@ namespace XpressMarket.Server.Controllers
 
         private static (DateTime orden, string etiqueta) ObtenerClaveSemana(DateTime fecha)
         {
-            var diasDesdeInicioSemana = ((int)fecha.DayOfWeek + 6) % 7; // Lunes = inicio de semana
+            var diasDesdeInicioSemana = ((int)fecha.DayOfWeek + 6) % 7;
             var inicioSemana = fecha.Date.AddDays(-diasDesdeInicioSemana);
             var finSemana = inicioSemana.AddDays(6);
             return (inicioSemana, $"{inicioSemana:dd/MM} - {finSemana:dd/MM}");
         }
 
         private static string Capitalizar(string texto) => char.ToUpper(texto[0]) + texto.Substring(1);
-
     }
 }
