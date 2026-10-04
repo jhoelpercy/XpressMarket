@@ -5,7 +5,8 @@
 <MudNavMenu Class="mud-width-full py-2" Style="background-color: #6b2181;">
 
     @* Brand / Header del Menú *@
-    <div class="d-flex align-center justify-center px-4 py-4 mb-2" style="background: rgba(255, 255, 255, 0.05); border-radius: 0 0 12px 12px;">
+    <div class="d-flex align-center justify-center px-4 py-4 mb-2"
+         style="background: rgba(255, 255, 255, 0.05); border-radius: 0 0 12px 12px;">
         <img src="images/icon.png" alt="Logo" style="width: 50px; height: 50px;" class="mr-3" />
         <MudText Typo="Typo.h6" Class="fw-bold" Style="color: #fbf2db; letter-spacing: 0.5px;">
             <span>press</span><span style="color: #f38218;">Market</span>
@@ -21,7 +22,8 @@
         Inicio
     </MudNavLink>
 
-    <AuthorizeView>
+    @* Punto de Venta: solo visible para el rol Cajero *@
+    <AuthorizeView Roles="Cajero">
         <Authorized>
             <MudNavLink Href="punto-venta" Icon="@Icons.Material.Filled.PointOfSale"
                         Style="color: #fbf2db; border-radius: 8px; margin: 4px 8px;"
@@ -31,7 +33,7 @@
         </Authorized>
     </AuthorizeView>
 
-    @* Sección de Administración y Reportes *@
+    @* Sección de Administración y Reportes (solo Admin) *@
     <AuthorizeView Roles="Administrador">
         <Authorized>
             <MudNavGroup Title="Administración" Icon="@Icons.Material.Filled.AdminPanelSettings"
