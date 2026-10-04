@@ -1,31 +1,71 @@
-﻿<MudTable Items="Carrito" Hover="true" Dense="true" Elevation="0">
+﻿<MudTable Items="Carrito" Hover="true" Dense="true" Elevation="0" Class="rounded-lg">
     <HeaderContent>
-        <MudTh>Producto</MudTh>
-        <MudTh>Precio U.</MudTh>
-        <MudTh>Cantidad</MudTh>
-        <MudTh>Descuento</MudTh>
-        <MudTh>Subtotal</MudTh>
-        <MudTh></MudTh>
+        <MudTh><MudText Typo="Typo.subtitle2" Class="fw-bold">Producto</MudText></MudTh>
+        <MudTh Class="text-right"><MudText Typo="Typo.subtitle2" Class="fw-bold">Precio U.</MudText></MudTh>
+        <MudTh Class="text-center"><MudText Typo="Typo.subtitle2" Class="fw-bold">Cantidad</MudText></MudTh>
+        <MudTh Class="text-right"><MudText Typo="Typo.subtitle2" Class="fw-bold">Descuento</MudText></MudTh>
+        <MudTh Class="text-right"><MudText Typo="Typo.subtitle2" Class="fw-bold">Subtotal</MudText></MudTh>
+        <MudTh Class="text-center"></MudTh>
     </HeaderContent>
+
     <RowTemplate>
-        <MudTd DataLabel="Producto">@context.NombreProducto</MudTd>
-        <MudTd DataLabel="Precio U.">@context.PrecioUnitario.ToString("C2")</MudTd>
-        <MudTd DataLabel="Cantidad">
-            <MudNumericField Value="context.Cantidad" 
-                             ValueChanged="@(async (int val) => await CambiarCantidad(context, val))" 
-                             Min="1" Variant="Variant.Outlined" Style="width: 80px;" Margin="Margin.Dense" />
+        <MudTd DataLabel="Producto">
+            <MudStack Spacing="0">
+                <MudText Typo="Typo.body1" Class="fw-bold">@context.NombreProducto</MudText>
+            </MudStack>
         </MudTd>
-        <MudTd DataLabel="Descuento">@context.Descuento.ToString("C2")</MudTd>
-        <MudTd DataLabel="Subtotal">@context.Subtotal.ToString("C2")</MudTd>
-        <MudTd>
-            <MudIconButton Icon="@Icons.Material.Filled.Delete" 
-                           Color="Color.Error" 
-                           Size="Size.Small" 
-                           OnClick="@(async () => await EliminarItem(context))" />
+
+        <MudTd DataLabel="Precio U." Class="text-right">
+            <MudText Typo="Typo.body2" Style="color: #6c757d;">
+                @context.PrecioUnitario.ToString("C2")
+            </MudText>
+        </MudTd>
+
+        <MudTd DataLabel="Cantidad" Class="text-center">
+            <MudNumericField Value="context.Cantidad"
+                             ValueChanged="@(async (int val) => await CambiarCantidad(context, val))"
+                             Min="1"
+                             Variant="Variant.Outlined"
+                             Margin="Margin.Dense"
+                             Style="width: 90px;"
+                             Class="mx-auto" />
+        </MudTd>
+
+        <MudTd DataLabel="Descuento" Class="text-right">
+            <MudText Typo="Typo.body2" Style="color: #dc3545;">
+                -@context.Descuento.ToString("C2")
+            </MudText>
+        </MudTd>
+
+        <MudTd DataLabel="Subtotal" Class="text-right">
+            <MudText Typo="Typo.body1" Class="fw-bold" Style="color: #6b2181;">
+                @context.Subtotal.ToString("C2")
+            </MudText>
+        </MudTd>
+
+        <MudTd Class="text-center">
+            <MudTooltip Text="Eliminar del carrito">
+                <MudIconButton Icon="@Icons.Material.Filled.DeleteOutline"
+                               Color="Color.Error"
+                               Size="Size.Small"
+                               Variant="Variant.Text"
+                               OnClick="@(async () => await EliminarItem(context))" />
+            </MudTooltip>
         </MudTd>
     </RowTemplate>
+
     <NoRecordsContent>
-        <MudText Align="Align.Center" Color="Color.Secondary" Class="my-4">El carrito está vacío. Busca productos arriba.</MudText>
+        <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="py-8" Spacing="2">
+            <MudIcon Icon="@Icons.Material.Filled.RemoveShoppingCart"
+                     Size="Size.Large"
+                     Style="color: #adb5bd;" />
+            <MudText Typo="Typo.subtitle1" Class="fw-bold" Style="color: #6c757d;">
+                El carrito está vacío
+            </MudText>
+            <MudText Typo="Typo.body2" Style="color: #adb5bd;">
+                Busca productos arriba para comenzar la venta
+            </MudText>
+        </MudStack>
     </NoRecordsContent>
 </MudTable>
 

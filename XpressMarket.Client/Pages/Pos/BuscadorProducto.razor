@@ -1,34 +1,64 @@
 ﻿@inject ProductoService ProductoSvc
 
-<MudAutocomplete T="Producto" 
-                  Label="Buscar producto por nombre, descripción o código..." 
+<MudAutocomplete T="Producto"
                   Value="productoSeleccionado"
                   ValueChanged="OnProductoSelected"
-                  SearchFunc="BuscarProductosAsync" 
-                  ToStringFunc="@(p => p != null ? $"{p.CodigoBarras} - {p.Nombre} (Stock: {p.StockActual})" : string.Empty)"
+                  SearchFunc="BuscarProductosAsync"
+                  ToStringFunc="@(p => p != null ? $"{p.CodigoBarras} - {p.Nombre}" : string.Empty)"
                   ResetValueOnEmptyText="true"
                   CoerceText="true"
                   Clearable="true"
                   Variant="Variant.Outlined"
-                  AdornmentIcon="@Icons.Material.Filled.Search" />
+                  AdornmentIcon="@Icons.Material.Filled.Search"
+                  AdornmentColor="Color.Primary"
+                  Placeholder="Buscar producto por nombre, descripción o código..."
+                  FullWidth="true"
+                  Dense="true">
+    <ItemTemplate>
+        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="w-100 py-1">
+            <MudStack Spacing="0">
+                <MudText Typo="Typo.body1" Class="fw-bold">@context.Nombre</MudText>
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                    <MudIcon Icon="@Icons.Material.Filled.QrCode" Size="Size.Small" Style="color: #6c757d;" />
+                    <MudText Typo="Typo.caption" Style="color: #6c757d;">
+                        @(string.IsNullOrEmpty(context.CodigoBarras) ? "Sin código" : context.CodigoBarras)
+                    </MudText>
+                </MudStack>
+            </MudStack>
+
+            <MudStack Spacing="0" AlignItems="AlignItems.End">
+                <MudText Typo="Typo.body2" Class="fw-bold" Style="color: #6b2181;">
+                    @context.PrecioVenta.ToString("C2")
+                </MudText>
+                <MudChip T="string" Size="Size.Small"
+                         Color="@(context.StockActual > 10 ? Color.Success : context.StockActual > 0 ? Color.Warning : Color.Error)"
+                         Variant="Variant.Text"
+                         Class="ma-0">
+                    Stock: @context.StockActual
+                </MudChip>
+            </MudStack>
+        </MudStack>
+    </ItemTemplate>
+</MudAutocomplete>
 
 @code {
     [Parameter] public EventCallback<Producto> OnProductoAgregado { get; set; }
-    
+
     private Producto? productoSeleccionado;
 
     private async Task<IEnumerable<Producto>> BuscarProductosAsync(string valor, CancellationToken token)
     {
         var productos = await ProductoSvc.ObtenerTodosAsync();
-        
+
         if (string.IsNullOrWhiteSpace(valor))
         {
-            return productos.Where(p => p.Activo);
+            return productos.Where(p => p.Activo).Take(20);
         }
 
-        return productos.Where(p => p.Activo && 
-            (p.Nombre.Contains(valor, StringComparison.OrdinalIgnoreCase) || 
-             (!string.IsNullOrEmpty(p.CodigoBarras) && p.CodigoBarras.Contains(valor, StringComparison.OrdinalIgnoreCase))));
+        return productos.Where(p => p.Activo &&
+            (p.Nombre.Contains(valor, StringComparison.OrdinalIgnoreCase) ||
+             (!string.IsNullOrEmpty(p.CodigoBarras) && p.CodigoBarras.Contains(valor, StringComparison.OrdinalIgnoreCase))))
+            .Take(20);
     }
 
     private async Task OnProductoSelected(Producto producto)
@@ -37,7 +67,7 @@
         {
             productoSeleccionado = producto;
             await OnProductoAgregado.InvokeAsync(producto);
-            productoSeleccionado = null; 
+            productoSeleccionado = null;
         }
     }
 }

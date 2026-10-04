@@ -113,3 +113,27 @@ code {
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
     text-align: start;
 }
+
+.nav-link-custom {
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+    .nav-link-custom:hover {
+        background-color: rgba(255, 255, 255, 0.1) !important;
+        color: #ffffff !important;
+    }
+
+.mud-nav-link.active {
+    background-color: rgba(243, 130, 24, 0.2) !important;
+    color: #f38218 !important;
+    border-left: 4px solid #f38218;
+    font-weight: 600;
+}
+
+.mud-nav-group > .mud-nav-link {
+    color: #fbf2db !important;
+}
+
+    .mud-nav-group > .mud-nav-link:hover {
+        background-color: rgba(255, 255, 255, 0.05) !important;
+    }

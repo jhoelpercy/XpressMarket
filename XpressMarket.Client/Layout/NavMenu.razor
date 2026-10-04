@@ -2,25 +2,30 @@
 @inject AuthService AuthSvc
 @inject NavigationManager NavManager
 
-<MudNavMenu Class="mud-width-full py-2">
+<MudNavMenu Class="mud-width-full py-2" Style="background-color: #6b2181;">
 
     @* Brand / Header del Menú *@
-    <div class="d-flex align-center justify-center px-4 py-3 mb-2" style="background: rgba(255, 255, 255, 0.08); border-radius: 8px;">
-        <img src="images/icon.png" alt="Logo" style="width: 70px; height: 70px;" class="mr-2" />
+    <div class="d-flex align-center justify-center px-4 py-4 mb-2" style="background: rgba(255, 255, 255, 0.05); border-radius: 0 0 12px 12px;">
+        <img src="images/icon.png" alt="Logo" style="width: 50px; height: 50px;" class="mr-3" />
         <MudText Typo="Typo.h6" Class="fw-bold" Style="color: #fbf2db; letter-spacing: 0.5px;">
-            <span>press</span><span>Market</span>
+            <span>press</span><span style="color: #f38218;">Market</span>
         </MudText>
     </div>
-    <MudDivider Style="background-color: rgba(251, 242, 219, 0.2);" Class="my-2" />
+
+    <MudDivider Style="background-color: rgba(251, 242, 219, 0.15);" Class="my-3" />
 
     @* Navegación General *@
-    <MudNavLink Href="" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home" Style="color: #fbf2db;">
+    <MudNavLink Href="" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home"
+                Style="color: #fbf2db; border-radius: 8px; margin: 4px 8px;"
+                Class="nav-link-custom">
         Inicio
     </MudNavLink>
 
     <AuthorizeView>
         <Authorized>
-            <MudNavLink Href="punto-venta" Icon="@Icons.Material.Filled.PointOfSale" Style="color: #fbf2db;">
+            <MudNavLink Href="punto-venta" Icon="@Icons.Material.Filled.PointOfSale"
+                        Style="color: #fbf2db; border-radius: 8px; margin: 4px 8px;"
+                        Class="nav-link-custom">
                 Punto de Venta
             </MudNavLink>
         </Authorized>
@@ -29,31 +34,33 @@
     @* Sección de Administración y Reportes *@
     <AuthorizeView Roles="Administrador">
         <Authorized>
-            <MudNavGroup Title="Administración" Icon="@Icons.Material.Filled.AdminPanelSettings" Expanded="true" Style="color: #fbf2db;">
-                <MudNavLink Href="categorias" Icon="@Icons.Material.Filled.Category" Style="color: #fbf2db;">Categorías</MudNavLink>
-                <MudNavLink Href="productos" Icon="@Icons.Material.Filled.Inventory2" Style="color: #fbf2db;">Productos</MudNavLink>
-                <MudNavLink Href="proveedores" Icon="@Icons.Material.Filled.LocalShipping" Style="color: #fbf2db;">Proveedores</MudNavLink>
-                <MudNavLink Href="lotes" Icon="@Icons.Material.Filled.QrCodeScanner" Style="color: #fbf2db;">Lotes</MudNavLink>
-                <MudNavLink Href="ventas" Icon="@Icons.Material.Filled.ReceiptLong" Style="color: #fbf2db;">Ventas</MudNavLink>
-                <MudNavLink Href="alertas" Icon="@Icons.Material.Filled.NotificationsActive" Style="color: #f38218;">Alertas</MudNavLink>
-                <MudNavLink Href="usuarios" Icon="@Icons.Material.Filled.People" Style="color: #fbf2db;">Usuarios</MudNavLink>
+            <MudNavGroup Title="Administración" Icon="@Icons.Material.Filled.AdminPanelSettings"
+                         Expanded="true" Style="color: #fbf2db; margin: 4px 8px;">
+                <MudNavLink Href="categorias" Icon="@Icons.Material.Filled.Category" Style="color: #fbf2db;" Class="nav-link-custom">Categorías</MudNavLink>
+                <MudNavLink Href="productos" Icon="@Icons.Material.Filled.Inventory2" Style="color: #fbf2db;" Class="nav-link-custom">Productos</MudNavLink>
+                <MudNavLink Href="proveedores" Icon="@Icons.Material.Filled.LocalShipping" Style="color: #fbf2db;" Class="nav-link-custom">Proveedores</MudNavLink>
+                <MudNavLink Href="lotes" Icon="@Icons.Material.Filled.QrCodeScanner" Style="color: #fbf2db;" Class="nav-link-custom">Lotes</MudNavLink>
+                <MudNavLink Href="ventas" Icon="@Icons.Material.Filled.ReceiptLong" Style="color: #fbf2db;" Class="nav-link-custom">Ventas</MudNavLink>
+                <MudNavLink Href="alertas" Icon="@Icons.Material.Filled.NotificationsActive" Style="color: #f38218;" Class="nav-link-custom">Alertas</MudNavLink>
+                <MudNavLink Href="usuarios" Icon="@Icons.Material.Filled.People" Style="color: #fbf2db;" Class="nav-link-custom">Usuarios</MudNavLink>
             </MudNavGroup>
 
-            <MudNavGroup Title="Reportes" Icon="@Icons.Material.Filled.Assessment" Expanded="false" Style="color: #fbf2db;">
-                <MudNavLink Href="dashboard" Icon="@Icons.Material.Filled.Speed" Style="color: #fbf2db;">Dashboard</MudNavLink>
-                <MudNavLink Href="reporte-mermas" Icon="@Icons.Material.Filled.AssignmentReturn" Style="color: #fbf2db;">Reporte de Mermas</MudNavLink>
-                <MudNavLink Href="reporte-utilidades" Icon="@Icons.Material.Filled.ShowChart" Style="color: #fbf2db;">Reporte de Utilidades</MudNavLink>
+            <MudNavGroup Title="Reportes" Icon="@Icons.Material.Filled.Assessment"
+                         Expanded="false" Style="color: #fbf2db; margin: 4px 8px;">
+                <MudNavLink Href="dashboard" Icon="@Icons.Material.Filled.Speed" Style="color: #fbf2db;" Class="nav-link-custom">Dashboard</MudNavLink>
+                <MudNavLink Href="reporte-mermas" Icon="@Icons.Material.Filled.AssignmentReturn" Style="color: #fbf2db;" Class="nav-link-custom">Reporte de Mermas</MudNavLink>
+                <MudNavLink Href="reporte-utilidades" Icon="@Icons.Material.Filled.ShowChart" Style="color: #fbf2db;" Class="nav-link-custom">Reporte de Utilidades</MudNavLink>
             </MudNavGroup>
         </Authorized>
     </AuthorizeView>
 
     <MudSpacer />
-    <MudDivider Style="background-color: rgba(251, 242, 219, 0.2);" Class="my-3" />
+    <MudDivider Style="background-color: rgba(251, 242, 219, 0.15);" Class="my-3" />
 
     @* Usuario y Cierre de Sesión *@
     <AuthorizeView>
         <Authorized Context="authContext">
-            <div class="px-3 py-2 d-flex align-center rounded mb-2" style="background: rgba(255, 255, 255, 0.08);">
+            <div class="px-4 py-3 d-flex align-center rounded mb-2 mx-2" style="background: rgba(255, 255, 255, 0.08);">
                 <MudAvatar Style="background-color: #f38218; color: #ffffff;" Variant="Variant.Filled" Size="Size.Medium" Class="mr-3">
                     @(string.IsNullOrEmpty(authContext.User.Identity?.Name) ? "U" : authContext.User.Identity.Name.Trim().Substring(0, 1).ToUpper())
                 </MudAvatar>
@@ -68,11 +75,11 @@
             </div>
 
             <MudButton Variant="Variant.Outlined"
-                       Style="color: #fbf2db; border-color: #f38218; background-color: rgba(243, 130, 24, 0.1);"
+                       Style="color: #fbf2db; border-color: #f38218; background-color: rgba(243, 130, 24, 0.1); margin: 0 8px;"
                        StartIcon="@Icons.Material.Filled.Logout"
                        FullWidth="true"
                        OnClick="CerrarSesion"
-                       Class="mt-2">
+                       Class="mt-2 rounded-lg">
                 Cerrar sesión
             </MudButton>
         </Authorized>

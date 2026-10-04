@@ -3,33 +3,84 @@
 @attribute [Authorize]
 @inject VentaService VentaSvc
 @inject NavigationManager NavManager
+@inject ISnackbar Snackbar
 
 <PageTitle>Punto de Venta - XpressMarket</PageTitle>
 
-<div class="pos-container pa-4 pa-md-6">
-    <div class="d-flex align-center justify-between mb-4">
-        <div>
-            <MudText Typo="Typo.h5" Class="fw-bold" Style="color: #6b2181;">Punto de Venta</MudText>
-            <MudText Typo="Typo.body2" Style="color: #6c757d;">Registra transacciones y emite comprobantes al instante</MudText>
-        </div>
-        <MudChip T="string" Icon="@Icons.Material.Filled.Storefront" Style="background-color: #6b2181; color: #fbf2db;" Class="fw-bold">
-            Caja Activa
-        </MudChip>
-    </div>
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="pa-4 pa-md-6">
 
+    @* ==================== ENCABEZADO ==================== *@
+    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-6" Wrap="Wrap.Wrap">
+        <MudStack Spacing="0">
+            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                <MudIcon Icon="@Icons.Material.Filled.Storefront" Style="color: #f38218;" />
+                <MudText Typo="Typo.overline" Style="color: #6c757d; letter-spacing: 1px;">
+                    CAJA / PUNTO DE VENTA
+                </MudText>
+            </MudStack>
+            <MudText Typo="Typo.h4" Class="fw-bold" Style="color: #6b2181;">
+                Punto de Venta
+            </MudText>
+            <MudText Typo="Typo.body2" Style="color: #6c757d;">
+                Registra transacciones y emite comprobantes al instante
+            </MudText>
+        </MudStack>
+
+        <MudPaper Elevation="0" Class="pa-3 rounded-lg"
+                  Style="background: linear-gradient(135deg, #6b2181 0%, #8e3aa8 100%);">
+            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                <MudIcon Icon="@Icons.Material.Filled.PointOfSale" Style="color: #f38218;" Size="Size.Large" />
+                <MudStack Spacing="0">
+                    <MudText Typo="Typo.caption" Style="color: rgba(251,242,219,0.7);">Estado</MudText>
+                    <MudText Typo="Typo.body1" Class="fw-bold" Style="color: #fbf2db;">Caja Activa</MudText>
+                </MudStack>
+            </MudStack>
+        </MudPaper>
+    </MudStack>
+
+    @* ==================== GRID PRINCIPAL ==================== *@
     <MudGrid Spacing="4">
+
+        @* -------- COLUMNA IZQUIERDA: Buscador + Carrito -------- *@
         <MudItem xs="12" lg="8">
-            <MudPaper Elevation="2" Class="pa-4 mb-4 rounded-lg">
+
+            @* Buscador destacado *@
+            <MudPaper Elevation="1" Class="pa-4 mb-4 rounded-lg">
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1" Class="mb-3">
+                    <MudIcon Icon="@Icons.Material.Filled.Search" Style="color: #6b2181;" />
+                    <MudText Typo="Typo.subtitle1" Class="fw-bold" Style="color: #6b2181;">
+                        Buscar Producto
+                    </MudText>
+                </MudStack>
                 <BuscadorProducto OnProductoAgregado="AgregarAlCarrito" />
             </MudPaper>
 
-            <MudPaper Elevation="2" Class="pa-4 rounded-lg">
+            @* Tabla del carrito *@
+            <MudPaper Elevation="1" Class="rounded-lg overflow-hidden">
+
+                <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center"
+                          Class="px-4 py-3"
+                          Style="background: #f8f9fa; border-bottom: 1px solid #e9ecef;">
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                        <MudIcon Icon="@Icons.Material.Filled.ShoppingCart" Style="color: #6b2181;" />
+                        <MudText Typo="Typo.subtitle1" Class="fw-bold" Style="color: #6b2181;">
+                            Carrito de Venta
+                        </MudText>
+                    </MudStack>
+                    <MudChip T="string" Size="Size.Small"
+                             Style="background-color: #6b2181; color: #fbf2db;"
+                             Class="fw-bold">
+                        @carrito.Count item(s)
+                    </MudChip>
+                </MudStack>
+
                 <TablaCarrito Carrito="carrito"
                               OnCantidadModificada="RecalcularTotales"
                               OnEliminarItem="RemoverDelCarrito" />
             </MudPaper>
         </MudItem>
 
+        @* -------- COLUMNA DERECHA: Resumen tipo ticket -------- *@
         <MudItem xs="12" lg="4">
             <ResumenVentaCard SubTotal="subtotal"
                               DescuentoTotal="descuentoTotal"
@@ -39,7 +90,7 @@
                               TieneItems="carrito.Any()" />
         </MudItem>
     </MudGrid>
-</div>
+</MudContainer>
 
 @code {
     private List<DetalleVenta> carrito = new();
@@ -53,6 +104,16 @@
         if (producto == null) return;
 
         var existente = carrito.FirstOrDefault(i => i.ProductoId == producto.Id);
+        int cantidadActual = existente?.Cantidad ?? 0;
+
+        // Validación de stock en el cliente
+        if (cantidadActual + 1 > producto.StockActual)
+        {
+            Snackbar.Add($"Stock insuficiente para '{producto.Nombre}'. Disponible: {producto.StockActual}",
+                         Severity.Warning);
+            return;
+        }
+
         if (existente != null)
         {
             existente.Cantidad++;
@@ -110,16 +171,20 @@
             {
                 carrito.Clear();
                 RecalcularTotales();
+
+                Snackbar.Add("Venta registrada correctamente", Severity.Success);
                 NavManager.NavigateTo($"/comprobante-venta/{resultado.Venta.Id}");
             }
             else
             {
-                Console.WriteLine($"Error del servidor: {resultado.Error}");
+                Snackbar.Add(resultado.Error ?? "No se pudo registrar la venta",
+                             Severity.Error,
+                             config => { config.VisibleStateDuration = 6000; });
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error al procesar venta: {ex.Message}");
+            Snackbar.Add($"Error inesperado: {ex.Message}", Severity.Error);
         }
         finally
         {

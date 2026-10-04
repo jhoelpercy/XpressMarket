@@ -1,39 +1,59 @@
-﻿<MudCard Elevation="2" Class="pa-4 rounded-lg">
-    <MudCardContent>
-        <MudText Typo="Typo.h6" Class="mb-4">Resumen de Venta</MudText>
-        
-        <div class="d-flex justify-space-between mb-2">
-            <MudText>Subtotal:</MudText>
-            <MudText>@SubTotal.ToString("C2")</MudText>
-        </div>
-        <div class="d-flex justify-space-between mb-2">
-            <MudText>Descuento Total:</MudText>
-            <MudText>@DescuentoTotal.ToString("C2")</MudText>
-        </div>
-        <MudDivider Class="my-2" />
-        <div class="d-flex justify-space-between mb-4">
-            <MudText Typo="Typo.subtitle1" Style="font-weight: bold;">Total:</MudText>
-            <MudText Typo="Typo.subtitle1" Color="Color.Primary" Style="font-weight: bold;">@Total.ToString("C2")</MudText>
-        </div>
+﻿<MudPaper Elevation="1" Class="pa-4 rounded-lg">
 
-        <MudButton Variant="Variant.Filled" 
-                   Color="Color.Primary" 
-                   FullWidth="true" 
-                   Size="Size.Large"
-                   Disabled="@(!TieneItems || Procesando)"
-                   OnClick="OnConfirmarVenta">
-            @if (Procesando)
-            {
-                <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
-                <MudText Class="ms-2">Procesando...</MudText>
-            }
-            else
-            {
-                <MudText>Procesar Venta</MudText>
-            }
-        </MudButton>
-    </MudCardContent>
-</MudCard>
+    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1" Class="mb-3">
+        <MudIcon Icon="@Icons.Material.Filled.Receipt" Style="color: #6b2181;" />
+        <MudText Typo="Typo.h6" Class="fw-bold" Style="color: #6b2181;">
+            Resumen de Venta
+        </MudText>
+    </MudStack>
+
+    <MudDivider Class="mb-3" />
+
+    <MudStack Spacing="2" Class="mb-3">
+        <MudStack Row="true" Justify="Justify.SpaceBetween">
+            <MudText Typo="Typo.body1" Style="color: #6c757d;">Subtotal:</MudText>
+            <MudText Typo="Typo.body1" Class="fw-bold">@SubTotal.ToString("C2")</MudText>
+        </MudStack>
+
+        <MudStack Row="true" Justify="Justify.SpaceBetween">
+            <MudText Typo="Typo.body1" Style="color: #6c757d;">Descuento Total:</MudText>
+            <MudText Typo="Typo.body1" Class="fw-bold" Style="color: #dc3545;">
+                -@DescuentoTotal.ToString("C2")
+            </MudText>
+        </MudStack>
+    </MudStack>
+
+    <MudDivider Class="mb-3" />
+
+    <MudPaper Elevation="0" Class="pa-3 mb-4 rounded-lg"
+              Style="background: linear-gradient(135deg, #6b2181 0%, #8e3aa8 100%);">
+        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+            <MudText Typo="Typo.subtitle1" Class="fw-bold" Style="color: #fbf2db;">TOTAL:</MudText>
+            <MudText Typo="Typo.h5" Class="fw-bold" Style="color: #fbf2db;">
+                @Total.ToString("C2")
+            </MudText>
+        </MudStack>
+    </MudPaper>
+
+    <MudButton Variant="Variant.Filled"
+               Color="Color.Secondary"
+               FullWidth="true"
+               Size="Size.Large"
+               Disabled="@(!TieneItems || Procesando)"
+               OnClick="OnConfirmarVenta"
+               Class="rounded-lg fw-bold">
+        @if (Procesando)
+        {
+            <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" Color="Color.Inherit" />
+            <MudText Class="ms-2">Procesando...</MudText>
+        }
+        else
+        {
+            <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Class="mr-2" />
+            <MudText>Procesar Venta</MudText>
+        }
+    </MudButton>
+</MudPaper>
 
 @code {
     [Parameter] public decimal SubTotal { get; set; }

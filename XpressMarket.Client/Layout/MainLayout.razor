@@ -7,7 +7,7 @@
 
 <MudLayout>
     @* Barra superior *@
-    <MudAppBar Elevation="1" Color="Color.Primary" Dense="true">
+    <MudAppBar Elevation="1" Color="Color.Primary" Dense="true" Fixed="true" Class="px-4">
         <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="DrawerToggle" />
         <MudText Typo="Typo.h6" Class="ml-2 fw-bold" Style="color: #fbf2db; letter-spacing: 0.5px;">
             XpressMarket
@@ -16,13 +16,19 @@
     </MudAppBar>
 
     @* Menú lateral desplegable *@
-    <MudDrawer @bind-Open="_drawerOpen" ClipMode="DrawerClipMode.Always" Elevation="2" Style="background-color: #6b2181;">
+    <MudDrawer @bind-Open="_drawerOpen" 
+               ClipMode="DrawerClipMode.Never" 
+               Elevation="2" 
+               Style="background-color: #6b2181; border-right: 1px solid rgba(255,255,255,0.1);"
+               Width="280px">
         <NavMenu />
     </MudDrawer>
 
     @* Área principal de contenido *@
-    <MudMainContent Class="pa-4" Style="background-color: #f8f9fa; min-height: 100vh;">
-        @Body
+    <MudMainContent Class="pa-6 mud-appbar-dense" Style="background-color: #f8f9fa; min-height: 100vh;">
+        <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="pa-0">
+            @Body
+        </MudContainer>
     </MudMainContent>
 </MudLayout>
 
@@ -44,7 +50,10 @@
             Background = "#f8f9fa",       
             DrawerBackground = "#6b2181", 
             DrawerText = "#fbf2db",       
-            DrawerIcon = "#f38218"        
+            DrawerIcon = "#f38218",
+            Surface = "#ffffff",
+            TextPrimary = "#333333",
+            TextSecondary = "#666666"
         }
     };
 }
