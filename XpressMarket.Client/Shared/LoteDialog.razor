@@ -1,0 +1,330 @@
+﻿@using XpressMarket.Shared.Models
+@inject LoteService LoteSvc
+@inject ProductoService ProductoSvc
+@inject ProveedorService ProveedorSvc
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6" Class="fw-bold" Style="color: #6b2181;">
+            <MudIcon Icon="@Icons.Material.Filled.QrCodeScanner" Class="mr-2" />
+            @(EsNuevo ? "Nuevo Lote" : "Editar Lote")
+        </MudText>
+    </TitleContent>
+
+    <DialogContent>
+        <EditForm Model="Lote" OnValidSubmit="Guardar">
+            <DataAnnotationsValidator />
+            <ValidationSummary class="alert alert-danger p-2 small mb-3" />
+
+            <MudGrid>
+                <MudItem xs="12" md="6">
+                    <MudTextField Label="Número de Lote"
+                                  @bind-Value="Lote.NumeroLote"
+                                  For="@(() => Lote.NumeroLote)"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  Class="mb-3" />
+                </MudItem>
+
+                <MudItem xs="12" md="6">
+                    <MudSelect T="int" Label="Proveedor (opcional)"
+                               @bind-Value="ProveedorSeleccionado"
+                               Variant="Variant.Outlined"
+                               Margin="Margin.Dense"
+                               Class="mb-3">
+                        <MudSelectItem T="int" Value="0">-- Sin proveedor --</MudSelectItem>
+                        @if (Proveedores != null)
+                        {
+                            @foreach (var prov in Proveedores)
+                            {
+                                <MudSelectItem T="int" Value="@prov.Id">@prov.Nombre</MudSelectItem>
+                            }
+                        }
+                    </MudSelect>
+                </MudItem>
+            </MudGrid>
+
+            <div class="mb-3">
+                <MudText Typo="Typo.caption" Class="fw-bold" Style="color: #6c757d;">Producto</MudText>
+                @if (Lote.Id > 0)
+                {
+                    <MudTextField Value="@ProductoSeleccionadoNombre" ReadOnly="true"
+                                  Variant="Variant.Outlined" Margin="Margin.Dense" />
+                }
+                else if (ProductoSeleccionadoNombre != null)
+                {
+                    <MudPaper Elevation="0" Class="pa-3 rounded-lg d-flex align-center justify-between"
+                              Style="background: #f3e5f5;">
+                        <MudText Typo="Typo.body2" Class="fw-bold" Style="color: #6b2181;">
+                            <MudIcon Icon="@Icons.Material.Filled.Inventory" Size="Size.Small" Class="mr-1" />
+                            @ProductoSeleccionadoNombre
+                        </MudText>
+                        <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Default"
+                                   OnClick="QuitarProductoSeleccionado">
+                            Cambiar
+                        </MudButton>
+                    </MudPaper>
+                }
+                else
+                {
+                    <BuscadorProducto ProductoSeleccionado="SeleccionarProducto" />
+                }
+            </div>
+
+            <MudGrid>
+                <MudItem xs="12" md="6">
+                    <MudDatePicker Label="Fecha de Ingreso"
+                                   @bind-Date="FechaIngresoNullable"
+                                   Variant="Variant.Outlined"
+                                   Margin="Margin.Dense"
+                                   Class="mb-3" />
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudDatePicker Label="Fecha de Vencimiento"
+                                   @bind-Date="FechaVencimientoNullable"
+                                   Variant="Variant.Outlined"
+                                   Margin="Margin.Dense"
+                                   Class="mb-3" />
+                </MudItem>
+            </MudGrid>
+
+            <MudGrid>
+                @if (EsNuevo)
+                {
+                    <MudItem xs="12">
+                        <MudNumericField @bind-Value="Lote.CantidadInicial"
+                                         Label="Cantidad Inicial"
+                                         Variant="Variant.Outlined"
+                                         Margin="Margin.Dense"
+                                         Class="mb-3"
+                                         HelperText="La cantidad actual quedará igual a la inicial" />
+                    </MudItem>
+                }
+                else
+                {
+                    <MudItem xs="12" md="6">
+                        <MudTextField Value="@Lote.CantidadInicial.ToString()"
+                                      Label="Cantidad Inicial (histórico)"
+                                      ReadOnly="true"
+                                      Variant="Variant.Outlined"
+                                      Margin="Margin.Dense" />
+                    </MudItem>
+                    <MudItem xs="12" md="6">
+                        <MudNumericField @bind-Value="Lote.CantidadActual"
+                                         Label="Cantidad Actual"
+                                         Variant="Variant.Outlined"
+                                         Margin="Margin.Dense"
+                                         HelperText="Ajusta solo para correcciones físicas" />
+                    </MudItem>
+                }
+            </MudGrid>
+
+            <MudNumericField @bind-Value="Lote.PrecioCosto"
+                             @bind-Value:after="RecalcularSugerencia"
+                             Label="Precio Costo de este Lote (Bs)"
+                             Variant="Variant.Outlined"
+                             Margin="Margin.Dense"
+                             Class="mb-3" />
+
+            @if (Lote.ProductoId > 0)
+            {
+                <MudAlert Severity="Severity.Info" Variant="Variant.Outlined" Class="mb-3">
+                    <MudText Typo="Typo.subtitle2" Class="fw-bold mb-2">Estado actual del Producto</MudText>
+                    <MudText Typo="Typo.body2">Costo de compra actual: <strong>@CostoActualProducto.ToString("N2") Bs</strong></MudText>
+                    <MudText Typo="Typo.body2">Precio de venta actual: <strong>@PrecioVentaActualProducto.ToString("N2") Bs</strong></MudText>
+
+                    @if (Lote.PrecioCosto > PrecioVentaActualProducto && Lote.PrecioCosto > 0)
+                    {
+                        <MudAlert Severity="Severity.Error" Variant="Variant.Text" Class="mt-2">
+                            El costo ingresado supera el precio de venta actual.
+                        </MudAlert>
+                    }
+
+                    <MudNumericField @bind-Value="NuevoPrecioVentaSugerido"
+                                     Label="Nuevo Precio de Venta Sugerido (30% Margen)"
+                                     Variant="Variant.Outlined"
+                                     Margin="Margin.Dense"
+                                     Class="mt-3"
+                                     HelperText="Puedes ajustar el valor comercial" />
+                </MudAlert>
+            }
+
+            @if (MostrarConfirmacionCosto)
+            {
+                <MudAlert Severity="Severity.Warning" Variant="Variant.Outlined" Class="mb-3">
+                    <MudText Typo="Typo.body2" Class="mb-2">
+                        El costo actual es <strong>@CostoActualProducto.ToString("N2") Bs</strong> y el precio de venta es <strong>@PrecioVentaActualProducto.ToString("N2") Bs</strong>.
+                    </MudText>
+                    <MudText Typo="Typo.body2" Class="mb-2">
+                        Este lote tiene costo <strong>@Lote.PrecioCosto.ToString("N2") Bs</strong>, sugerido a <strong>@(NuevoPrecioVentaSugerido?.ToString("N2") ?? "-") Bs</strong>.
+                    </MudText>
+                    <MudText Typo="Typo.body2" Class="fw-bold mb-3">¿Actualizar el producto con estos valores?</MudText>
+
+                    <MudStack Row="true" Spacing="2">
+                        <MudButton Size="Size.Small" Color="Color.Success" Variant="Variant.Filled"
+                                   OnClick="() => GuardarConfirmado(true)">
+                            Sí, actualizar
+                        </MudButton>
+                        <MudButton Size="Size.Small" Color="Color.Default" Variant="Variant.Outlined"
+                                   OnClick="() => GuardarConfirmado(false)">
+                            No, mantener
+                        </MudButton>
+                        <MudButton Size="Size.Small" Color="Color.Default" Variant="Variant.Text"
+                                   OnClick="() => MostrarConfirmacionCosto = false">
+                            Editar
+                        </MudButton>
+                    </MudStack>
+                </MudAlert>
+            }
+        </EditForm>
+    </DialogContent>
+
+    <DialogActions>
+        @if (!MostrarConfirmacionCosto)
+        {
+            <MudButton OnClick="Cancelar" Variant="Variant.Outlined" Color="Color.Default">
+                Cancelar
+            </MudButton>
+            <MudButton OnClick="Guardar" Variant="Variant.Filled"
+                       Style="background-color: #6b2181; color: #ffffff;"
+                       Disabled="@_guardando">
+                @(_guardando ? "Guardando..." : "Guardar Lote")
+            </MudButton>
+        }
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = null!;
+    [Parameter] public Lote Lote { get; set; } = new();
+    [Parameter] public bool EsNuevo { get; set; }
+
+    private List<Proveedor>? Proveedores;
+    private string? ProductoSeleccionadoNombre;
+    private decimal CostoActualProducto = 0;
+    private decimal PrecioVentaActualProducto = 0;
+    private decimal? NuevoPrecioVentaSugerido = null;
+    private bool MostrarConfirmacionCosto = false;
+    private bool _guardando = false;
+
+    private int ProveedorSeleccionado
+    {
+        get => Lote.ProveedorId ?? 0;
+        set => Lote.ProveedorId = value == 0 ? null : value;
+    }
+
+    private DateTime? FechaIngresoNullable
+    {
+        get => Lote.FechaIngreso;
+        set => Lote.FechaIngreso = value ?? DateTime.Now;
+    }
+
+    private DateTime? FechaVencimientoNullable
+    {
+        get => Lote.FechaVencimiento;
+        set => Lote.FechaVencimiento = value ?? DateTime.Now;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        Proveedores = await ProveedorSvc.ObtenerTodosAsync();
+
+        if (!EsNuevo && Lote.ProductoId > 0)
+        {
+            // Cargar nombre del producto si es edición
+            var prod = await ProductoSvc.ObtenerPorIdAsync(Lote.ProductoId);
+            if (prod != null)
+            {
+                ProductoSeleccionadoNombre = prod.Nombre;
+                CostoActualProducto = prod.PrecioCosto;
+                PrecioVentaActualProducto = prod.PrecioVenta;
+            }
+            RecalcularSugerencia();
+        }
+    }
+
+    private async Task SeleccionarProducto(Producto producto)
+    {
+        Lote.ProductoId = producto.Id;
+        ProductoSeleccionadoNombre = producto.Nombre;
+
+        var productoActualizado = await ProductoSvc.ObtenerPorIdAsync(producto.Id);
+        CostoActualProducto = productoActualizado?.PrecioCosto ?? producto.PrecioCosto;
+        PrecioVentaActualProducto = productoActualizado?.PrecioVenta ?? producto.PrecioVenta;
+        RecalcularSugerencia();
+        StateHasChanged();
+    }
+
+    private void QuitarProductoSeleccionado()
+    {
+        Lote.ProductoId = 0;
+        ProductoSeleccionadoNombre = null;
+        CostoActualProducto = 0;
+        PrecioVentaActualProducto = 0;
+        NuevoPrecioVentaSugerido = null;
+    }
+
+    private void RecalcularSugerencia()
+    {
+        if (Lote.PrecioCosto > 0)
+            NuevoPrecioVentaSugerido = Math.Round(Lote.PrecioCosto * 1.30m, 2);
+    }
+
+    private void Cancelar() => MudDialog.Cancel();
+
+    private async Task Guardar()
+    {
+        if (Lote.Id == 0)
+            Lote.CantidadActual = Lote.CantidadInicial;
+
+        if (Lote.PrecioCosto != CostoActualProducto && Lote.PrecioCosto > 0)
+        {
+            MostrarConfirmacionCosto = true;
+            return;
+        }
+
+        await GuardarConfirmado(true);
+    }
+
+    private async Task GuardarConfirmado(bool actualizarPrecios)
+    {
+        MostrarConfirmacionCosto = false;
+        _guardando = true;
+        try
+        {
+            if (EsNuevo)
+            {
+                var request = new LoteCreateRequest
+                {
+                    Lote = Lote,
+                    ActualizarCostoProducto = actualizarPrecios,
+                    NuevoPrecioVenta = actualizarPrecios ? NuevoPrecioVentaSugerido : null
+                };
+                await LoteSvc.CrearAsync(request);
+                Snackbar.Add("Lote creado", Severity.Success);
+            }
+            else
+            {
+                var request = new LoteUpdateRequest
+                {
+                    Lote = Lote,
+                    ActualizarCostoProducto = actualizarPrecios,
+                    NuevoPrecioVenta = actualizarPrecios ? NuevoPrecioVentaSugerido : null
+                };
+                await LoteSvc.ActualizarAsync(Lote.Id, request);
+                Snackbar.Add("Lote actualizado", Severity.Success);
+            }
+
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _guardando = false;
+        }
+    }
+}
