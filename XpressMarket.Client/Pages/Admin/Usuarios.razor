@@ -1,37 +1,45 @@
 ﻿@page "/usuarios"
+@using Microsoft.AspNetCore.Authorization
+@using XpressMarket.Shared.Models
+@using MudBlazor
 @attribute [Authorize(Roles = "Administrador")]
 @inject UsuarioService UsuarioSvc
+@inject IDialogService DialogService
 @inject ISnackbar Snackbar
-@using XpressMarket.Shared.Models
 
 <PageTitle>Usuarios - XpressMarket</PageTitle>
 
-<div class="pa-4 pa-md-6">
+<div class="pa-3 pa-sm-4 pa-md-6">
 
-    <MudPaper Elevation="0" Class="pa-6 mb-6 rounded-xl d-flex justify-between align-center"
+    @* ==================== BANNER ==================== *@
+    <MudPaper Elevation="0" Class="pa-4 pa-sm-5 pa-md-6 mb-4 mb-md-6 rounded-xl"
               Style="background: linear-gradient(135deg, #4a1458 0%, #6b2181 100%); color: #ffffff; border: 1px solid rgba(255,255,255,0.1);">
-        <div>
-            <div class="d-flex align-center gap-2 mb-2">
-                <MudChip T="string" Size="Size.Small" Variant="Variant.Filled"
-                         Style="background-color: rgba(243, 130, 24, 0.2); color: #f38218;"
-                         Class="fw-bold">
-                    Accesos
-                </MudChip>
+        <div class="d-flex flex-column flex-md-row justify-between align-start align-md-center gap-3">
+            <div>
+                <div class="d-flex align-center gap-2 mb-2">
+                    <MudChip T="string" Size="Size.Small" Variant="Variant.Filled"
+                             Style="background-color: rgba(243, 130, 24, 0.2); color: #f38218;"
+                             Class="fw-bold">
+                        Accesos
+                    </MudChip>
+                </div>
+                <MudText Typo="Typo.h4" Class="fw-bold mb-1"
+                         Style="color: #ffffff; text-shadow: 0px 2px 4px rgba(0,0,0,0.2); font-size: clamp(1.4rem, 4vw, 2.125rem);">
+                    Gestión de Usuarios
+                </MudText>
+                <MudText Typo="Typo.body2" Style="color: rgba(255, 255, 255, 0.85);">
+                    Administra cuentas, roles y permisos del sistema.
+                </MudText>
             </div>
-            <MudText Typo="Typo.h4" Class="fw-bold mb-1" Style="color: #ffffff; text-shadow: 0px 2px 4px rgba(0,0,0,0.2);">
-                Gestión de Usuarios
-            </MudText>
-            <MudText Typo="Typo.body2" Style="color: rgba(255, 255, 255, 0.85);">
-                Administra cuentas, roles y permisos del sistema.
-            </MudText>
-        </div>
-        <div class="d-none d-md-block">
-            <MudIcon Icon="@Icons.Material.Filled.ManageAccounts" Style="font-size: 4.5rem; color: rgba(255,255,255,0.15);" />
+            <div class="d-none d-md-block">
+                <MudIcon Icon="@Icons.Material.Filled.ManageAccounts" Style="font-size: 4.5rem; color: rgba(255,255,255,0.15);" />
+            </div>
         </div>
     </MudPaper>
 
-    <MudPaper Elevation="2" Class="pa-5 rounded-xl">
-        <div class="d-flex justify-between align-center mb-4">
+    @* ==================== CONTENIDO ==================== *@
+    <MudPaper Elevation="2" Class="pa-3 pa-sm-4 pa-md-5 rounded-xl">
+        <div class="d-flex flex-column flex-sm-row justify-between align-start align-sm-center gap-3 mb-4">
             <MudText Typo="Typo.h6" Class="fw-bold" Style="color: #2b2b2b;">
                 Listado de Usuarios
             </MudText>
@@ -65,7 +73,8 @@
         }
         else
         {
-            <MudTable Items="@usuarios" Hover="true" Dense="true" Elevation="0" Class="rounded-lg">
+            <MudTable Items="@usuarios" Hover="true" Dense="true" Elevation="0" Class="rounded-lg"
+                      Breakpoint="Breakpoint.Sm">
                 <HeaderContent>
                     <MudTh><MudText Typo="Typo.subtitle2" Class="fw-bold">Usuario</MudText></MudTh>
                     <MudTh><MudText Typo="Typo.subtitle2" Class="fw-bold">Rol</MudText></MudTh>
@@ -78,7 +87,13 @@
                             <MudAvatar Size="Size.Medium" Style="background-color: #f3e5f5; color: #6b2181;">
                                 <MudIcon Icon="@Icons.Material.Filled.Person" />
                             </MudAvatar>
-                            <MudText Typo="Typo.body1" Class="fw-bold">@context.NombreUsuario</MudText>
+                            <MudStack Spacing="0">
+                                <MudText Typo="Typo.body1" Class="fw-bold">@context.NombreUsuario</MudText>
+                                @if (!string.IsNullOrWhiteSpace(context.NombreCompleto))
+                                {
+                                    <MudText Typo="Typo.caption" Style="color: #6c757d;">@context.NombreCompleto</MudText>
+                                }
+                            </MudStack>
                         </MudStack>
                     </MudTd>
                     <MudTd DataLabel="Rol">
@@ -118,162 +133,78 @@
     </MudPaper>
 </div>
 
-@* ==================== DIÁLOGO NUEVO USUARIO ==================== *@
-<MudDialog @bind-IsVisible="mostrarFormularioNuevo" Options="dialogOptions">
-    <TitleContent>
-        <MudText Typo="Typo.h6" Class="fw-bold" Style="color: #6b2181;">
-            <MudIcon Icon="@Icons.Material.Filled.PersonAdd" Class="mr-2" />
-            Nuevo Usuario
-        </MudText>
-    </TitleContent>
-    <DialogContent>
-        <EditForm Model="nuevoUsuario" OnValidSubmit="GuardarNuevo">
-            <DataAnnotationsValidator />
-            <ValidationSummary class="alert alert-danger p-2 small mb-3" />
-
-            <MudTextField Label="Nombre Completo" @bind-Value="nuevoUsuario.NombreCompleto"
-                          Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-3" />
-            <MudTextField Label="Nombre de Usuario" @bind-Value="nuevoUsuario.NombreUsuario"
-                          Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-3" />
-            <MudTextField Label="Contraseña" @bind-Value="nuevoUsuario.Contrasena"
-                          InputType="InputType.Password"
-                          Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-3" />
-            <MudSelect T="string" Label="Rol" @bind-Value="nuevoUsuario.Rol"
-                       Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-3">
-                <MudSelectItem T="string" Value="@("Cajero")">Cajero</MudSelectItem>
-                <MudSelectItem T="string" Value="@("Administrador")">Administrador</MudSelectItem>
-            </MudSelect>
-
-            <div class="d-flex justify-end gap-2 mt-4">
-                <MudButton OnClick="CancelarAccion" Variant="Variant.Outlined" Color="Color.Default">
-                    Cancelar
-                </MudButton>
-                <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled"
-                           Style="background-color: #6b2181; color: #ffffff;">
-                    Guardar
-                </MudButton>
-            </div>
-        </EditForm>
-    </DialogContent>
-</MudDialog>
-
-@* ==================== DIÁLOGO EDITAR USUARIO ==================== *@
-<MudDialog @bind-IsVisible="mostrarFormularioEditar" Options="dialogOptions">
-    <TitleContent>
-        <MudText Typo="Typo.h6" Class="fw-bold" Style="color: #6b2181;">
-            <MudIcon Icon="@Icons.Material.Filled.ManageAccounts" Class="mr-2" />
-            Editar Usuario: @usuarioEditando?.NombreUsuario
-        </MudText>
-    </TitleContent>
-    <DialogContent>
-        <EditForm Model="edicion" OnValidSubmit="GuardarEdicion">
-            <DataAnnotationsValidator />
-            <ValidationSummary class="alert alert-danger p-2 small mb-3" />
-
-            <MudSelect T="string" Label="Rol" @bind-Value="edicion.Rol"
-                       Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-3">
-                <MudSelectItem T="string" Value="@("Cajero")">Cajero</MudSelectItem>
-                <MudSelectItem T="string" Value="@("Administrador")">Administrador</MudSelectItem>
-            </MudSelect>
-
-            <MudSwitch T="bool" @bind-Value="edicion.Activo" Label="Usuario Activo"
-                       Color="Color.Primary" Class="mb-3" />
-
-            <MudTextField Label="Nueva Contraseña" @bind-Value="edicion.NuevaContrasena"
-                          InputType="InputType.Password"
-                          HelperText="Dejar en blanco para no cambiarla"
-                          Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-3" />
-
-            <div class="d-flex justify-end gap-2 mt-4">
-                <MudButton OnClick="CancelarAccion" Variant="Variant.Outlined" Color="Color.Default">
-                    Cancelar
-                </MudButton>
-                <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled"
-                           Style="background-color: #6b2181; color: #ffffff;">
-                    Guardar Cambios
-                </MudButton>
-            </div>
-        </EditForm>
-    </DialogContent>
-</MudDialog>
-
 @code {
     private List<UsuarioResponse> usuarios = new();
     private bool cargando = true;
-
-    private bool mostrarFormularioNuevo = false;
-    private UsuarioCreateRequest nuevoUsuario = new();
-
-    private bool mostrarFormularioEditar = false;
-    private UsuarioResponse? usuarioEditando;
-    private UsuarioUpdateRequest edicion = new();
-
-    private DialogOptions dialogOptions = new()
-    {
-        CloseButton = true,
-        MaxWidth = MaxWidth.Small,
-        FullWidth = true,
-        BackdropClick = false,
-        CloseOnEscapeKey = false
-    };
 
     protected override async Task OnInitializedAsync() => await Cargar();
 
     private async Task Cargar()
     {
         cargando = true;
-        usuarios = await UsuarioSvc.ObtenerTodosAsync();
-        cargando = false;
-    }
-
-    private void AbrirFormularioNuevo()
-    {
-        nuevoUsuario = new UsuarioCreateRequest { Rol = "Cajero" };
-        mostrarFormularioNuevo = true;
-    }
-
-    private async Task GuardarNuevo()
-    {
-        var (exito, error) = await UsuarioSvc.CrearAsync(nuevoUsuario);
-        if (exito)
+        try
         {
-            Snackbar.Add("Usuario creado correctamente", Severity.Success);
-            mostrarFormularioNuevo = false;
+            usuarios = await UsuarioSvc.ObtenerTodosAsync();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error al cargar: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    private async Task AbrirFormularioNuevo()
+    {
+        var parametros = new DialogParameters<UsuarioDialog>
+        {
+            { x => x.EsNuevo, true },
+            { x => x.UsuarioId, 0 }
+        };
+
+        var opciones = new DialogOptions
+        {
+            CloseButton = true,
+            MaxWidth = MaxWidth.Small,
+            FullWidth = true,
+            BackdropClick = false,
+            CloseOnEscapeKey = false
+        };
+
+        var dialog = await DialogService.ShowAsync<UsuarioDialog>("Nuevo Usuario", parametros, opciones);
+        var resultado = await dialog.Result;
+
+        if (resultado != null && !resultado.Canceled)
+        {
             await Cargar();
         }
-        else
-        {
-            Snackbar.Add(error ?? "No se pudo crear el usuario", Severity.Error);
-        }
     }
 
-    private void AbrirFormularioEditar(UsuarioResponse u)
+    private async Task AbrirFormularioEditar(UsuarioResponse u)
     {
-        usuarioEditando = u;
-        edicion = new UsuarioUpdateRequest { Rol = u.Rol, Activo = u.Activo };
-        mostrarFormularioEditar = true;
-    }
-
-    private async Task GuardarEdicion()
-    {
-        if (usuarioEditando == null) return;
-
-        var (exito, error) = await UsuarioSvc.ActualizarAsync(usuarioEditando.Id, edicion);
-        if (exito)
+        var parametros = new DialogParameters<UsuarioDialog>
         {
-            Snackbar.Add("Usuario actualizado", Severity.Success);
-            mostrarFormularioEditar = false;
+            { x => x.EsNuevo, false },
+            { x => x.UsuarioId, u.Id }
+        };
+
+        var opciones = new DialogOptions
+        {
+            CloseButton = true,
+            MaxWidth = MaxWidth.Small,
+            FullWidth = true,
+            BackdropClick = false,
+            CloseOnEscapeKey = false
+        };
+
+        var dialog = await DialogService.ShowAsync<UsuarioDialog>("Editar Usuario", parametros, opciones);
+        var resultado = await dialog.Result;
+
+        if (resultado != null && !resultado.Canceled)
+        {
             await Cargar();
         }
-        else
-        {
-            Snackbar.Add(error ?? "No se pudo actualizar", Severity.Error);
-        }
-    }
-
-    private void CancelarAccion()
-    {
-        mostrarFormularioNuevo = false;
-        mostrarFormularioEditar = false;
     }
 }
