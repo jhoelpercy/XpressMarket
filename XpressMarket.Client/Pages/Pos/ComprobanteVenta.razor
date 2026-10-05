@@ -128,7 +128,6 @@
     {
         try
         {
-            // Descarga el PDF usando HttpClient (envía el token JWT correctamente)
             var response = await Http.GetAsync($"api/ventas/{VentaId}/ticket-pdf");
 
             if (response.IsSuccessStatusCode)
@@ -136,8 +135,8 @@
                 var pdfBytes = await response.Content.ReadAsByteArrayAsync();
                 var base64 = Convert.ToBase64String(pdfBytes);
 
-                // Llama a la función de JavaScript para abrir el PDF de forma segura
-                await JS.InvokeVoidAsync("abrirPdfDesdeBase64", base64, $"Ticket_{VentaId}.pdf");
+                // 👇 Ahora llamamos a la función que abre el diálogo de impresión
+                await JS.InvokeVoidAsync("imprimirPdfDesdeBase64", base64);
             }
             else
             {

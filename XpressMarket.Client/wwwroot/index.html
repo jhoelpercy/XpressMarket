@@ -19,6 +19,10 @@
 
     <link rel="icon" type="image/png" href="favicon.png" />
 
+    <link href="manifest.webmanifest" rel="manifest" />
+    <link rel="apple-touch-icon" sizes="512x512" href="icon-512.png" />
+    <link rel="apple-touch-icon" sizes="192x192" href="icon-192.png" />
+
     <style>
         @keyframes spin {
             0% {
@@ -58,18 +62,58 @@
     <script src="js/charts.js"></script>
 
     <script>
-            window.abrirPdfDesdeBase64 = function (base64Data, fileName) {
+            // @ts-ignore
+            window.imprimirPdfDesdeBase64 = function (base64Data) {
+                // @ts-ignore
                 const binaryString = window.atob(base64Data);
                 const len = binaryString.length;
                 const bytes = new Uint8Array(len);
                 for (let i = 0; i < len; i++) {
                     bytes[i] = binaryString.charCodeAt(i);
                 }
+
+                // MIME correcto (con barra)
                 const blob = new Blob([bytes], { type: 'application/pdf' });
                 const blobUrl = URL.createObjectURL(blob);
 
-                window.open(blobUrl, '_blank');
+                // Crear iframe oculto
+                const iframe = document.createElement('iframe');
+                iframe.style.position = 'fixed';
+                iframe.style.right = '0';
+                iframe.style.bottom = '0';
+                iframe.style.width = '0';
+                iframe.style.height = '0';
+                iframe.style.border = '0';
+                iframe.src = blobUrl;
+
+                document.body.appendChild(iframe);
+
+                iframe.onload = function () {
+                    setTimeout(() => {
+                        try {
+                            // @ts-ignore
+                            const ventana = iframe.contentWindow;
+                            if (ventana) {
+                                ventana.focus();
+                                ventana.print();
+                            } else {
+                                window.open(blobUrl, '_blank');
+                            }
+                        } catch (e) {
+                            window.open(blobUrl, '_blank');
+                        }
+                    }, 250);
+                };
+
+                setTimeout(() => {
+                    URL.revokeObjectURL(blobUrl);
+                    if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
+                }, 60000);
             };
+    </script>
+
+    <script>
+        navigator.serviceWorker.register('service-worker.js', { updateViaCache: 'none' });
     </script>
 </body>
 </html>

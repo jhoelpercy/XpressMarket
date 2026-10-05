@@ -1,0 +1,47 @@
+{
+  "id": "/",
+  "name": "XpressMarket",
+  "short_name": "XpressMarket",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#6b2181",
+  "theme_color": "#6b2181",
+  "description": "Sistema de gestión inteligente de ventas e inventario.",
+  "orientation": "any",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-maskable-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "screenshots/desktop.png",
+      "sizes": "1920x1080",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Vista de escritorio de XpressMarket"
+    },
+    {
+      "src": "screenshots/mobile.png",
+      "sizes": "1080x1920",
+      "type": "image/png",
+      "label": "Vista móvil de XpressMarket"
+    }
+  ]
+}
