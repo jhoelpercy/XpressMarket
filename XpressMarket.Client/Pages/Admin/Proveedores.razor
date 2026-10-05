@@ -1,43 +1,53 @@
 ﻿@page "/proveedores"
 @using Microsoft.AspNetCore.Authorization
+@using XpressMarket.Shared.Models
+@using MudBlazor
 @attribute [Authorize(Roles = "Administrador")]
 @inject ProveedorService ProveedorSvc
+@inject IDialogService DialogService
 @inject ISnackbar Snackbar
-@using XpressMarket.Shared.Models
 
 <PageTitle>Proveedores - XpressMarket</PageTitle>
 
-<div class="pa-4 pa-md-6">
+<div class="pa-3 pa-sm-4 pa-md-6">
 
-    <MudPaper Elevation="0" Class="pa-6 mb-6 rounded-xl d-flex justify-between align-center"
+    @* ==================== BANNER ==================== *@
+    <MudPaper Elevation="0" Class="pa-4 pa-sm-5 pa-md-6 mb-4 mb-md-6 rounded-xl"
               Style="background: linear-gradient(135deg, #4a1458 0%, #6b2181 100%); color: #ffffff; border: 1px solid rgba(255,255,255,0.1);">
-        <div>
-            <div class="d-flex align-center gap-2 mb-2">
-                <MudChip T="string" Size="Size.Small" Variant="Variant.Filled"
-                         Style="background-color: rgba(243, 130, 24, 0.2); color: #f38218;"
-                         Class="fw-bold">
-                    Directorio
-                </MudChip>
+        <div class="d-flex flex-column flex-md-row justify-between align-start align-md-center gap-3">
+            <div>
+                <div class="d-flex align-center gap-2 mb-2">
+                    <MudChip T="string" Size="Size.Small" Variant="Variant.Filled"
+                             Style="background-color: rgba(243, 130, 24, 0.2); color: #f38218;"
+                             Class="fw-bold">
+                        Directorio
+                    </MudChip>
+                </div>
+                <MudText Typo="Typo.h4" Class="fw-bold mb-1"
+                         Style="color: #ffffff; text-shadow: 0px 2px 4px rgba(0,0,0,0.2); font-size: clamp(1.4rem, 4vw, 2.125rem);">
+                    Gestión de Proveedores
+                </MudText>
+                <MudText Typo="Typo.body2" Style="color: rgba(255, 255, 255, 0.85);">
+                    Administra contactos, teléfonos y datos de facturación.
+                </MudText>
             </div>
-            <MudText Typo="Typo.h4" Class="fw-bold mb-1" Style="color: #ffffff; text-shadow: 0px 2px 4px rgba(0,0,0,0.2);">
-                Gestión de Proveedores
-            </MudText>
-            <MudText Typo="Typo.body2" Style="color: rgba(255, 255, 255, 0.85);">
-                Administra contactos, teléfonos y datos de facturación.
-            </MudText>
-        </div>
-        <div class="d-none d-md-block">
-            <MudIcon Icon="@Icons.Material.Filled.LocalShipping" Style="font-size: 4.5rem; color: rgba(255,255,255,0.15);" />
+            <div class="d-none d-md-block">
+                <MudIcon Icon="@Icons.Material.Filled.LocalShipping" Style="font-size: 4.5rem; color: rgba(255,255,255,0.15);" />
+            </div>
         </div>
     </MudPaper>
 
-    <MudPaper Elevation="2" Class="pa-5 rounded-xl">
-        <div class="d-flex justify-between align-center mb-4">
-            <MudText Typo="Typo.h6" Class="fw-bold" Style="color: #2b2b2b;">Listado de Proveedores</MudText>
+    @* ==================== CONTENIDO ==================== *@
+    <MudPaper Elevation="2" Class="pa-3 pa-sm-4 pa-md-5 rounded-xl">
+        <div class="d-flex flex-column flex-sm-row justify-between align-start align-sm-center gap-3 mb-4">
+            <MudText Typo="Typo.h6" Class="fw-bold" Style="color: #2b2b2b;">
+                Listado de Proveedores
+            </MudText>
             <MudButton Variant="Variant.Filled"
                        Style="background-color: #6b2181; color: #ffffff; font-weight: bold;"
                        StartIcon="@Icons.Material.Filled.AddBusiness"
-                       OnClick="AbrirFormularioNuevo" Class="rounded-lg">
+                       OnClick="AbrirFormularioNuevo"
+                       Class="rounded-lg">
                 Nuevo Proveedor
             </MudButton>
         </div>
@@ -63,7 +73,8 @@
         }
         else
         {
-            <MudTable Items="@proveedores" Hover="true" Dense="true" Elevation="0" Class="rounded-lg">
+            <MudTable Items="@proveedores" Hover="true" Dense="true" Elevation="0" Class="rounded-lg"
+                      Breakpoint="Breakpoint.Sm">
                 <HeaderContent>
                     <MudTh><MudText Typo="Typo.subtitle2" Class="fw-bold">Nombre</MudText></MudTh>
                     <MudTh><MudText Typo="Typo.subtitle2" Class="fw-bold">Contacto</MudText></MudTh>
@@ -131,114 +142,133 @@
     </MudPaper>
 </div>
 
-<MudDialog @bind-IsVisible="mostrarFormulario" Options="dialogOptions">
-    <TitleContent>
-        <MudText Typo="Typo.h6" Class="fw-bold" Style="color: #6b2181;">
-            <MudIcon Icon="@Icons.Material.Filled.LocalShipping" Class="mr-2" />
-            @(proveedorEditando.Id == 0 ? "Nuevo Proveedor" : "Editar Proveedor")
-        </MudText>
-    </TitleContent>
-    <DialogContent>
-        <EditForm Model="proveedorEditando" OnValidSubmit="GuardarProveedor">
-            <DataAnnotationsValidator />
-            <ValidationSummary class="alert alert-danger p-2 small mb-3" />
-
-            <MudGrid>
-                <MudItem xs="12" md="6">
-                    <MudTextField Label="Nombre de la Empresa" @bind-Value="proveedorEditando.Nombre"
-                                  Variant="Variant.Outlined" Margin="Margin.Dense" />
-                </MudItem>
-                <MudItem xs="12" md="6">
-                    <MudTextField Label="Persona de Contacto" @bind-Value="proveedorEditando.Contacto"
-                                  Variant="Variant.Outlined" Margin="Margin.Dense" />
-                </MudItem>
-                <MudItem xs="12" md="6">
-                    <MudTextField Label="Teléfono" @bind-Value="proveedorEditando.Telefono"
-                                  Variant="Variant.Outlined" Margin="Margin.Dense" />
-                </MudItem>
-                <MudItem xs="12" md="6">
-                    <MudTextField Label="Correo Electrónico" @bind-Value="proveedorEditando.Email"
-                                  Variant="Variant.Outlined" Margin="Margin.Dense" />
-                </MudItem>
-                <MudItem xs="12">
-                    <MudTextField Label="Dirección / Ubicación" @bind-Value="proveedorEditando.Direccion"
-                                  Lines="2" Variant="Variant.Outlined" Margin="Margin.Dense" />
-                </MudItem>
-            </MudGrid>
-
-            <div class="d-flex justify-end gap-2 mt-4">
-                <MudButton OnClick="CerrarFormulario" Variant="Variant.Outlined" Color="Color.Default">
-                    Cancelar
-                </MudButton>
-                <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled"
-                           Style="background-color: #6b2181; color: #ffffff;">
-                    Guardar
-                </MudButton>
-            </div>
-        </EditForm>
-    </DialogContent>
-</MudDialog>
-
 @code {
     private List<Proveedor>? proveedores;
     private bool cargando = true;
-    private bool mostrarFormulario = false;
-    private Proveedor proveedorEditando = new();
-
-    private DialogOptions dialogOptions = new()
-    {
-        CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true,
-        BackdropClick = false, CloseOnEscapeKey = false
-    };
 
     protected override async Task OnInitializedAsync() => await CargarDatos();
 
     private async Task CargarDatos()
     {
         cargando = true;
-        proveedores = await ProveedorSvc.ObtenerTodosAsync();
-        cargando = false;
-    }
-
-    private void AbrirFormularioNuevo()
-    {
-        proveedorEditando = new Proveedor { Activo = true };
-        mostrarFormulario = true;
-    }
-
-    private void AbrirFormularioEditar(Proveedor p)
-    {
-        proveedorEditando = new Proveedor
+        try
         {
-            Id = p.Id, Nombre = p.Nombre, Contacto = p.Contacto,
-            Telefono = p.Telefono, Email = p.Email,
-            Direccion = p.Direccion, Activo = p.Activo
+            proveedores = await ProveedorSvc.ObtenerTodosAsync();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error al cargar: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    private async Task AbrirFormularioNuevo()
+    {
+        var modelo = new Proveedor { Activo = true };
+
+        var parametros = new DialogParameters<ProveedorDialog>
+        {
+            { x => x.Proveedor, modelo },
+            { x => x.EsNuevo, true }
         };
-        mostrarFormulario = true;
+
+        var opciones = new DialogOptions
+        {
+            CloseButton = true,
+            MaxWidth = MaxWidth.Medium,
+            FullWidth = true,
+            BackdropClick = false,
+            CloseOnEscapeKey = false
+        };
+
+        var dialog = await DialogService.ShowAsync<ProveedorDialog>("Nuevo Proveedor", parametros, opciones);
+        var resultado = await dialog.Result;
+
+        if (resultado != null && !resultado.Canceled)
+        {
+            await CargarDatos();
+        }
     }
 
-    private void CerrarFormulario() => mostrarFormulario = false;
-
-    private async Task GuardarProveedor()
+    private async Task AbrirFormularioEditar(Proveedor p)
     {
-        if (proveedorEditando.Id == 0)
+        var modelo = new Proveedor
         {
-            await ProveedorSvc.CrearAsync(proveedorEditando);
-            Snackbar.Add("Proveedor creado", Severity.Success);
-        }
-        else
+            Id = p.Id,
+            Nombre = p.Nombre,
+            Contacto = p.Contacto,
+            Telefono = p.Telefono,
+            Email = p.Email,
+            Direccion = p.Direccion,
+            Activo = p.Activo
+        };
+
+        var parametros = new DialogParameters<ProveedorDialog>
         {
-            await ProveedorSvc.ActualizarAsync(proveedorEditando.Id, proveedorEditando);
-            Snackbar.Add("Proveedor actualizado", Severity.Success);
+            { x => x.Proveedor, modelo },
+            { x => x.EsNuevo, false }
+        };
+
+        var opciones = new DialogOptions
+        {
+            CloseButton = true,
+            MaxWidth = MaxWidth.Medium,
+            FullWidth = true,
+            BackdropClick = false,
+            CloseOnEscapeKey = false
+        };
+
+        var dialog = await DialogService.ShowAsync<ProveedorDialog>("Editar Proveedor", parametros, opciones);
+        var resultado = await dialog.Result;
+
+        if (resultado != null && !resultado.Canceled)
+        {
+            await CargarDatos();
         }
-        mostrarFormulario = false;
-        await CargarDatos();
     }
 
     private async Task EliminarProveedor(int id)
     {
-        await ProveedorSvc.EliminarAsync(id);
-        Snackbar.Add("Proveedor eliminado", Severity.Warning);
-        await CargarDatos();
+        var parametros = new DialogParameters<MudMessageBox>
+        {
+            { x => x.Title, "Confirmar eliminación" },
+            { x => x.Message, "¿Estás seguro de eliminar este proveedor?" },
+            { x => x.YesText, "Sí, eliminar" },
+            { x => x.CancelText, "Cancelar" }
+        };
+
+        var opciones = new DialogOptions
+        {
+            MaxWidth = MaxWidth.ExtraSmall,
+            FullWidth = true,
+            CloseButton = true
+        };
+
+        var dialog = await DialogService.ShowAsync<MudMessageBox>("", parametros, opciones);
+        var resultado = await dialog.Result;
+
+        if (resultado != null && !resultado.Canceled)
+        {
+            try
+            {
+                var eliminado = await ProveedorSvc.EliminarAsync(id);
+                if (eliminado)
+                {
+                    Snackbar.Add("Proveedor eliminado", Severity.Warning);
+                    await CargarDatos();
+                }
+                else
+                {
+                    Snackbar.Add("No se pudo eliminar el proveedor", Severity.Error);
+                }
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Error: {ex.Message}", Severity.Error);
+            }
+        }
     }
 }
