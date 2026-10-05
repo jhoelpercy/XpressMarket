@@ -1,114 +1,147 @@
 ﻿@page "/dashboard"
+@using Microsoft.AspNetCore.Authorization
+@using XpressMarket.Shared.Models
+@using XpressMarket.Shared.Extensions
+@using MudBlazor
 @attribute [Authorize(Roles = "Administrador")]
 @inject VentaService VentaSvc
 @inject IJSRuntime JS
-@using XpressMarket.Shared.Models
-@using XpressMarket.Shared.Extensions
+@inject ISnackbar Snackbar
 
 <PageTitle>XpressMarket - Dashboard KPIs</PageTitle>
 
-<div class="pa-4 pa-md-6">
-    @* Encabezado con la estética de la pantalla de login *@
-    <MudPaper Elevation="0" Class="pa-6 mb-6 rounded-xl d-flex justify-between align-center" 
+<div class="pa-3 pa-sm-4 pa-md-6">
+
+    @* ==================== BANNER ==================== *@
+    <MudPaper Elevation="0" Class="pa-4 pa-sm-5 pa-md-6 mb-4 mb-md-6 rounded-xl"
               Style="background: linear-gradient(135deg, #4a1458 0%, #6b2181 100%); color: #ffffff; border: 1px solid rgba(255,255,255,0.1);">
-        <div>
-            <div class="d-flex align-center gap-2 mb-2">
-                <MudChip T="string" Size="Size.Small" Variant="Variant.Filled" Style="background-color: rgba(243, 130, 24, 0.2); color: #f38218;" Class="fw-bold">
-                    Métricas en Tiempo Real
-                </MudChip>
+        <div class="d-flex flex-column flex-md-row justify-between align-start align-md-center gap-3">
+            <div>
+                <div class="d-flex align-center gap-2 mb-2">
+                    <MudChip T="string" Size="Size.Small" Variant="Variant.Filled"
+                             Style="background-color: rgba(243, 130, 24, 0.2); color: #f38218;"
+                             Class="fw-bold">
+                        Métricas en Tiempo Real
+                    </MudChip>
+                </div>
+                <MudText Typo="Typo.h4" Class="fw-bold mb-1"
+                         Style="color: #ffffff; text-shadow: 0px 2px 4px rgba(0,0,0,0.2); font-size: clamp(1.4rem, 4vw, 2.125rem);">
+                    Dashboard de KPIs
+                </MudText>
+                <MudText Typo="Typo.body2" Style="color: rgba(255, 255, 255, 0.85);">
+                    Resumen ejecutivo de ingresos, utilidades y estado crítico de inventario.
+                </MudText>
             </div>
-            <MudText Typo="Typo.h4" Class="fw-bold mb-1" Style="color: #ffffff; text-shadow: 0px 2px 4px rgba(0,0,0,0.2);">
-                Dashboard de KPIs
-            </MudText>
-            <MudText Typo="Typo.body2" Style="color: rgba(255, 255, 255, 0.85);">
-                Resumen ejecutivo de ingresos, utilidades y estado crítico de inventario.
-            </MudText>
-        </div>
-        <div class="d-none d-md-block">
-            <MudIcon Icon="@Icons.Material.Filled.Analytics" Style="font-size: 4.5rem; color: rgba(255,255,255,0.15);" />
+            <div class="d-none d-md-block">
+                <MudIcon Icon="@Icons.Material.Filled.Analytics" Style="font-size: 4.5rem; color: rgba(255,255,255,0.15);" />
+            </div>
         </div>
     </MudPaper>
 
     @if (cargando)
     {
         <MudPaper Elevation="0" Class="pa-8 d-flex justify-center align-center rounded-xl" Style="background: #ffffff;">
-            <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" Class="my-4" />
+            <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
         </MudPaper>
     }
     else if (resumen != null)
     {
-        @* Tarjetas de Métricas Directas *@
-        <MudGrid Class="mb-6">
-            <MudItem xs="12" sm="6" md="3">
-                <MudPaper Elevation="2" Class="pa-4 rounded-xl d-flex align-center" Style="border-left: 5px solid #6b2181; background: #ffffff;">
-                    <MudAvatar Style="background-color: #f3e5f5; color: #6b2181;" Class="mr-3" Size="Size.Large">
+        @* ==================== TARJETAS DE MÉTRICAS ==================== *@
+        <MudGrid Spacing="3" Class="mb-5">
+            <MudItem xs="6" sm="6" md="3">
+                <MudPaper Elevation="2" Class="pa-3 pa-md-4 rounded-lg d-flex align-center h-100"
+                          Style="border-left: 4px solid #6b2181; background: #ffffff;">
+                    <MudAvatar Style="background-color: #f3e5f5; color: #6b2181;" Class="mr-2 mr-md-3" Size="Size.Medium">
                         <MudIcon Icon="@Icons.Material.Filled.AttachMoney" />
                     </MudAvatar>
-                    <div>
-                        <MudText Typo="Typo.caption" Style="color: #6c757d; font-weight: 600; text-transform: uppercase;">Ventas (30 días)</MudText>
-                        <MudText Typo="Typo.h5" Class="fw-bold" Style="color: #2b2b2b;">@resumen.TotalVentasPeriodo.Bs()</MudText>
+                    <div style="min-width: 0;">
+                        <MudText Typo="Typo.caption" Style="color: #6c757d; font-weight: 600; text-transform: uppercase;">
+                            Ventas (30d)
+                        </MudText>
+                        <MudText Typo="Typo.h6" Class="fw-bold" Style="color: #2b2b2b;">
+                            @resumen.TotalVentasPeriodo.Bs()
+                        </MudText>
                     </div>
                 </MudPaper>
             </MudItem>
 
-            <MudItem xs="12" sm="6" md="3">
-                <MudPaper Elevation="2" Class="pa-4 rounded-xl d-flex align-center" Style="border-left: 5px solid #2e7d32; background: #ffffff;">
-                    <MudAvatar Style="background-color: #e8f5e9; color: #2e7d32;" Class="mr-3" Size="Size.Large">
+            <MudItem xs="6" sm="6" md="3">
+                <MudPaper Elevation="2" Class="pa-3 pa-md-4 rounded-lg d-flex align-center h-100"
+                          Style="border-left: 4px solid #2e7d32; background: #ffffff;">
+                    <MudAvatar Style="background-color: #e8f5e9; color: #2e7d32;" Class="mr-2 mr-md-3" Size="Size.Medium">
                         <MudIcon Icon="@Icons.Material.Filled.TrendingUp" />
                     </MudAvatar>
-                    <div>
-                        <MudText Typo="Typo.caption" Style="color: #6c757d; font-weight: 600; text-transform: uppercase;">Utilidad (30 días)</MudText>
-                        <MudText Typo="Typo.h5" Class="fw-bold" Style="color: #2e7d32;">@resumen.TotalUtilidadPeriodo.Bs()</MudText>
+                    <div style="min-width: 0;">
+                        <MudText Typo="Typo.caption" Style="color: #6c757d; font-weight: 600; text-transform: uppercase;">
+                            Utilidad (30d)
+                        </MudText>
+                        <MudText Typo="Typo.h6" Class="fw-bold" Style="color: #2e7d32;">
+                            @resumen.TotalUtilidadPeriodo.Bs()
+                        </MudText>
                     </div>
                 </MudPaper>
             </MudItem>
 
-            <MudItem xs="12" sm="6" md="3">
-                <MudPaper Elevation="2" Class="pa-4 rounded-xl d-flex align-center" Style="border-left: 5px solid #f38218; background: #ffffff;">
-                    <MudAvatar Style="background-color: #fff3e0; color: #f38218;" Class="mr-3" Size="Size.Large">
+            <MudItem xs="6" sm="6" md="3">
+                <MudPaper Elevation="2" Class="pa-3 pa-md-4 rounded-lg d-flex align-center h-100"
+                          Style="border-left: 4px solid #f38218; background: #ffffff;">
+                    <MudAvatar Style="background-color: #fff3e0; color: #f38218;" Class="mr-2 mr-md-3" Size="Size.Medium">
                         <MudIcon Icon="@Icons.Material.Filled.Warning" />
                     </MudAvatar>
-                    <div>
-                        <MudText Typo="Typo.caption" Style="color: #6c757d; font-weight: 600; text-transform: uppercase;">Stock Bajo</MudText>
-                        <MudText Typo="Typo.h5" Class="fw-bold" Style="color: #2b2b2b;">@resumen.ProductosStockBajo</MudText>
+                    <div style="min-width: 0;">
+                        <MudText Typo="Typo.caption" Style="color: #6c757d; font-weight: 600; text-transform: uppercase;">
+                            Stock Bajo
+                        </MudText>
+                        <MudText Typo="Typo.h6" Class="fw-bold" Style="color: #2b2b2b;">
+                            @resumen.ProductosStockBajo
+                        </MudText>
                     </div>
                 </MudPaper>
             </MudItem>
 
-            <MudItem xs="12" sm="6" md="3">
-                <MudPaper Elevation="2" Class="pa-4 rounded-xl d-flex align-center" Style="border-left: 5px solid #d32f2f; background: #ffffff;">
-                    <MudAvatar Style="background-color: #ffebee; color: #d32f2f;" Class="mr-3" Size="Size.Large">
+            <MudItem xs="6" sm="6" md="3">
+                <MudPaper Elevation="2" Class="pa-3 pa-md-4 rounded-lg d-flex align-center h-100"
+                          Style="border-left: 4px solid #d32f2f; background: #ffffff;">
+                    <MudAvatar Style="background-color: #ffebee; color: #d32f2f;" Class="mr-2 mr-md-3" Size="Size.Medium">
                         <MudIcon Icon="@Icons.Material.Filled.Event" />
                     </MudAvatar>
-                    <div>
-                        <MudText Typo="Typo.caption" Style="color: #6c757d; font-weight: 600; text-transform: uppercase;">Lotes por Vencer</MudText>
-                        <MudText Typo="Typo.h5" Class="fw-bold" Style="color: #2b2b2b;">@resumen.LotesPorVencer</MudText>
+                    <div style="min-width: 0;">
+                        <MudText Typo="Typo.caption" Style="color: #6c757d; font-weight: 600; text-transform: uppercase;">
+                            Lotes por Vencer
+                        </MudText>
+                        <MudText Typo="Typo.h6" Class="fw-bold" Style="color: #2b2b2b;">
+                            @resumen.LotesPorVencer
+                        </MudText>
                     </div>
                 </MudPaper>
             </MudItem>
         </MudGrid>
 
-        @* Gráficos Analíticos *@
-        <MudGrid>
+        @* ==================== GRÁFICOS ==================== *@
+        <MudGrid Spacing="3">
             <MudItem xs="12" md="7">
-                <MudPaper Elevation="2" Class="pa-5 rounded-xl" Style="background: #ffffff; border: 1px solid #e0e0e0;">
+                <MudPaper Elevation="2" Class="pa-3 pa-sm-4 pa-md-5 rounded-xl">
                     <div class="d-flex align-center mb-4">
                         <MudIcon Icon="@Icons.Material.Filled.ShowChart" Style="color: #6b2181;" Class="mr-2" />
-                        <MudText Typo="Typo.h6" Class="fw-bold" Style="color: #2b2b2b;">Ventas por Día</MudText>
+                        <MudText Typo="Typo.h6" Class="fw-bold" Style="color: #2b2b2b;">
+                            Ventas por Día
+                        </MudText>
                     </div>
-                    <div style="position: relative; width: 100%; height: 320px;">
+                    <div style="position: relative; width: 100%; height: clamp(220px, 40vw, 320px);">
                         <canvas id="graficoVentas"></canvas>
                     </div>
                 </MudPaper>
             </MudItem>
 
             <MudItem xs="12" md="5">
-                <MudPaper Elevation="2" Class="pa-5 rounded-xl" Style="background: #ffffff; border: 1px solid #e0e0e0;">
+                <MudPaper Elevation="2" Class="pa-3 pa-sm-4 pa-md-5 rounded-xl">
                     <div class="d-flex align-center mb-4">
                         <MudIcon Icon="@Icons.Material.Filled.BarChart" Style="color: #f38218;" Class="mr-2" />
-                        <MudText Typo="Typo.h6" Class="fw-bold" Style="color: #2b2b2b;">Productos Más Vendidos</MudText>
+                        <MudText Typo="Typo.h6" Class="fw-bold" Style="color: #2b2b2b;">
+                            Productos Más Vendidos
+                        </MudText>
                     </div>
-                    <div style="position: relative; width: 100%; height: 320px;">
+                    <div style="position: relative; width: 100%; height: clamp(220px, 40vw, 320px);">
                         <canvas id="graficoProductos"></canvas>
                     </div>
                 </MudPaper>
@@ -128,9 +161,9 @@
         {
             resumen = await VentaSvc.ObtenerDashboardAsync();
         }
-        catch
+        catch (Exception ex)
         {
-            // Manejo seguro de errores de carga
+            Snackbar.Add($"Error al cargar el dashboard: {ex.Message}", Severity.Error);
         }
         finally
         {
@@ -144,14 +177,24 @@
         if (graficosPendientes && resumen != null)
         {
             graficosPendientes = false;
-            await Task.Delay(1); // Asegura que el canvas esté completamente renderizado en el DOM
-            var labelsVentas = resumen.VentasPorDia.Select(v => v.Fecha.ToString("dd/MM")).ToArray();
-            var datosVentas = resumen.VentasPorDia.Select(v => v.Total).ToArray();
-            await JS.InvokeVoidAsync("renderizarGraficoLinea", "graficoVentas", labelsVentas, datosVentas, "#6b2181", "rgba(107,33,129,0.12)", "Ventas (Bs)");
+            await Task.Delay(1);
 
-            var labelsProductos = resumen.TopProductos.Select(p => p.NombreProducto).ToArray();
-            var datosProductos = resumen.TopProductos.Select(p => p.CantidadVendida).ToArray();
-            await JS.InvokeVoidAsync("renderizarGraficoBarras", "graficoProductos", labelsProductos, datosProductos, "#f38218", "Unidades vendidas");
+            try
+            {
+                var labelsVentas = resumen.VentasPorDia.Select(v => v.Fecha.ToString("dd/MM")).ToArray();
+                var datosVentas = resumen.VentasPorDia.Select(v => v.Total).ToArray();
+                await JS.InvokeVoidAsync("renderizarGraficoLinea", "graficoVentas", labelsVentas, datosVentas,
+                    "#6b2181", "rgba(107,33,129,0.12)", "Ventas (Bs)");
+
+                var labelsProductos = resumen.TopProductos.Select(p => p.NombreProducto).ToArray();
+                var datosProductos = resumen.TopProductos.Select(p => p.CantidadVendida).ToArray();
+                await JS.InvokeVoidAsync("renderizarGraficoBarras", "graficoProductos", labelsProductos, datosProductos,
+                    "#f38218", "Unidades vendidas");
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Error al renderizar gráficos: {ex.Message}", Severity.Warning);
+            }
         }
     }
 }
