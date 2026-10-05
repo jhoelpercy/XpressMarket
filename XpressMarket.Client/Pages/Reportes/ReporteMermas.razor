@@ -1,99 +1,159 @@
 ﻿@page "/reporte-mermas"
 @using Microsoft.AspNetCore.Authorization
-@attribute [Authorize(Roles = "Administrador")]
-@inject LoteService LoteSvc
 @using XpressMarket.Shared.Models
 @using XpressMarket.Shared.Extensions
+@using MudBlazor
+@attribute [Authorize(Roles = "Administrador")]
+@inject LoteService LoteSvc
+@inject ReporteService ReporteSvc
 @inject IJSRuntime JS
+@inject ISnackbar Snackbar
 
 <PageTitle>XpressMarket - Reporte de Mermas</PageTitle>
 
-<div class="pa-4 pa-md-6">
-    @* Banner Principal *@
-    <MudPaper Elevation="0" Class="pa-6 mb-6 rounded-xl d-flex justify-between align-center" 
+<div class="pa-3 pa-sm-4 pa-md-6">
+
+    @* ==================== BANNER ==================== *@
+    <MudPaper Elevation="0" Class="pa-4 pa-sm-5 pa-md-6 mb-4 mb-md-6 rounded-xl"
               Style="background: linear-gradient(135deg, #4a1458 0%, #6b2181 100%); color: #ffffff; border: 1px solid rgba(255,255,255,0.1);">
-        <div>
-            <div class="d-flex align-center gap-2 mb-2">
-                <MudChip T="string" Size="Size.Small" Variant="Variant.Filled" Style="background-color: rgba(243, 130, 24, 0.2); color: #f38218;" Class="fw-bold">
-                    Control de Pérdidas
-                </MudChip>
+        <div class="d-flex flex-column flex-md-row justify-between align-start align-md-center gap-3">
+            <div>
+                <div class="d-flex align-center gap-2 mb-2">
+                    <MudChip T="string" Size="Size.Small" Variant="Variant.Filled"
+                             Style="background-color: rgba(243, 130, 24, 0.2); color: #f38218;"
+                             Class="fw-bold">
+                        Control de Pérdidas
+                    </MudChip>
+                </div>
+                <MudText Typo="Typo.h4" Class="fw-bold mb-1"
+                         Style="color: #ffffff; text-shadow: 0px 2px 4px rgba(0,0,0,0.2); font-size: clamp(1.4rem, 4vw, 2.125rem);">
+                    Reporte de Mermas
+                </MudText>
+                <MudText Typo="Typo.body2" Style="color: rgba(255, 255, 255, 0.85);">
+                    Historial y análisis detallado de productos vencidos y valor económico perdido.
+                </MudText>
             </div>
-            <MudText Typo="Typo.h4" Class="fw-bold mb-1" Style="color: #ffffff; text-shadow: 0px 2px 4px rgba(0,0,0,0.2);">
-                Reporte de Mermas
-            </MudText>
-            <MudText Typo="Typo.body2" Style="color: rgba(255, 255, 255, 0.85);">
-                Historial y análisis detallado de productos vencidos y valor económico perdido.
-            </MudText>
-        </div>
-        <div class="d-none d-md-block">
-            <MudIcon Icon="@Icons.Material.Filled.ReportOff" Style="font-size: 4.5rem; color: rgba(255,255,255,0.15);" />
+            <div class="d-none d-md-block">
+                <MudIcon Icon="@Icons.Material.Filled.ReportOff" Style="font-size: 4.5rem; color: rgba(255,255,255,0.15);" />
+            </div>
         </div>
     </MudPaper>
 
-    @* Sección: Vista por Período y Gráfico *@
-    <MudPaper Elevation="2" Class="pa-5 mb-6 rounded-xl" Style="background: #ffffff; border: 1px solid #e0e0e0;">
-        <div class="d-flex align-center mb-4">
-            <MudIcon Icon="@Icons.Material.Filled.BarChart" Style="color: #6b2181;" Class="mr-2" />
-            <MudText Typo="Typo.h6" Class="fw-bold" Style="color: #2b2b2b;">Análisis por Período</MudText>
+    @* ==================== VISTA POR PERÍODO ==================== *@
+    <MudPaper Elevation="2" Class="pa-3 pa-sm-4 pa-md-5 mb-4 mb-md-6 rounded-xl">
+        <div class="d-flex flex-column flex-sm-row justify-between align-start align-sm-center gap-3 mb-4">
+            <div class="d-flex align-center">
+                <MudIcon Icon="@Icons.Material.Filled.BarChart" Style="color: #6b2181;" Class="mr-2" />
+                <MudText Typo="Typo.h6" Class="fw-bold" Style="color: #2b2b2b;">Análisis por Período</MudText>
+            </div>
+            <div class="d-flex flex-column flex-sm-row gap-2">
+                <MudButton Variant="Variant.Filled" Color="Color.Error" Size="Size.Small"
+                           StartIcon="@Icons.Material.Filled.PictureAsPdf"
+                           OnClick="ExportarPeriodoPdf">
+                    PDF
+                </MudButton>
+                <MudButton Variant="Variant.Filled" Color="Color.Success" Size="Size.Small"
+                           StartIcon="@Icons.Material.Filled.TableChart"
+                           OnClick="ExportarPeriodoExcel">
+                    Excel
+                </MudButton>
+            </div>
         </div>
 
-        <MudGrid Class="mb-4 align-center">
-            <MudItem xs="12" sm="3">
-                <MudSelect T="string" Label="Agrupar por" @bind-Value="agrupacionSeleccionada" Variant="Variant.Outlined" Margin="Margin.Dense">
-                    <MudSelectItem Value="@("dia")">Día</MudSelectItem>
-                    <MudSelectItem Value="@("semana")">Semana</MudSelectItem>
-                    <MudSelectItem Value="@("mes")">Mes</MudSelectItem>
+        <MudGrid Spacing="2" Class="mb-4">
+            <MudItem xs="12" sm="6" md="3">
+                <MudSelect T="string" Label="Agrupar por" @bind-Value="agrupacionSeleccionada"
+                           Variant="Variant.Outlined" Margin="Margin.Dense">
+                    <MudSelectItem T="string" Value="@("dia")">Día</MudSelectItem>
+                    <MudSelectItem T="string" Value="@("semana")">Semana</MudSelectItem>
+                    <MudSelectItem T="string" Value="@("mes")">Mes</MudSelectItem>
                 </MudSelect>
             </MudItem>
-            <MudItem xs="12" sm="3">
-                <MudDatePicker Label="Desde" @bind-Date="periodoDesde" Variant="Variant.Outlined" Margin="Margin.Dense" />
+            <MudItem xs="12" sm="6" md="3">
+                <MudDatePicker Label="Desde" @bind-Date="periodoDesde"
+                               Variant="Variant.Outlined" Margin="Margin.Dense" />
             </MudItem>
-            <MudItem xs="12" sm="3">
-                <MudDatePicker Label="Hasta" @bind-Date="periodoHasta" Variant="Variant.Outlined" Margin="Margin.Dense" />
+            <MudItem xs="12" sm="6" md="3">
+                <MudDatePicker Label="Hasta" @bind-Date="periodoHasta"
+                               Variant="Variant.Outlined" Margin="Margin.Dense" />
             </MudItem>
-            <MudItem xs="12" sm="3">
-                <MudButton Variant="Variant.Filled" Style="background-color: #6b2181; color: #ffffff;" FullWidth="true" OnClick="CargarPeriodo">
+            <MudItem xs="12" sm="6" md="3">
+                <MudButton Variant="Variant.Filled"
+                           Style="background-color: #6b2181; color: #ffffff;"
+                           FullWidth="true" OnClick="CargarPeriodo">
                     Consultar
                 </MudButton>
             </MudItem>
         </MudGrid>
 
-        @if (resumenPeriodo.Any())
+        @if (cargandoPeriodo)
         {
-            <div style="position: relative; width: 100%; height: 300px;" class="mb-4">
+            <div class="d-flex justify-center pa-6">
+                <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
+            </div>
+        }
+        else if (resumenPeriodo.Any())
+        {
+            <div style="position: relative; width: 100%; height: clamp(220px, 40vw, 320px);" class="mb-4">
                 <canvas id="graficoMermasPeriodo"></canvas>
             </div>
-            <MudTable Items="@resumenPeriodo" Dense="true" Hover="true" Elevation="0" Class="rounded-lg">
+            <MudTable Items="@resumenPeriodo" Dense="true" Hover="true" Elevation="0" Class="rounded-lg"
+                      Breakpoint="Breakpoint.Sm">
                 <HeaderContent>
-                    <MudTh>Período</MudTh>
-                    <MudTh Style="text-align: right;">Valor Perdido</MudTh>
+                    <MudTh><MudText Typo="Typo.subtitle2" Class="fw-bold">Período</MudText></MudTh>
+                    <MudTh Class="text-end"><MudText Typo="Typo.subtitle2" Class="fw-bold">Valor Perdido</MudText></MudTh>
                 </HeaderContent>
                 <RowTemplate>
                     <MudTd DataLabel="Período">@context.Etiqueta</MudTd>
-                    <MudTd DataLabel="Valor Perdido" Style="text-align: right;">
-                        <span style="color: #d32f2f; font-weight: bold;">@Math.Abs(context.Utilidad).Bs()</span>
+                    <MudTd DataLabel="Valor Perdido" Class="text-end">
+                        <MudText Typo="Typo.body2" Class="fw-bold" Style="color:#d32f2f;">
+                            @Math.Abs(context.Utilidad).Bs()
+                        </MudText>
                     </MudTd>
                 </RowTemplate>
             </MudTable>
         }
+        else
+        {
+            <MudText Typo="Typo.body2" Class="text-muted italic pa-4">
+                No hay datos en este período.
+            </MudText>
+        }
     </MudPaper>
 
-    @* Sección: Filtro y Tabla de Detalle Histórico *@
-    <MudPaper Elevation="2" Class="pa-5 rounded-xl" Style="background: #ffffff; border: 1px solid #e0e0e0;">
-        <div class="d-flex align-center mb-4">
-            <MudIcon Icon="@Icons.Material.Filled.History" Style="color: #f38218;" Class="mr-2" />
-            <MudText Typo="Typo.h6" Class="fw-bold" Style="color: #2b2b2b;">Detalle de Mermas</MudText>
+    @* ==================== DETALLE DE MERMAS ==================== *@
+    <MudPaper Elevation="2" Class="pa-3 pa-sm-4 pa-md-5 rounded-xl">
+        <div class="d-flex flex-column flex-sm-row justify-between align-start align-sm-center gap-3 mb-4">
+            <div class="d-flex align-center">
+                <MudIcon Icon="@Icons.Material.Filled.History" Style="color: #f38218;" Class="mr-2" />
+                <MudText Typo="Typo.h6" Class="fw-bold" Style="color: #2b2b2b;">Detalle de Mermas</MudText>
+            </div>
+            <div class="d-flex flex-column flex-sm-row gap-2">
+                <MudButton Variant="Variant.Filled" Color="Color.Error" Size="Size.Small"
+                           StartIcon="@Icons.Material.Filled.PictureAsPdf"
+                           OnClick="ExportarDetallePdf">
+                    PDF
+                </MudButton>
+                <MudButton Variant="Variant.Filled" Color="Color.Success" Size="Size.Small"
+                           StartIcon="@Icons.Material.Filled.TableChart"
+                           OnClick="ExportarDetalleExcel">
+                    Excel
+                </MudButton>
+            </div>
         </div>
 
-        <MudGrid Class="mb-4 align-center">
-            <MudItem xs="12" sm="4">
-                <MudDatePicker Label="Desde" @bind-Date="fechaDesde" Variant="Variant.Outlined" Margin="Margin.Dense" />
+        <MudGrid Spacing="2" Class="mb-4">
+            <MudItem xs="12" sm="6" md="4">
+                <MudDatePicker Label="Desde" @bind-Date="fechaDesde"
+                               Variant="Variant.Outlined" Margin="Margin.Dense" />
             </MudItem>
-            <MudItem xs="12" sm="4">
-                <MudDatePicker Label="Hasta" @bind-Date="fechaHasta" Variant="Variant.Outlined" Margin="Margin.Dense" />
+            <MudItem xs="12" sm="6" md="4">
+                <MudDatePicker Label="Hasta" @bind-Date="fechaHasta"
+                               Variant="Variant.Outlined" Margin="Margin.Dense" />
             </MudItem>
-            <MudItem xs="12" sm="4">
-                <MudButton Variant="Variant.Outlined" Color="Color.Primary" FullWidth="true" OnClick="Filtrar">
+            <MudItem xs="12" sm="6" md="4">
+                <MudButton Variant="Variant.Outlined" Color="Color.Primary"
+                           FullWidth="true" OnClick="Filtrar">
                     Filtrar Detalle
                 </MudButton>
             </MudItem>
@@ -107,32 +167,43 @@
         }
         else if (!mermas.Any())
         {
-            <MudText Typo="Typo.body2" Class="text-muted italic pa-4">No hay mermas registradas en este período.</MudText>
+            <MudText Typo="Typo.body2" Class="text-muted italic pa-4">
+                No hay mermas registradas en este período.
+            </MudText>
         }
         else
         {
-            <MudTable Items="@mermas" Dense="true" Hover="true" Elevation="0" Class="rounded-lg">
+            <MudTable Items="@mermas" Dense="true" Hover="true" Elevation="0" Class="rounded-lg"
+                      Breakpoint="Breakpoint.Sm">
                 <HeaderContent>
-                    <MudTh>N° Lote</MudTh>
-                    <MudTh>Producto</MudTh>
-                    <MudTh>Fecha Vencimiento</MudTh>
-                    <MudTh>Fecha Registro Merma</MudTh>
-                    <MudTh>Cantidad</MudTh>
-                    <MudTh>Costo Unit.</MudTh>
-                    <MudTh Style="text-align: right;">Valor Perdido</MudTh>
+                    <MudTh><MudText Typo="Typo.subtitle2" Class="fw-bold">N° Lote</MudText></MudTh>
+                    <MudTh><MudText Typo="Typo.subtitle2" Class="fw-bold">Producto</MudText></MudTh>
+                    <MudTh><MudText Typo="Typo.subtitle2" Class="fw-bold">Vencimiento</MudText></MudTh>
+                    <MudTh><MudText Typo="Typo.subtitle2" Class="fw-bold">Fecha Merma</MudText></MudTh>
+                    <MudTh Class="text-center"><MudText Typo="Typo.subtitle2" Class="fw-bold">Cant.</MudText></MudTh>
+                    <MudTh Class="text-end"><MudText Typo="Typo.subtitle2" Class="fw-bold">Costo U.</MudText></MudTh>
+                    <MudTh Class="text-end"><MudText Typo="Typo.subtitle2" Class="fw-bold">Valor Perdido</MudText></MudTh>
                 </HeaderContent>
                 <RowTemplate>
-                    <MudTd DataLabel="N° Lote"><strong>@context.NumeroLote</strong></MudTd>
+                    <MudTd DataLabel="N° Lote">
+                        <MudText Typo="Typo.body2" Class="fw-bold" Style="color:#6b2181;">@context.NumeroLote</MudText>
+                    </MudTd>
                     <MudTd DataLabel="Producto">@context.Producto?.Nombre</MudTd>
-                    <MudTd DataLabel="Fecha Vencimiento">@context.FechaVencimiento.ToString("dd/MM/yyyy")</MudTd>
-                    <MudTd DataLabel="Fecha Registro Merma">@context.FechaMerma?.ToString("dd/MM/yyyy")</MudTd>
-                    <MudTd DataLabel="Cantidad">@context.CantidadActual</MudTd>
-                    <MudTd DataLabel="Costo Unit.">@context.PrecioCosto.Bs()</MudTd>
-                    <MudTd DataLabel="Valor Perdido" Style="text-align: right;">@((context.CantidadActual * context.PrecioCosto).Bs())</MudTd>
+                    <MudTd DataLabel="Vencimiento">@context.FechaVencimiento.ToString("dd/MM/yyyy")</MudTd>
+                    <MudTd DataLabel="Fecha Merma">@context.FechaMerma?.ToString("dd/MM/yyyy")</MudTd>
+                    <MudTd DataLabel="Cant." Class="text-center">@context.CantidadActual</MudTd>
+                    <MudTd DataLabel="Costo U." Class="text-end">@context.PrecioCosto.Bs()</MudTd>
+                    <MudTd DataLabel="Valor Perdido" Class="text-end">
+                        <MudText Typo="Typo.body2" Class="fw-bold" Style="color:#d32f2f;">
+                            @((context.CantidadActual * context.PrecioCosto).Bs())
+                        </MudText>
+                    </MudTd>
                 </RowTemplate>
                 <FooterContent>
-                    <MudTd colspan="6" Style="text-align: right;"><strong>Valor Total Perdido:</strong></MudTd>
-                    <MudTd Style="text-align: right;"><strong style="color: #d32f2f;">@valorTotalPerdido.Bs()</strong></MudTd>
+                    <MudTd colspan="6" Class="text-end"><strong>Valor Total Perdido:</strong></MudTd>
+                    <MudTd Class="text-end">
+                        <strong style="color:#d32f2f;">@valorTotalPerdido.Bs()</strong>
+                    </MudTd>
                 </FooterContent>
             </MudTable>
         }
@@ -142,6 +213,7 @@
 @code {
     private List<Lote> mermas = new();
     private bool cargando = true;
+    private bool cargandoPeriodo = true;
     private DateTime? fechaDesde;
     private DateTime? fechaHasta;
     private string agrupacionSeleccionada = "dia";
@@ -149,28 +221,6 @@
     private DateTime? periodoHasta = DateTime.Now;
     private List<PeriodoResumen> resumenPeriodo = new();
     private bool graficoPendiente = false;
-
-    private async Task CargarPeriodo()
-    {
-        if (periodoDesde.HasValue && periodoHasta.HasValue)
-        {
-            resumenPeriodo = await LoteSvc.ObtenerReporteMermasPeriodoAsync(periodoDesde.Value, periodoHasta.Value, agrupacionSeleccionada);
-            graficoPendiente = true;
-        }
-    }
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (graficoPendiente && resumenPeriodo.Any())
-        {
-            graficoPendiente = false;
-            await Task.Delay(1);
-            var labels = resumenPeriodo.Select(p => p.Etiqueta).ToArray();
-            var datos = resumenPeriodo.Select(p => Math.Abs(p.Utilidad)).ToArray();
-            
-            await JS.InvokeVoidAsync("renderizarGraficoBarras", "graficoMermasPeriodo", labels, datos, "#d32f2f", "Valor Perdido (Bs)");
-        }
-    }
 
     private decimal valorTotalPerdido => mermas.Sum(l => l.CantidadActual * l.PrecioCosto);
 
@@ -180,10 +230,114 @@
         await Filtrar();
     }
 
+    private async Task CargarPeriodo()
+    {
+        if (!periodoDesde.HasValue || !periodoHasta.HasValue) return;
+
+        cargandoPeriodo = true;
+        try
+        {
+            resumenPeriodo = await LoteSvc.ObtenerReporteMermasPeriodoAsync(
+                periodoDesde.Value, periodoHasta.Value, agrupacionSeleccionada);
+            graficoPendiente = true;
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error al cargar período: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            cargandoPeriodo = false;
+        }
+    }
+
     private async Task Filtrar()
     {
         cargando = true;
-        mermas = await LoteSvc.ObtenerReporteMermasAsync(fechaDesde, fechaHasta);
-        cargando = false;
+        try
+        {
+            mermas = await LoteSvc.ObtenerReporteMermasAsync(fechaDesde, fechaHasta);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error al filtrar: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (graficoPendiente && resumenPeriodo.Any())
+        {
+            graficoPendiente = false;
+            await Task.Delay(50);
+
+            try
+            {
+                var labels = resumenPeriodo.Select(p => p.Etiqueta).ToArray();
+                var datos = resumenPeriodo.Select(p => Math.Abs(p.Utilidad)).ToArray();
+                await JS.InvokeVoidAsync("renderizarGraficoBarras", "graficoMermasPeriodo",
+                    labels, datos, "#d32f2f", "Valor Perdido (Bs)");
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Error al renderizar gráfico: {ex.Message}", Severity.Warning);
+            }
+        }
+    }
+
+    // ==================== EXPORTACIONES ====================
+
+    private async Task ExportarPeriodoPdf()
+    {
+        var bytes = await ReporteSvc.ObtenerMermasPdfAsync(periodoDesde, periodoHasta);
+        if (bytes == null)
+        {
+            Snackbar.Add("No se pudo generar el PDF", Severity.Error);
+            return;
+        }
+        var base64 = Convert.ToBase64String(bytes);
+        await JS.InvokeVoidAsync("abrirPdfDesdeBase64", base64, $"Reporte_Mermas_{DateTime.Now:yyyyMMdd}.pdf");
+    }
+
+    private async Task ExportarPeriodoExcel()
+    {
+        var bytes = await ReporteSvc.ObtenerMermasExcelAsync(periodoDesde, periodoHasta);
+        if (bytes == null)
+        {
+            Snackbar.Add("No se pudo generar el Excel", Severity.Error);
+            return;
+        }
+        var base64 = Convert.ToBase64String(bytes);
+        await JS.InvokeVoidAsync("descargarArchivoExcel", $"Reporte_Mermas_{DateTime.Now:yyyyMMdd}.xlsx", base64);
+        Snackbar.Add("Excel descargado", Severity.Success);
+    }
+
+    private async Task ExportarDetallePdf()
+    {
+        var bytes = await ReporteSvc.ObtenerMermasPdfAsync(fechaDesde, fechaHasta);
+        if (bytes == null)
+        {
+            Snackbar.Add("No se pudo generar el PDF", Severity.Error);
+            return;
+        }
+        var base64 = Convert.ToBase64String(bytes);
+        await JS.InvokeVoidAsync("abrirPdfDesdeBase64", base64, $"Reporte_Mermas_{DateTime.Now:yyyyMMdd}.pdf");
+    }
+
+    private async Task ExportarDetalleExcel()
+    {
+        var bytes = await ReporteSvc.ObtenerMermasExcelAsync(fechaDesde, fechaHasta);
+        if (bytes == null)
+        {
+            Snackbar.Add("No se pudo generar el Excel", Severity.Error);
+            return;
+        }
+        var base64 = Convert.ToBase64String(bytes);
+        await JS.InvokeVoidAsync("descargarArchivoExcel", $"Reporte_Mermas_{DateTime.Now:yyyyMMdd}.xlsx", base64);
+        Snackbar.Add("Excel descargado", Severity.Success);
     }
 }

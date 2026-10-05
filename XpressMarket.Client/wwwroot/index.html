@@ -72,11 +72,9 @@
                     bytes[i] = binaryString.charCodeAt(i);
                 }
 
-                // MIME correcto (con barra)
                 const blob = new Blob([bytes], { type: 'application/pdf' });
                 const blobUrl = URL.createObjectURL(blob);
 
-                // Crear iframe oculto
                 const iframe = document.createElement('iframe');
                 iframe.style.position = 'fixed';
                 iframe.style.right = '0';
@@ -110,10 +108,47 @@
                     if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
                 }, 60000);
             };
+
+            // @ts-ignore
+            window.abrirPdfDesdeBase64 = function (base64Data, fileName) {
+                // @ts-ignore
+                const binaryString = window.atob(base64Data);
+                const len = binaryString.length;
+                const bytes = new Uint8Array(len);
+                for (let i = 0; i < len; i++) {
+                    bytes[i] = binaryString.charCodeAt(i);
+                }
+
+                const blob = new Blob([bytes], { type: 'application/pdf' });
+                const blobUrl = URL.createObjectURL(blob);
+                window.open(blobUrl, '_blank');
+                setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+            };
+
+            // @ts-ignore
+            window.descargarArchivoExcel = function (nombre, base64) {
+                // @ts-ignore
+                const byteCharacters = atob(base64);
+                const byteNumbers = new Array(byteCharacters.length);
+                for (let i = 0; i < byteCharacters.length; i++) {
+                    byteNumbers[i] = byteCharacters.charCodeAt(i);
+                }
+                const blob = new Blob([new Uint8Array(byteNumbers)], {
+                    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = nombre;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            };
     </script>
 
     <script>
-        navigator.serviceWorker.register('service-worker.js', { updateViaCache: 'none' });
+                        navigator.serviceWorker.register('service-worker.js', { updateViaCache: 'none' });
     </script>
 </body>
 </html>

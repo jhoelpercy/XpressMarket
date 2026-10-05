@@ -18,14 +18,14 @@ CultureInfo.DefaultThreadCurrentUICulture = cultureInfo;
 
 builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
-
+builder.Services.AddScoped<ReporteService>();
 // 1. Registro del DelegatingHandler para inyectar el token JWT en las peticiones
 builder.Services.AddScoped<AuthHeaderHandler>();
 
 // 2. Configuración del HttpClient autenticado apuntando a la Web API (Server)
 builder.Services.AddHttpClient("XpressMarketAPI", client =>
 {
-    client.BaseAddress = new Uri("https://localhost:7232/"); // Reemplaza por la URL de tu API
+    client.BaseAddress = new Uri("https://localhost:7232/");
 }).AddHttpMessageHandler<AuthHeaderHandler>();
 
 // 3. Registrar HttpClient genérico para que use la instancia autenticada por defecto
