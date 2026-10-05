@@ -1,44 +1,53 @@
 ﻿@page "/productos"
 @using Microsoft.AspNetCore.Authorization
+@using XpressMarket.Shared.Models
+@using XpressMarket.Shared.Extensions
+@using MudBlazor
 @attribute [Authorize(Roles = "Administrador")]
 @inject ProductoService ProductoSvc
 @inject CategoriaService CategoriaSvc
+@inject IDialogService DialogService
 @inject ISnackbar Snackbar
-@using XpressMarket.Shared.Models
-@using XpressMarket.Shared.Extensions
 
 <PageTitle>Productos - XpressMarket</PageTitle>
 
-<div class="pa-4 pa-md-6">
+<div class="pa-3 pa-sm-4 pa-md-6">
 
-    <MudPaper Elevation="0" Class="pa-6 mb-6 rounded-xl d-flex justify-between align-center"
+    <MudPaper Elevation="0" Class="pa-4 pa-sm-5 pa-md-6 mb-4 mb-md-6 rounded-xl"
               Style="background: linear-gradient(135deg, #4a1458 0%, #6b2181 100%); color: #ffffff; border: 1px solid rgba(255,255,255,0.1);">
-        <div>
-            <div class="d-flex align-center gap-2 mb-2">
-                <MudChip T="string" Size="Size.Small" Variant="Variant.Filled"
-                         Style="background-color: rgba(243, 130, 24, 0.2); color: #f38218;"
-                         Class="fw-bold">
-                    Catálogo
-                </MudChip>
+        <div class="d-flex flex-column flex-md-row justify-between align-start align-md-center gap-3">
+            <div>
+                <div class="d-flex align-center gap-2 mb-2">
+                    <MudChip T="string" Size="Size.Small" Variant="Variant.Filled"
+                             Style="background-color: rgba(243, 130, 24, 0.2); color: #f38218;"
+                             Class="fw-bold">
+                        Catálogo
+                    </MudChip>
+                </div>
+                <MudText Typo="Typo.h4" Class="fw-bold mb-1"
+                         Style="color: #ffffff; text-shadow: 0px 2px 4px rgba(0,0,0,0.2); font-size: clamp(1.4rem, 4vw, 2.125rem);">
+                    Gestión de Productos
+                </MudText>
+                <MudText Typo="Typo.body2" Style="color: rgba(255, 255, 255, 0.85);">
+                    Administra catálogo, precios y niveles de stock.
+                </MudText>
             </div>
-            <MudText Typo="Typo.h4" Class="fw-bold mb-1" Style="color: #ffffff; text-shadow: 0px 2px 4px rgba(0,0,0,0.2);">
-                Gestión de Productos
-            </MudText>
-            <MudText Typo="Typo.body2" Style="color: rgba(255, 255, 255, 0.85);">
-                Administra catálogo, precios y niveles de stock.
-            </MudText>
-        </div>
-        <div class="d-none d-md-block">
-            <MudIcon Icon="@Icons.Material.Filled.Inventory2" Style="font-size: 4.5rem; color: rgba(255,255,255,0.15);" />
+            <div class="d-none d-md-block">
+                <MudIcon Icon="@Icons.Material.Filled.Inventory2" Style="font-size: 4.5rem; color: rgba(255,255,255,0.15);" />
+            </div>
         </div>
     </MudPaper>
 
-    <MudPaper Elevation="2" Class="pa-5 rounded-xl">
-        <div class="d-flex justify-between align-center mb-4">
-            <MudText Typo="Typo.h6" Class="fw-bold" Style="color: #2b2b2b;">Listado de Productos</MudText>
+    <MudPaper Elevation="2" Class="pa-3 pa-sm-4 pa-md-5 rounded-xl">
+        <div class="d-flex flex-column flex-sm-row justify-between align-start align-sm-center gap-3 mb-4">
+            <MudText Typo="Typo.h6" Class="fw-bold" Style="color: #2b2b2b;">
+                Listado de Productos
+            </MudText>
             <MudButton Variant="Variant.Filled"
                        Style="background-color: #6b2181; color: #ffffff; font-weight: bold;"
-                       StartIcon="@Icons.Material.Filled.Add" OnClick="AbrirFormularioNuevo" Class="rounded-lg">
+                       StartIcon="@Icons.Material.Filled.Add"
+                       OnClick="AbrirFormularioNuevo"
+                       Class="rounded-lg">
                 Nuevo Producto
             </MudButton>
         </div>
@@ -64,13 +73,13 @@
         }
         else
         {
-            <MudTable Items="@productos" Hover="true" Dense="true" Elevation="0" Class="rounded-lg">
+            <MudTable Items="@productos" Hover="true" Dense="true" Elevation="0" Class="rounded-lg"
+                      Breakpoint="Breakpoint.Sm">
                 <HeaderContent>
                     <MudTh><MudText Typo="Typo.subtitle2" Class="fw-bold">Nombre</MudText></MudTh>
                     <MudTh><MudText Typo="Typo.subtitle2" Class="fw-bold">Categoría</MudText></MudTh>
-                    <MudTh><MudText Typo="Typo.subtitle2" Class="fw-bold">Precio Venta</MudText></MudTh>
-                    <MudTh Class="text-center"><MudText Typo="Typo.subtitle2" Class="fw-bold">Stock Actual</MudText></MudTh>
-                    <MudTh Class="text-center"><MudText Typo="Typo.subtitle2" Class="fw-bold">Stock Mín.</MudText></MudTh>
+                    <MudTh><MudText Typo="Typo.subtitle2" Class="fw-bold">Precio</MudText></MudTh>
+                    <MudTh Class="text-center"><MudText Typo="Typo.subtitle2" Class="fw-bold">Stock</MudText></MudTh>
                     <MudTh><MudText Typo="Typo.subtitle2" Class="fw-bold">Estado</MudText></MudTh>
                     <MudTh Class="text-end"><MudText Typo="Typo.subtitle2" Class="fw-bold">Acciones</MudText></MudTh>
                 </HeaderContent>
@@ -84,16 +93,13 @@
                             @(context.Categoria?.Nombre ?? "Sin categoría")
                         </MudChip>
                     </MudTd>
-                    <MudTd DataLabel="Precio Venta">
+                    <MudTd DataLabel="Precio">
                         <MudText Typo="Typo.body1" Class="fw-bold" Style="color: #6b2181;">
                             @context.PrecioVenta.Bs()
                         </MudText>
                     </MudTd>
-                    <MudTd DataLabel="Stock Actual" Class="text-center">
+                    <MudTd DataLabel="Stock" Class="text-center">
                         <MudText Typo="Typo.body1" Class="fw-bold">@context.StockActual</MudText>
-                    </MudTd>
-                    <MudTd DataLabel="Stock Mín." Class="text-center">
-                        <MudText Typo="Typo.body2" Style="color: #6c757d;">@context.StockMinimo</MudText>
                     </MudTd>
                     <MudTd DataLabel="Estado">
                         @if (context.StockBajo)
@@ -131,155 +137,140 @@
     </MudPaper>
 </div>
 
-<MudDialog @bind-IsVisible="mostrarFormulario" Options="dialogOptions">
-    <TitleContent>
-        <MudText Typo="Typo.h6" Class="fw-bold" Style="color: #6b2181;">
-            <MudIcon Icon="@Icons.Material.Filled.Inventory2" Class="mr-2" />
-            @(productoEditando.Id == 0 ? "Nuevo Producto" : "Editar Producto")
-        </MudText>
-    </TitleContent>
-    <DialogContent>
-        <EditForm Model="productoEditando" OnValidSubmit="GuardarProducto">
-            <DataAnnotationsValidator />
-            <ValidationSummary class="alert alert-danger p-2 small mb-3" />
-
-            <MudTextField Label="Nombre" @bind-Value="productoEditando.Nombre"
-                          Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-3" />
-            <MudTextField Label="Descripción" @bind-Value="productoEditando.Descripcion"
-                          Lines="2" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-3" />
-
-            <MudGrid>
-                <MudItem xs="12" md="6">
-                    <MudSelect T="int" Label="Categoría" @bind-Value="productoEditando.CategoriaId"
-                               Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-3">
-                        <MudSelectItem T="int" Value="0">-- Seleccione --</MudSelectItem>
-                        @if (categorias != null)
-                        {
-                            @foreach (var cat in categorias)
-                            {
-                                <MudSelectItem T="int" Value="@cat.Id">@cat.Nombre</MudSelectItem>
-                            }
-                        }
-                    </MudSelect>
-                </MudItem>
-                <MudItem xs="12" md="6">
-                    <MudTextField Label="Código de Barras" @bind-Value="productoEditando.CodigoBarras"
-                                  Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-3" />
-                </MudItem>
-
-                <MudItem xs="12" md="6">
-                    @if (productoEditando.Id == 0)
-                    {
-                        <MudNumericField @bind-Value="productoEditando.PrecioCosto"
-                                         Label="Precio Costo (Bs)"
-                                         Variant="Variant.Outlined" Margin="Margin.Dense"
-                                         HelperText="Se actualiza al registrar lotes" />
-                    }
-                    else
-                    {
-                        <MudTextField Label="Precio Costo (Bs)"
-                                      Value="@($"{productoEditando.PrecioCosto:N2} Bs")"
-                                      ReadOnly="true" Variant="Variant.Outlined"
-                                      Margin="Margin.Dense"
-                                      HelperText="Se actualiza al registrar un nuevo lote" />
-                    }
-                </MudItem>
-                <MudItem xs="12" md="6">
-                    <MudNumericField @bind-Value="productoEditando.PrecioVenta"
-                                     Label="Precio Venta (Bs)"
-                                     Variant="Variant.Outlined" Margin="Margin.Dense" />
-                </MudItem>
-
-                <MudItem xs="12" md="6">
-                    <MudTextField Label="Stock Actual"
-                                  Value="@($"{productoEditando.StockActual} unidades")"
-                                  ReadOnly="true" Variant="Variant.Outlined"
-                                  Margin="Margin.Dense"
-                                  HelperText="Se actualiza al registrar o vender lotes" />
-                </MudItem>
-                <MudItem xs="12" md="6">
-                    <MudNumericField @bind-Value="productoEditando.StockMinimo"
-                                     Label="Stock Mínimo"
-                                     Variant="Variant.Outlined" Margin="Margin.Dense" />
-                </MudItem>
-            </MudGrid>
-
-            <div class="d-flex justify-end gap-2 mt-4">
-                <MudButton OnClick="CerrarFormulario" Variant="Variant.Outlined" Color="Color.Default">
-                    Cancelar
-                </MudButton>
-                <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled"
-                           Style="background-color: #6b2181; color: #ffffff;">
-                    Guardar Producto
-                </MudButton>
-            </div>
-        </EditForm>
-    </DialogContent>
-</MudDialog>
-
 @code {
     private List<Producto>? productos;
     private List<Categoria>? categorias;
     private bool cargando = true;
-    private bool mostrarFormulario = false;
-    private Producto productoEditando = new();
-
-    private DialogOptions dialogOptions = new()
-    {
-        CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true,
-        BackdropClick = false, CloseOnEscapeKey = false
-    };
 
     protected override async Task OnInitializedAsync() => await CargarDatos();
 
     private async Task CargarDatos()
     {
         cargando = true;
-        categorias = await CategoriaSvc.ObtenerTodasAsync();
-        productos = await ProductoSvc.ObtenerTodosAsync();
-        cargando = false;
-    }
-
-    private void AbrirFormularioNuevo()
-    {
-        productoEditando = new Producto { Activo = true, StockActual = 0 };
-        mostrarFormulario = true;
-    }
-
-    private void AbrirFormularioEditar(Producto p)
-    {
-        productoEditando = new Producto
+        try
         {
-            Id = p.Id, Nombre = p.Nombre, Descripcion = p.Descripcion,
-            PrecioVenta = p.PrecioVenta, PrecioCosto = p.PrecioCosto,
-            StockActual = p.StockActual, StockMinimo = p.StockMinimo,
-            CodigoBarras = p.CodigoBarras, Activo = p.Activo, CategoriaId = p.CategoriaId
+            categorias = await CategoriaSvc.ObtenerTodasAsync();
+            productos = await ProductoSvc.ObtenerTodosAsync();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error al cargar: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    private async Task AbrirFormularioNuevo()
+    {
+        var modelo = new Producto { Activo = true, StockActual = 0 };
+
+        var parametros = new DialogParameters<ProductoDialog>
+        {
+            { x => x.Producto, modelo },
+            { x => x.Categorias, categorias ?? new() },
+            { x => x.EsNuevo, true }
         };
-        mostrarFormulario = true;
+
+        var opciones = new DialogOptions
+        {
+            CloseButton = true,
+            MaxWidth = MaxWidth.Medium,
+            FullWidth = true,
+            BackdropClick = false,
+            CloseOnEscapeKey = false
+        };
+
+        var dialog = await DialogService.ShowAsync<ProductoDialog>("Nuevo Producto", parametros, opciones);
+        var resultado = await dialog.Result;
+
+        if (resultado != null && !resultado.Canceled)
+        {
+            await CargarDatos();
+        }
     }
 
-    private void CerrarFormulario() => mostrarFormulario = false;
-
-    private async Task GuardarProducto()
+    private async Task AbrirFormularioEditar(Producto p)
     {
-        if (productoEditando.Id == 0)
+        var modelo = new Producto
         {
-            await ProductoSvc.CrearAsync(productoEditando);
-            Snackbar.Add("Producto creado", Severity.Success);
-        }
-        else
+            Id = p.Id,
+            Nombre = p.Nombre,
+            Descripcion = p.Descripcion,
+            PrecioVenta = p.PrecioVenta,
+            PrecioCosto = p.PrecioCosto,
+            StockActual = p.StockActual,
+            StockMinimo = p.StockMinimo,
+            CodigoBarras = p.CodigoBarras,
+            Activo = p.Activo,
+            CategoriaId = p.CategoriaId
+        };
+
+        var parametros = new DialogParameters<ProductoDialog>
         {
-            await ProductoSvc.ActualizarAsync(productoEditando.Id, productoEditando);
-            Snackbar.Add("Producto actualizado", Severity.Success);
+            { x => x.Producto, modelo },
+            { x => x.Categorias, categorias ?? new() },
+            { x => x.EsNuevo, false }
+        };
+
+        var opciones = new DialogOptions
+        {
+            CloseButton = true,
+            MaxWidth = MaxWidth.Medium,
+            FullWidth = true,
+            BackdropClick = false,
+            CloseOnEscapeKey = false
+        };
+
+        var dialog = await DialogService.ShowAsync<ProductoDialog>("Editar Producto", parametros, opciones);
+        var resultado = await dialog.Result;
+
+        if (resultado != null && !resultado.Canceled)
+        {
+            await CargarDatos();
         }
-        mostrarFormulario = false;
-        await CargarDatos();
     }
 
     private async Task EliminarProducto(int id)
     {
-        await ProductoSvc.EliminarAsync(id);
-        Snackbar.Add("Producto eliminado", Severity.Warning);
-        await CargarDatos();
+        var parametros = new DialogParameters<MudMessageBox>
+        {
+            { x => x.Title, "Confirmar eliminación" },
+            { x => x.Message, "¿Estás seguro de eliminar este producto?" },
+            { x => x.YesText, "Sí, eliminar" },
+            { x => x.CancelText, "Cancelar" }
+        };
+
+        var opciones = new DialogOptions
+        {
+            MaxWidth = MaxWidth.ExtraSmall,
+            FullWidth = true,
+            CloseButton = true
+        };
+
+        var dialog = await DialogService.ShowAsync<MudMessageBox>("", parametros, opciones);
+        var resultado = await dialog.Result;
+
+        if (resultado != null && !resultado.Canceled)
+        {
+            try
+            {
+                var eliminado = await ProductoSvc.EliminarAsync(id);
+                if (eliminado)
+                {
+                    Snackbar.Add("Producto eliminado", Severity.Warning);
+                    await CargarDatos();
+                }
+                else
+                {
+                    Snackbar.Add("No se pudo eliminar el producto", Severity.Error);
+                }
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Error: {ex.Message}", Severity.Error);
+            }
+        }
     }
 }

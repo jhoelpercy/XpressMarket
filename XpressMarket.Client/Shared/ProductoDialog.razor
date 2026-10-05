@@ -1,0 +1,166 @@
+﻿@using XpressMarket.Shared.Models
+@inject ProductoService ProductoSvc
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6" Class="fw-bold" Style="color: #6b2181;">
+            <MudIcon Icon="@Icons.Material.Filled.Inventory2" Class="mr-2" />
+            @(EsNuevo ? "Nuevo Producto" : "Editar Producto")
+        </MudText>
+    </TitleContent>
+
+    <DialogContent>
+        <EditForm Model="Producto" OnValidSubmit="Guardar">
+            <DataAnnotationsValidator />
+            <ValidationSummary class="alert alert-danger p-2 small mb-3" />
+
+            <MudTextField Label="Nombre"
+                          @bind-Value="Producto.Nombre"
+                          For="@(() => Producto.Nombre)"
+                          Variant="Variant.Outlined"
+                          Margin="Margin.Dense"
+                          Class="mb-3" />
+
+            <MudTextField Label="Descripción"
+                          @bind-Value="Producto.Descripcion"
+                          Lines="2"
+                          Variant="Variant.Outlined"
+                          Margin="Margin.Dense"
+                          Class="mb-3" />
+
+            <MudGrid>
+                <MudItem xs="12" md="6">
+                    <MudSelect T="int" Label="Categoría"
+                               @bind-Value="Producto.CategoriaId"
+                               Variant="Variant.Outlined"
+                               Margin="Margin.Dense"
+                               Class="mb-3">
+                        <MudSelectItem T="int" Value="0">-- Seleccione --</MudSelectItem>
+                        @if (Categorias != null)
+                        {
+                            @foreach (var cat in Categorias)
+                            {
+                                <MudSelectItem T="int" Value="@cat.Id">@cat.Nombre</MudSelectItem>
+                            }
+                        }
+                    </MudSelect>
+                </MudItem>
+
+                <MudItem xs="12" md="6">
+                    <MudTextField Label="Código de Barras"
+                                  @bind-Value="Producto.CodigoBarras"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  Class="mb-3" />
+                </MudItem>
+
+                <MudItem xs="12" md="6">
+                    @if (EsNuevo)
+                    {
+                        <MudNumericField @bind-Value="Producto.PrecioCosto"
+                                         Label="Precio Costo (Bs)"
+                                         Variant="Variant.Outlined"
+                                         Margin="Margin.Dense"
+                                         HelperText="Se actualiza al registrar lotes" />
+                    }
+                    else
+                    {
+                        <MudTextField Label="Precio Costo (Bs)"
+                                      Value="@($"{Producto.PrecioCosto:N2} Bs")"
+                                      ReadOnly="true"
+                                      Variant="Variant.Outlined"
+                                      Margin="Margin.Dense"
+                                      HelperText="Se actualiza al registrar un nuevo lote" />
+                    }
+                </MudItem>
+
+                <MudItem xs="12" md="6">
+                    <MudNumericField @bind-Value="Producto.PrecioVenta"
+                                     Label="Precio Venta (Bs)"
+                                     Variant="Variant.Outlined"
+                                     Margin="Margin.Dense" />
+                </MudItem>
+
+                <MudItem xs="12" md="6">
+                    <MudTextField Label="Stock Actual"
+                                  Value="@($"{Producto.StockActual} unidades")"
+                                  ReadOnly="true"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  HelperText="Se actualiza al registrar o vender lotes" />
+                </MudItem>
+
+                <MudItem xs="12" md="6">
+                    <MudNumericField @bind-Value="Producto.StockMinimo"
+                                     Label="Stock Mínimo"
+                                     Variant="Variant.Outlined"
+                                     Margin="Margin.Dense" />
+                </MudItem>
+            </MudGrid>
+        </EditForm>
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton OnClick="Cancelar" Variant="Variant.Outlined" Color="Color.Default">
+            Cancelar
+        </MudButton>
+        <MudButton OnClick="Guardar" Variant="Variant.Filled"
+                   Style="background-color: #6b2181; color: #ffffff;"
+                   Disabled="@_guardando">
+            @(_guardando ? "Guardando..." : "Guardar Producto")
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = null!;
+    [Parameter] public Producto Producto { get; set; } = new();
+    [Parameter] public List<Categoria> Categorias { get; set; } = new();
+    [Parameter] public bool EsNuevo { get; set; }
+
+    private bool _guardando = false;
+
+    private void Cancelar()
+    {
+        MudDialog.Cancel();
+    }
+
+    private async Task Guardar()
+    {
+        _guardando = true;
+        try
+        {
+            if (EsNuevo)
+            {
+                var creado = await ProductoSvc.CrearAsync(Producto);
+                if (creado == null)
+                {
+                    Snackbar.Add("No se pudo crear el producto", Severity.Error);
+                    return;
+                }
+                Snackbar.Add("Producto creado", Severity.Success);
+            }
+            else
+            {
+                var actualizado = await ProductoSvc.ActualizarAsync(Producto.Id, Producto);
+                if (!actualizado)
+                {
+                    Snackbar.Add("No se pudo actualizar el producto", Severity.Error);
+                    return;
+                }
+                Snackbar.Add("Producto actualizado", Severity.Success);
+            }
+
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _guardando = false;
+        }
+    }
+}
