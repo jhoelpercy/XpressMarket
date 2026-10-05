@@ -142,26 +142,30 @@
         </MudStack>
 
         <MudGrid Spacing="3">
-            @* ✅ POS: solo visible para rol Cajero *@
+            @*POS: solo visible para rol Cajero *@
             <AuthorizeView Roles="Cajero">
                 <Authorized>
-                    <MudItem xs="6" sm="6" md="4" lg="3">
-                        <MudPaper Elevation="2" Class="pa-3 pa-md-4 rounded-lg pos-action-card h-100" @onclick='() => NavTo("punto-venta")'>
-                            <div class="d-flex align-center">
-                                <MudAvatar Style="background-color: #6b2181; color: #ffffff;" Class="mr-2 mr-md-3" Size="Size.Medium">
-                                    <MudIcon Icon="@Icons.Material.Filled.ShoppingCart" />
+                    <MudItem xs="12" sm="6" md="4" lg="3">
+                        <MudPaper Elevation="2" Class="pa-4 rounded-lg pos-action-card h-100"
+                                  Style="background: linear-gradient(135deg, #6b2181 0%, #8e3aa8 100%); color: #ffffff;"
+                                  @onclick='() => NavTo("punto-venta")'>
+                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="3">
+                                <MudAvatar Style="background-color: rgba(255,255,255,0.15); color: #f38218;" Size="Size.Large">
+                                    <MudIcon Icon="@Icons.Material.Filled.ShoppingCart" Size="Size.Large" />
                                 </MudAvatar>
                                 <div style="min-width: 0;">
-                                    <MudText Typo="Typo.subtitle2" Class="fw-bold text-truncate" Style="color: #2b2b2b;">Punto de Venta</MudText>
-                                    <MudText Typo="Typo.caption" Class="text-truncate d-none d-sm-block" Style="color: #6c757d;">Registrar ventas</MudText>
+                                    <MudText Typo="Typo.h6" Class="fw-bold" Style="color: #ffffff;">Punto de Venta</MudText>
+                                    <MudText Typo="Typo.caption" Style="color: rgba(255,255,255,0.8);">
+                                        Registrar ventas y emitir tickets
+                                    </MudText>
                                 </div>
-                            </div>
+                            </MudStack>
                         </MudPaper>
                     </MudItem>
                 </Authorized>
             </AuthorizeView>
 
-            @* ✅ Accesos solo para Administrador *@
+            @*Accesos solo para Administrador *@
             @if (esAdministrador)
             {
                 <MudItem xs="6" sm="6" md="4" lg="3">

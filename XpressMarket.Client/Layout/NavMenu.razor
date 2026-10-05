@@ -62,12 +62,12 @@
     @* Usuario y Cierre de Sesión *@
     <AuthorizeView>
         <Authorized Context="authContext">
-            <div class="px-4 py-3 d-flex align-center rounded mb-2 mx-2" style="background: rgba(255, 255, 255, 0.08);">
+            <div class="px-3 py-3 d-flex align-center rounded mb-3" style="background: rgba(255, 255, 255, 0.08); margin: 0 12px;">
                 <MudAvatar Style="background-color: #f38218; color: #ffffff;" Variant="Variant.Filled" Size="Size.Medium" Class="mr-3">
                     @(string.IsNullOrEmpty(authContext.User.Identity?.Name) ? "U" : authContext.User.Identity.Name.Trim().Substring(0, 1).ToUpper())
                 </MudAvatar>
-                <div class="d-flex flex-column">
-                    <MudText Typo="Typo.body2" Class="fw-bold" Style="color: #fbf2db;">
+                <div class="d-flex flex-column" style="min-width: 0; overflow: hidden;">
+                    <MudText Typo="Typo.body2" Class="fw-bold text-truncate" Style="color: #fbf2db;">
                         @authContext.User.Identity?.Name
                     </MudText>
                     <MudText Typo="Typo.caption" Style="color: rgba(251, 242, 219, 0.7);">
@@ -76,14 +76,15 @@
                 </div>
             </div>
 
-            <MudButton Variant="Variant.Outlined"
-                       Style="color: #fbf2db; border-color: #f38218; background-color: rgba(243, 130, 24, 0.1); margin: 0 8px;"
-                       StartIcon="@Icons.Material.Filled.Logout"
-                       FullWidth="true"
-                       OnClick="CerrarSesion"
-                       Class="mt-2 rounded-lg">
-                Cerrar sesión
-            </MudButton>
+            <div style="margin: 0 12px;">
+                <MudButton Variant="Variant.Outlined"
+                           Style="color: #fbf2db; border-color: #f38218; background-color: rgba(243, 130, 24, 0.1); width: 100%;"
+                           StartIcon="@Icons.Material.Filled.Logout"
+                           OnClick="CerrarSesion"
+                           Class="rounded-lg">
+                    Cerrar sesión
+                </MudButton>
+            </div>
         </Authorized>
     </AuthorizeView>
 
