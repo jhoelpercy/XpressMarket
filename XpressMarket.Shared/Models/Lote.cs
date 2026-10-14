@@ -13,7 +13,7 @@ namespace XpressMarket.Shared.Models
         [Key]
         public int Id { get; set; }
 
-        [Required]
+        [Required(ErrorMessage = "El número de lote es obligatorio.")]
         [StringLength(50, ErrorMessage = "El número de lote no puede superar los 50 caracteres.")]
         public string NumeroLote { get; set; } = string.Empty;
 
@@ -22,7 +22,6 @@ namespace XpressMarket.Shared.Models
         [ForeignKey(nameof(Producto))]
         public int ProductoId { get; set; }
 
-        [JsonIgnore]
         public Producto? Producto { get; set; }
 
         // Clave foránea hacia Proveedor (opcional: puede no conocerse en algunos casos)
