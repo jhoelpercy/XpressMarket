@@ -1,7 +1,7 @@
 @inject ProductoService ProductoSvc
 @inject ISnackbar Snackbar
 
-<MudAutocomplete T="Producto"
+<MudAutocomplete T="Producto" @ref="_buscador"
                   Value="productoSeleccionado"
                   ValueChanged="OnProductoSelected"
                   SearchFunc="BuscarProductosAsync"
@@ -45,6 +45,7 @@
 @code {
     [Parameter] public EventCallback<Producto> OnProductoAgregado { get; set; }
 
+    private MudAutocomplete<Producto>? _buscador;
     private Producto? productoSeleccionado;
     private List<Producto>? catalogo;
 
@@ -96,5 +97,9 @@
         }
 
         productoSeleccionado = null;
+
+        // Deja el cuadro de búsqueda vacío para el siguiente producto.
+        if (_buscador != null)
+            await _buscador.ClearAsync();
     }
 }

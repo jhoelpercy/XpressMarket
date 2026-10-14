@@ -1,4 +1,5 @@
-﻿<MudTable Items="Carrito" Hover="true" Dense="true" Elevation="0" Class="rounded-lg">
+﻿@using XpressMarket.Shared.Extensions
+<MudTable Items="Carrito" Hover="true" Dense="true" Elevation="0" Class="rounded-lg">
     <HeaderContent>
         <MudTh><MudText Typo="Typo.subtitle2" Class="fw-bold">Producto</MudText></MudTh>
         <MudTh Class="text-right"><MudText Typo="Typo.subtitle2" Class="fw-bold">Precio U.</MudText></MudTh>
@@ -17,7 +18,7 @@
 
         <MudTd DataLabel="Precio U." Class="text-right">
             <MudText Typo="Typo.body2" Style="color: #6c757d;">
-                @context.PrecioUnitario.ToString("C2")
+                @context.PrecioUnitario.Bs()
             </MudText>
         </MudTd>
 
@@ -33,13 +34,13 @@
 
         <MudTd DataLabel="Descuento" Class="text-right">
             <MudText Typo="Typo.body2" Style="color: #dc3545;">
-                -@context.Descuento.ToString("C2")
+                -@context.Descuento.Bs()
             </MudText>
         </MudTd>
 
         <MudTd DataLabel="Subtotal" Class="text-right">
             <MudText Typo="Typo.body1" Class="fw-bold" Style="color: #6b2181;">
-                @context.Subtotal.ToString("C2")
+                @context.Subtotal.Bs()
             </MudText>
         </MudTd>
 

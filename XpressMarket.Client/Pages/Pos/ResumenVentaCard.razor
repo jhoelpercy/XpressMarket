@@ -1,4 +1,5 @@
-﻿<MudPaper Elevation="1" Class="pa-4 rounded-lg">
+﻿@using XpressMarket.Shared.Extensions
+<MudPaper Elevation="1" Class="pa-4 rounded-lg">
 
     <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1" Class="mb-3">
         <MudIcon Icon="@Icons.Material.Filled.Receipt" Style="color: #6b2181;" />
@@ -12,13 +13,13 @@
     <MudStack Spacing="2" Class="mb-3">
         <MudStack Row="true" Justify="Justify.SpaceBetween">
             <MudText Typo="Typo.body1" Style="color: #6c757d;">Subtotal:</MudText>
-            <MudText Typo="Typo.body1" Class="fw-bold">@SubTotal.ToString("C2")</MudText>
+            <MudText Typo="Typo.body1" Class="fw-bold">@SubTotal.Bs()</MudText>
         </MudStack>
 
         <MudStack Row="true" Justify="Justify.SpaceBetween">
             <MudText Typo="Typo.body1" Style="color: #6c757d;">Descuento Total:</MudText>
             <MudText Typo="Typo.body1" Class="fw-bold" Style="color: #dc3545;">
-                -@DescuentoTotal.ToString("C2")
+                -@DescuentoTotal.Bs()
             </MudText>
         </MudStack>
     </MudStack>
@@ -30,7 +31,7 @@
         <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
             <MudText Typo="Typo.subtitle1" Class="fw-bold" Style="color: #fbf2db;">TOTAL:</MudText>
             <MudText Typo="Typo.h5" Class="fw-bold" Style="color: #fbf2db;">
-                @Total.ToString("C2")
+                @Total.Bs()
             </MudText>
         </MudStack>
     </MudPaper>
