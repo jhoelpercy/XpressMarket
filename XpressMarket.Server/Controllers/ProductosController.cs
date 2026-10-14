@@ -58,6 +58,7 @@ namespace XpressMarket.Server.Controllers
 
         // POST: api/productos
         [HttpPost]
+        [Authorize(Roles = "Administrador")] // el cajero solo consulta el catálogo
         public async Task<ActionResult<Producto>> PostProducto(Producto producto)
         {
             if (!await _context.Categorias.AnyAsync(c => c.Id == producto.CategoriaId))
@@ -73,6 +74,7 @@ namespace XpressMarket.Server.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize(Roles = "Administrador")]
         public async Task<IActionResult> PutProducto(int id, Producto producto)
         {
             if (id != producto.Id)
