@@ -29,7 +29,8 @@ namespace XpressMarket.Server.Controllers
                     NombreCompleto = u.NombreCompleto ?? string.Empty,
                     NombreUsuario = u.NombreUsuario,
                     Rol = u.Rol,
-                    Activo = u.Activo
+                    Activo = u.Activo,
+                    EsSuperAdmin = u.EsSuperAdmin // Mapeo agregado
                 })
                 .ToListAsync();
         }
@@ -48,9 +49,11 @@ namespace XpressMarket.Server.Controllers
                 NombreCompleto = usuario.NombreCompleto ?? string.Empty,
                 NombreUsuario = usuario.NombreUsuario,
                 Rol = usuario.Rol,
-                Activo = usuario.Activo
+                Activo = usuario.Activo,
+                EsSuperAdmin = usuario.EsSuperAdmin // Mapeo agregado
             };
         }
+
 
         [HttpPost]
         public async Task<ActionResult<UsuarioResponse>> PostUsuario(UsuarioCreateRequest request)
@@ -79,20 +82,29 @@ namespace XpressMarket.Server.Controllers
                 NombreCompleto = usuario.NombreCompleto ?? string.Empty,
                 NombreUsuario = usuario.NombreUsuario,
                 Rol = usuario.Rol,
-                Activo = usuario.Activo
+                Activo = usuario.Activo,
+                EsSuperAdmin = usuario.EsSuperAdmin // Opcional, por si requieres devolverlo también al crear
             };
 
             return CreatedAtAction(nameof(GetUsuario), new { id = usuario.Id }, response);
         }
 
         [HttpPut("{id}")]
+        [Authorize(Roles = "Administrador")]
         public async Task<IActionResult> PutUsuario(int id, UsuarioUpdateRequest request)
         {
             var usuario = await _context.Usuarios.FindAsync(id);
             if (usuario == null)
                 return NotFound();
 
-            // Evita que el admin actual se desactive o se despoje del rol de Administrador
+            // 1. Protección de la cuenta SuperAdmin
+            if (usuario.EsSuperAdmin)
+            {
+                if (!request.Activo || request.Rol != "Administrador")
+                    return BadRequest("Es la cuenta de respaldo del sistema: no puede desactivarse ni cambiar de rol. Solo se puede cambiar su contraseña.");
+            }
+
+            // 2. Protección de la cuenta propia activa en la sesión
             var idActual = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (idActual == id.ToString())
             {
@@ -106,8 +118,11 @@ namespace XpressMarket.Server.Controllers
             usuario.Rol = request.Rol;
             usuario.Activo = request.Activo;
 
+            // 4. Cambio opcional de contraseña
             if (!string.IsNullOrWhiteSpace(request.NuevaContrasena))
+            {
                 usuario.ContrasenaHash = BCrypt.Net.BCrypt.HashPassword(request.NuevaContrasena);
+            }
 
             await _context.SaveChangesAsync();
             return NoContent();

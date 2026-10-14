@@ -1,17 +1,18 @@
-﻿@inject ProductoService ProductoSvc
+@inject ProductoService ProductoSvc
+@inject ISnackbar Snackbar
 
 <MudAutocomplete T="Producto"
                   Value="productoSeleccionado"
                   ValueChanged="OnProductoSelected"
                   SearchFunc="BuscarProductosAsync"
-                  ToStringFunc="@(p => p != null ? $"{p.CodigoBarras} - {p.Nombre}" : string.Empty)"
+                  ToStringFunc="@(p => p == null ? string.Empty : string.IsNullOrWhiteSpace(p.CodigoBarras) ? p.Nombre : $"{p.CodigoBarras} - {p.Nombre}")"
                   ResetValueOnEmptyText="true"
-                  CoerceText="true"
                   Clearable="true"
                   Variant="Variant.Outlined"
                   AdornmentIcon="@Icons.Material.Filled.Search"
                   AdornmentColor="Color.Primary"
                   Placeholder="Buscar producto por nombre, descripción o código..."
+                  DebounceInterval="150"
                   FullWidth="true"
                   Dense="true">
     <ItemTemplate>
@@ -28,7 +29,7 @@
 
             <MudStack Spacing="0" AlignItems="AlignItems.End">
                 <MudText Typo="Typo.body2" Class="fw-bold" Style="color: #6b2181;">
-                    @context.PrecioVenta.ToString("C2")
+                    Bs. @context.PrecioVenta.ToString("N2")
                 </MudText>
                 <MudChip T="string" Size="Size.Small"
                          Color="@(context.StockActual > 10 ? Color.Success : context.StockActual > 0 ? Color.Warning : Color.Error)"
@@ -45,29 +46,55 @@
     [Parameter] public EventCallback<Producto> OnProductoAgregado { get; set; }
 
     private Producto? productoSeleccionado;
+    private List<Producto>? catalogo;
 
-    private async Task<IEnumerable<Producto>> BuscarProductosAsync(string valor, CancellationToken token)
+    // El catálogo se descarga una sola vez; luego se filtra en memoria al escribir.
+    private async Task<List<Producto>> ObtenerCatalogoAsync()
     {
-        var productos = await ProductoSvc.ObtenerTodosAsync();
+        if (catalogo != null) return catalogo;
+
+        try
+        {
+            catalogo = (await ProductoSvc.ObtenerTodosAsync()).Where(p => p.Activo).ToList();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"No se pudieron cargar los productos: {ex.Message}", Severity.Error);
+            return new List<Producto>();
+        }
+        return catalogo;
+    }
+
+    private async Task<IEnumerable<Producto>> BuscarProductosAsync(string? valor, CancellationToken token)
+    {
+        var productos = await ObtenerCatalogoAsync();
 
         if (string.IsNullOrWhiteSpace(valor))
-        {
-            return productos.Where(p => p.Activo).Take(20);
-        }
+            return productos.Take(20);
 
-        return productos.Where(p => p.Activo &&
-            (p.Nombre.Contains(valor, StringComparison.OrdinalIgnoreCase) ||
-             (!string.IsNullOrEmpty(p.CodigoBarras) && p.CodigoBarras.Contains(valor, StringComparison.OrdinalIgnoreCase))))
+        valor = valor.Trim();
+        return productos.Where(p =>
+                p.Nombre.Contains(valor, StringComparison.OrdinalIgnoreCase) ||
+                (!string.IsNullOrEmpty(p.Descripcion) && p.Descripcion.Contains(valor, StringComparison.OrdinalIgnoreCase)) ||
+                (!string.IsNullOrEmpty(p.CodigoBarras) && p.CodigoBarras.Contains(valor, StringComparison.OrdinalIgnoreCase)))
             .Take(20);
     }
 
-    private async Task OnProductoSelected(Producto producto)
+    private async Task OnProductoSelected(Producto? producto)
     {
-        if (producto != null)
+        if (producto == null) return;
+
+        if (producto.StockActual <= 0)
         {
-            productoSeleccionado = producto;
-            await OnProductoAgregado.InvokeAsync(producto);
-            productoSeleccionado = null;
+            Snackbar.Add($"'{producto.Nombre}' no tiene stock disponible.", Severity.Warning);
         }
+        else
+        {
+            await OnProductoAgregado.InvokeAsync(producto);
+            // Tras vender, el stock local cambia: se recarga la próxima vez que se busque.
+            catalogo = null;
+        }
+
+        productoSeleccionado = null;
     }
 }

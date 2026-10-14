@@ -28,24 +28,35 @@ namespace XpressMarket.Client.Services
             return await _http.GetFromJsonAsync<List<Producto>>($"{RutaBase}/stock-bajo") ?? new List<Producto>();
         }
 
+        public string? UltimoError { get; private set; }
+
         public async Task<Producto?> CrearAsync(Producto producto)
         {
+            UltimoError = null;
             var respuesta = await _http.PostAsJsonAsync(RutaBase, producto);
             if (!respuesta.IsSuccessStatusCode)
+            {
+                UltimoError = await HttpErrores.LeerAsync(respuesta);
                 return null;
-
+            }
             return await respuesta.Content.ReadFromJsonAsync<Producto>();
         }
 
         public async Task<bool> ActualizarAsync(int id, Producto producto)
         {
+            UltimoError = null;
             var respuesta = await _http.PutAsJsonAsync($"{RutaBase}/{id}", producto);
+            if (!respuesta.IsSuccessStatusCode)
+                UltimoError = await HttpErrores.LeerAsync(respuesta);
             return respuesta.IsSuccessStatusCode;
         }
 
         public async Task<bool> EliminarAsync(int id)
         {
+            UltimoError = null;
             var respuesta = await _http.DeleteAsync($"{RutaBase}/{id}");
+            if (!respuesta.IsSuccessStatusCode)
+                UltimoError = await HttpErrores.LeerAsync(respuesta);
             return respuesta.IsSuccessStatusCode;
         }
     }

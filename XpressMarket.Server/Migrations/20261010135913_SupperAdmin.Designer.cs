@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using XpressMarket.Server.Data;
@@ -11,8 +12,8 @@ using XpressMarket.Server.Data;
 namespace XpressMarket.Server.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20261003055507_InicialMySQL")]
-    partial class InicialMySQL
+    [Migration("20261010135913_SupperAdmin")]
+    partial class SupperAdmin
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -22,11 +23,15 @@ namespace XpressMarket.Server.Migrations
                 .HasAnnotation("ProductVersion", "10.0.12")
                 .HasAnnotation("Relational:MaxIdentifierLength", 64);
 
+            MySqlModelBuilderExtensions.AutoIncrementColumns(modelBuilder);
+
             modelBuilder.Entity("XpressMarket.Shared.Models.Categoria", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<bool>("Activo")
                         .HasColumnType("tinyint(1)");
@@ -54,6 +59,8 @@ namespace XpressMarket.Server.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
                     b.Property<int>("Cantidad")
                         .HasColumnType("int");
 
@@ -77,6 +84,8 @@ namespace XpressMarket.Server.Migrations
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<int>("Cantidad")
                         .HasColumnType("int");
@@ -112,6 +121,8 @@ namespace XpressMarket.Server.Migrations
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<bool>("Activo")
                         .HasColumnType("tinyint(1)");
@@ -171,6 +182,8 @@ namespace XpressMarket.Server.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
                     b.Property<bool>("Activo")
                         .HasColumnType("tinyint(1)");
 
@@ -220,6 +233,8 @@ namespace XpressMarket.Server.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
                     b.Property<bool>("Activo")
                         .HasColumnType("tinyint(1)");
 
@@ -257,12 +272,17 @@ namespace XpressMarket.Server.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
                     b.Property<bool>("Activo")
                         .HasColumnType("tinyint(1)");
 
                     b.Property<string>("ContrasenaHash")
                         .IsRequired()
                         .HasColumnType("longtext");
+
+                    b.Property<bool>("EsSuperAdmin")
+                        .HasColumnType("tinyint(1)");
 
                     b.Property<string>("NombreCompleto")
                         .HasMaxLength(100)
@@ -291,6 +311,8 @@ namespace XpressMarket.Server.Migrations
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<decimal>("Descuento")
                         .HasColumnType("decimal(18,2)");

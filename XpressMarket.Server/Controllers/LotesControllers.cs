@@ -5,6 +5,7 @@ using System.Globalization;
 using System.Security.Claims;
 using XpressMarket.Server.Data;
 using XpressMarket.Shared.Models;
+
 namespace XpressMarket.Server.Controllers
 {
     [Authorize(Roles = "Administrador")]
@@ -52,6 +53,7 @@ namespace XpressMarket.Server.Controllers
             return await _context.Lotes
                 .Include(l => l.Producto)
                 .Where(l => l.Activo
+                    && l.CantidadActual > 0 // CORRECCIÓN: Filtra lotes agotados
                     && l.FechaVencimiento.Date >= DateTime.Now.Date
                     && l.FechaVencimiento.Date <= limite)
                 .OrderBy(l => l.FechaVencimiento)
@@ -64,11 +66,12 @@ namespace XpressMarket.Server.Controllers
         {
             return await _context.Lotes
                 .Include(l => l.Producto)
-                .Where(l => l.Activo && l.FechaVencimiento.Date < DateTime.Now.Date)
+                .Where(l => l.Activo
+                    && l.CantidadActual > 0 // CORRECCIÓN: Filtra lotes agotados
+                    && l.FechaVencimiento.Date < DateTime.Now.Date)
                 .OrderBy(l => l.FechaVencimiento)
                 .ToListAsync();
         }
-
 
         [HttpPost]
         public async Task<ActionResult<Lote>> PostLote(LoteCreateRequest request)
@@ -89,7 +92,7 @@ namespace XpressMarket.Server.Controllers
             // El stock físico del producto crece con cada lote que entra al inventario.
             producto.StockActual += lote.CantidadActual;
 
-            if (request.ActualizarCostoProducto)
+            if (request.ActualizarCostoProducto || producto.PrecioCosto == 0)
                 producto.PrecioCosto = lote.PrecioCosto;
 
             if (request.NuevoPrecioVenta.HasValue && request.NuevoPrecioVenta.Value > 0)
@@ -100,7 +103,6 @@ namespace XpressMarket.Server.Controllers
 
             return CreatedAtAction(nameof(GetLote), new { id = lote.Id }, lote);
         }
-
 
         [HttpPut("{id}")]
         public async Task<IActionResult> PutLote(int id, LoteUpdateRequest request)
@@ -117,8 +119,7 @@ namespace XpressMarket.Server.Controllers
             if (producto == null)
                 return BadRequest("El producto asociado no existe.");
 
-            // Ajusta el stock del producto por la diferencia entre la cantidad vieja y la nueva,
-            // no por el valor absoluto (evita duplicar o perder unidades ya contadas).
+            // Ajusta el stock del producto por la diferencia entre la cantidad vieja y la nueva
             var deltaCantidad = loteNuevo.CantidadActual - loteExistente.CantidadActual;
             producto.StockActual += deltaCantidad;
 
@@ -169,8 +170,10 @@ namespace XpressMarket.Server.Controllers
 
             return NoContent();
         }
+
         // PUT: api/lotes/5/registrar-merma
         [HttpPut("{id}/registrar-merma")]
+        [Authorize(Roles = "Administrador")]
         public async Task<IActionResult> RegistrarMerma(int id)
         {
             var lote = await _context.Lotes.FindAsync(id);
@@ -198,7 +201,7 @@ namespace XpressMarket.Server.Controllers
             return NoContent();
         }
 
-        // GET: api/lotes/reporte-mermas?desde=2026-01-01&hasta=2026-12-31
+        // GET: api/lotes/reporte-mermas
         [HttpGet("reporte-mermas")]
         public async Task<ActionResult<IEnumerable<Lote>>> GetReporteMermas([FromQuery] DateTime? desde, [FromQuery] DateTime? hasta)
         {
@@ -211,10 +214,11 @@ namespace XpressMarket.Server.Controllers
 
             return await query.OrderByDescending(l => l.FechaMerma).ToListAsync();
         }
+
         [HttpGet("reporte-mermas-periodo")]
         [Authorize(Roles = "Administrador")]
         public async Task<ActionResult<List<PeriodoResumen>>> GetReporteMermasPeriodo(
-    [FromQuery] DateTime desde, [FromQuery] DateTime hasta, [FromQuery] string agrupacion = "dia")
+            [FromQuery] DateTime desde, [FromQuery] DateTime hasta, [FromQuery] string agrupacion = "dia")
         {
             var mermas = await _context.Lotes
                 .Where(l => l.EsMerma && l.FechaMerma.HasValue
@@ -244,7 +248,7 @@ namespace XpressMarket.Server.Controllers
                     FechaOrden = g.Key.orden,
                     TotalVentas = 0,
                     CostoTotal = g.Sum(l => l.CantidadActual * l.PrecioCosto),
-                    Utilidad = -g.Sum(l => l.CantidadActual * l.PrecioCosto) // Pérdida = utilidad negativa
+                    Utilidad = -g.Sum(l => l.CantidadActual * l.PrecioCosto)
                 })
                 .OrderBy(r => r.FechaOrden)
                 .ToList();
@@ -262,4 +266,4 @@ namespace XpressMarket.Server.Controllers
 
         private static string Capitalizar(string texto) => char.ToUpper(texto[0]) + texto.Substring(1);
     }
-}    
+}

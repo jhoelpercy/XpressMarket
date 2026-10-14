@@ -105,7 +105,8 @@ namespace XpressMarket.Server.Controllers
             var producto = await _context.Productos.FindAsync(id);
             if (producto == null)
                 return NotFound();
-
+            if (await _context.Lotes.AnyAsync(l => l.ProductoId == id && l.Activo && l.CantidadActual > 0))
+                return BadRequest("No se puede desactivar: el producto todavía tiene stock en lotes activos.");
             producto.Activo = false;
             await _context.SaveChangesAsync();
 

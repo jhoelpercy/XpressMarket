@@ -11,7 +11,7 @@
     </TitleContent>
 
     <DialogContent>
-        <EditForm Model="Modelo" OnValidSubmit="Guardar">
+        <EditForm EditContext="_editContext">
             <DataAnnotationsValidator />
             <ValidationSummary class="alert alert-danger p-2 small mb-3" />
 
@@ -38,6 +38,13 @@
             }
             else
             {
+                @if (EsSuperAdmin)
+                {
+                    <MudAlert Severity="Severity.Info" Dense="true" Class="mb-3">
+                        Cuenta de respaldo del sistema: no puede desactivarse ni cambiar de rol. Solo puedes cambiar su contraseña.
+                    </MudAlert>
+                }
+
                 <MudTextField Label="Nombre de Usuario"
                               Value="@NombreUsuarioMostrar"
                               ReadOnly="true"
@@ -49,6 +56,7 @@
                            @bind-Value="ModeloActivo"
                            Label="Usuario Activo"
                            Color="Color.Primary"
+                           Disabled="@EsSuperAdmin"
                            Class="mb-3" />
 
                 <MudTextField Label="Nueva Contraseña"
@@ -64,6 +72,7 @@
                        @bind-Value="RolSeleccionado"
                        Variant="Variant.Outlined"
                        Margin="Margin.Dense"
+                       Disabled="@(!EsNuevo && EsSuperAdmin)"
                        Class="mb-3">
                 <MudSelectItem T="string" Value="@("Cajero")">Cajero</MudSelectItem>
                 <MudSelectItem T="string" Value="@("Administrador")">Administrador</MudSelectItem>
@@ -89,11 +98,19 @@
     [Parameter] public int UsuarioId { get; set; }
 
     private UsuarioCreateRequest Modelo = new() { Rol = "Cajero" };
+    private EditContext _editContext = default!;
     private string NombreUsuarioMostrar = "";
     private string RolSeleccionado = "Cajero";
     private bool ModeloActivo = true;
+    private bool EsSuperAdmin;
     private string? ModeloNuevaContrasena;
     private bool _guardando = false;
+
+    protected override void OnInitialized()
+    {
+        // Al editar no se valida el modelo de creación: sus campos no están en pantalla.
+        _editContext = new EditContext(EsNuevo ? Modelo : new object());
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -106,6 +123,7 @@
                 NombreUsuarioMostrar = u.NombreUsuario;
                 RolSeleccionado = u.Rol;
                 ModeloActivo = u.Activo;
+                EsSuperAdmin = u.EsSuperAdmin;
             }
         }
     }
@@ -114,12 +132,18 @@
 
     private async Task Guardar()
     {
+        if (EsNuevo)
+        {
+            Modelo.Rol = RolSeleccionado;
+            if (!_editContext.Validate())
+                return;
+        }
+
         _guardando = true;
         try
         {
             if (EsNuevo)
             {
-                Modelo.Rol = RolSeleccionado;
                 var (exito, error) = await UsuarioSvc.CrearAsync(Modelo);
                 if (!exito)
                 {

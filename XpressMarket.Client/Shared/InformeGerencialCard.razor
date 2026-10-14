@@ -1,0 +1,70 @@
+﻿@inject ReporteService ReporteSvc
+@inject IJSRuntime JS
+
+<div class="card p-3 mt-4">
+    <h5 class="mb-1">Informe Gerencial</h5>
+    <p class="text-muted small">PDF con ventas, utilidad, mermas, stock bajo, lotes vencidos o por vencer y productos más vendidos del período elegido.</p>
+
+    @if (error != null)
+    {
+        <div class="alert alert-danger py-2">@error</div>
+    }
+
+    <div class="row g-2 align-items-end">
+        <div class="col-auto">
+            <label class="form-label mb-0">Desde</label>
+            <input type="date" class="form-control" @bind="desde" />
+        </div>
+        <div class="col-auto">
+            <label class="form-label mb-0">Hasta</label>
+            <input type="date" class="form-control" @bind="hasta" />
+        </div>
+        <div class="col-auto d-flex gap-2">
+            <button type="button" class="btn btn-outline-secondary btn-sm" @onclick="Hoy">Hoy</button>
+            <button type="button" class="btn btn-outline-secondary btn-sm" @onclick="Ultimos7">7 días</button>
+            <button type="button" class="btn btn-outline-secondary btn-sm" @onclick="EsteMes">Este mes</button>
+        </div>
+        <div class="col-auto">
+            <button type="button" class="btn btn-primary" @onclick="Descargar" disabled="@generando">
+                <i class="bi bi-file-earmark-pdf"></i> @(generando ? "Generando..." : "Descargar PDF")
+            </button>
+        </div>
+    </div>
+</div>
+
+@code {
+    private DateTime desde = DateTime.Now.Date;
+    private DateTime hasta = DateTime.Now.Date;
+    private bool generando;
+    private string? error;
+
+    private void Hoy() { desde = hasta = DateTime.Now.Date; }
+    private void Ultimos7() { hasta = DateTime.Now.Date; desde = hasta.AddDays(-6); }
+    private void EsteMes() { hasta = DateTime.Now.Date; desde = new DateTime(hasta.Year, hasta.Month, 1); }
+
+    private async Task Descargar()
+    {
+        error = null;
+        if (hasta.Date < desde.Date)
+        {
+            error = "La fecha final no puede ser anterior a la inicial.";
+            return;
+        }
+
+        generando = true;
+        try
+        {
+            var bytes = await ReporteSvc.ObtenerInformeGerencialPdfAsync(desde, hasta);
+            await JS.InvokeVoidAsync("descargarArchivo",
+                $"Informe_Gerencial_{desde:yyyyMMdd}_{hasta:yyyyMMdd}.pdf", Convert.ToBase64String(bytes));
+        }
+        catch (Exception ex)
+        {
+            error = $"No se pudo generar el informe: {ex.Message}";
+        }
+        finally
+        {
+            generando = false;
+        }
+    }
+}

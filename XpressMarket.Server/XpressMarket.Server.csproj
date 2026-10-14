@@ -30,4 +30,8 @@
     <ProjectReference Include="..\XpressMarket.Shared\XpressMarket.Shared.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Migrations\" />
+  </ItemGroup>
+
 </Project>

@@ -73,6 +73,8 @@ namespace XpressMarket.Server.Controllers
             var categoria = await _context.Categorias.FindAsync(id);
             if (categoria == null)
                 return NotFound();
+            if (await _context.Productos.AnyAsync(p => p.CategoriaId == id && p.Activo))
+                return BadRequest("No se puede desactivar: hay productos activos en esta categoría.");
 
             categoria.Activo = false;
             await _context.SaveChangesAsync();

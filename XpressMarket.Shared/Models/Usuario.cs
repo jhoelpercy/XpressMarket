@@ -27,5 +27,6 @@ namespace XpressMarket.Shared.Models
 
         [Required]
         public bool Activo { get; set; } = true;
+        public bool EsSuperAdmin { get; set; } = false;
     }
 }   

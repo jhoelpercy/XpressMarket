@@ -1,12 +1,14 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using ClosedXML.Excel;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
-using ClosedXML.Excel;
 using XpressMarket.Server.Data;
+using XpressMarket.Server.Services;
 using XpressMarket.Shared.Models;
+
 
 namespace XpressMarket.Server.Controllers
 {
@@ -20,6 +22,75 @@ namespace XpressMarket.Server.Controllers
         public ReportesController(AppDbContext context)
         {
             _context = context;
+        }
+        private async Task<InformeGerencial> ConstruirInformeAsync(DateTime desde, DateTime hasta)
+        {
+            var inicio = desde.Date;
+            var fin = hasta.Date.AddDays(1).AddTicks(-1);
+            var hoy = DateTime.Now.Date;
+
+            var ventas = await _context.Ventas
+                .Include(v => v.Detalles).ThenInclude(d => d.Producto)
+                .Where(v => v.Estado == EstadoVenta.Completada && v.FechaVenta >= inicio && v.FechaVenta <= fin)
+                .ToListAsync();
+
+            var costoTotal = ventas.Sum(v => v.Detalles.Sum(d => d.Cantidad * (d.Producto?.PrecioCosto ?? 0)));
+            var totalVentas = ventas.Sum(v => v.Total);
+
+            var mermas = await _context.Lotes
+                .Where(l => l.EsMerma && l.FechaMerma >= inicio && l.FechaMerma <= fin)
+                .ToListAsync();
+
+            var productos = await _context.Productos.Where(p => p.Activo).ToListAsync();
+
+            var lotesActivos = await _context.Lotes
+                .Include(l => l.Producto)
+                .Where(l => l.Activo && l.CantidadActual > 0)
+                .ToListAsync();
+
+            LoteResumen Resumir(Lote l) => new()
+            {
+                NumeroLote = l.NumeroLote,
+                Producto = l.Producto?.Nombre ?? "",
+                FechaVencimiento = l.FechaVencimiento,
+                Cantidad = l.CantidadActual
+            };
+
+            return new InformeGerencial
+            {
+                Desde = desde,
+                Hasta = hasta,
+                CantidadVentas = ventas.Count,
+                TotalVentas = totalVentas,
+                TotalCosto = costoTotal,
+                TotalUtilidad = totalVentas - costoTotal,
+                CantidadMermas = mermas.Sum(l => l.CantidadActual),
+                ValorMermas = mermas.Sum(l => l.CantidadActual * l.PrecioCosto),
+                ProductosStockBajo = productos.Where(p => p.StockBajo)
+                    .Select(p => new ProductoResumen { Nombre = p.Nombre, StockActual = p.StockActual, StockMinimo = p.StockMinimo })
+                    .ToList(),
+                LotesVencidos = lotesActivos.Where(l => l.FechaVencimiento.Date < hoy).Select(Resumir).ToList(),
+                LotesProximosAVencer = lotesActivos
+                    .Where(l => l.FechaVencimiento.Date >= hoy && l.FechaVencimiento.Date <= hoy.AddDays(30))
+                    .Select(Resumir).ToList(),
+                TopProductos = ventas.SelectMany(v => v.Detalles)
+                    .GroupBy(d => d.NombreProducto)
+                    .Select(g => new ProductoMasVendido { NombreProducto = g.Key, CantidadVendida = g.Sum(d => d.Cantidad) })
+                    .OrderByDescending(p => p.CantidadVendida)
+                    .Take(5)
+                    .ToList()
+            };
+        }
+
+        [HttpGet("informe-gerencial/pdf")]
+        public async Task<IActionResult> InformeGerencialPdf([FromQuery] DateTime desde, [FromQuery] DateTime hasta)
+        {
+            if (hasta.Date < desde.Date)
+                return BadRequest("La fecha final no puede ser anterior a la inicial.");
+
+            var informe = await ConstruirInformeAsync(desde, hasta);
+            var pdf = InformeGerencialPdfService.Generar(informe);
+            return File(pdf, "application/pdf", $"Informe_Gerencial_{desde:yyyyMMdd}_{hasta:yyyyMMdd}.pdf");
         }
 
         // ============================================================
@@ -76,7 +147,10 @@ namespace XpressMarket.Server.Controllers
             // Total al final
             ws.Cell(fila, 6).Value = "TOTAL:";
             ws.Cell(fila, 6).Style.Font.Bold = true;
-            ws.Cell(fila, 7).FormulaA1 = $"SUM(G2:G{fila - 1})";
+            if (fila > 2)
+                ws.Cell(fila, 7).FormulaA1 = $"SUM(G2:G{fila - 1})";
+            else
+                ws.Cell(fila, 7).Value = 0;
             ws.Cell(fila, 7).Style.Font.Bold = true;
 
             ws.Columns().AdjustToContents();
@@ -238,9 +312,18 @@ namespace XpressMarket.Server.Controllers
             // Totales
             ws.Cell(fila, 3).Value = "TOTALES:";
             ws.Cell(fila, 3).Style.Font.Bold = true;
-            ws.Cell(fila, 4).FormulaA1 = $"SUM(D2:D{fila - 1})";
-            ws.Cell(fila, 5).FormulaA1 = $"SUM(E2:E{fila - 1})";
-            ws.Cell(fila, 6).FormulaA1 = $"SUM(F2:F{fila - 1})";
+            if (fila > 2)
+            {
+                ws.Cell(fila, 4).FormulaA1 = $"SUM(D2:D{fila - 1})";
+                ws.Cell(fila, 5).FormulaA1 = $"SUM(E2:E{fila - 1})";
+                ws.Cell(fila, 6).FormulaA1 = $"SUM(F2:F{fila - 1})";
+            }
+            else
+            {
+                ws.Cell(fila, 4).Value = 0;
+                ws.Cell(fila, 5).Value = 0;
+                ws.Cell(fila, 6).Value = 0;
+            }
             ws.Range(fila, 4, fila, 6).Style.Font.Bold = true;
 
             ws.Columns().AdjustToContents();

@@ -1,9 +1,10 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Globalization;
+using System.Security.Claims;
 using XpressMarket.Server.Data;
 using XpressMarket.Shared.Models;
-using System.Globalization;
 
 namespace XpressMarket.Server.Controllers
 {
@@ -30,10 +31,10 @@ namespace XpressMarket.Server.Controllers
         }
 
         [HttpGet("{id}")]
-        [Authorize]
         public async Task<ActionResult<Venta>> GetVenta(int id)
         {
             var venta = await _context.Ventas
+                .AsNoTracking()
                 .Include(v => v.Detalles)
                     .ThenInclude(d => d.Producto)
                 .FirstOrDefaultAsync(v => v.Id == id);
@@ -41,12 +42,23 @@ namespace XpressMarket.Server.Controllers
             if (venta == null)
                 return NotFound();
 
+            var esAdmin = User.IsInRole("Administrador");
+            var idActual = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (!esAdmin && venta.UsuarioId != idActual)
+                return Forbid();
+
             return venta;
         }
 
         [HttpPost]
+        [Authorize(Roles = "Cajero,Administrador")]
         public async Task<ActionResult<Venta>> PostVenta(Venta venta)
         {
+            venta.UsuarioId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0";
+            venta.NombreUsuario = User.FindFirst(ClaimTypes.Name)?.Value ?? "Desconocido";
+            venta.Descuento = 0;
+
             if (venta.Detalles == null || !venta.Detalles.Any())
                 return BadRequest("La venta debe tener al menos un detalle.");
 
@@ -66,14 +78,15 @@ namespace XpressMarket.Server.Controllers
                     if (producto.StockActual < detalle.Cantidad)
                         return BadRequest($"Stock insuficiente para '{producto.Nombre}'. Disponible: {producto.StockActual}, solicitado: {detalle.Cantidad}.");
 
+                    // Asignación unificada de valores reales desde la base de datos
                     detalle.NombreProducto = producto.Nombre;
-                    if (detalle.PrecioUnitario == 0)
-                        detalle.PrecioUnitario = producto.PrecioVenta;
+                    detalle.PrecioUnitario = producto.PrecioVenta;
+                    detalle.Descuento = 0;
 
-                    subtotalVenta += (detalle.Cantidad * detalle.PrecioUnitario) - detalle.Descuento;
-
+                    subtotalVenta += detalle.Cantidad * detalle.PrecioUnitario;
                     producto.StockActual -= detalle.Cantidad;
 
+                    // Descuento de Lotes FIFO
                     int cantidadPorDescontar = detalle.Cantidad;
                     var lotesDisponibles = await _context.Lotes
                         .Where(l => l.ProductoId == detalle.ProductoId && l.Activo && l.CantidadActual > 0)
@@ -94,6 +107,11 @@ namespace XpressMarket.Server.Controllers
                             Lote = lote,
                             Cantidad = descontarDeEsteLote
                         });
+                    }
+
+                    if (cantidadPorDescontar > 0)
+                    {
+                        return BadRequest($"No hay suficientes lotes activos para cubrir la cantidad solicitada de '{producto.Nombre}'.");
                     }
                 }
 
@@ -178,16 +196,20 @@ namespace XpressMarket.Server.Controllers
         }
 
         [HttpGet("{id}/ticket-pdf")]
-        [Authorize] 
+        [Authorize]
         public async Task<IActionResult> GetTicketPdf(int id)
         {
             var venta = await _context.Ventas
+                .AsNoTracking()
                 .Include(v => v.Detalles)
-                    .ThenInclude(d => d.Producto)
                 .FirstOrDefaultAsync(v => v.Id == id);
 
             if (venta == null)
                 return NotFound("Venta no encontrada.");
+
+            if (!User.IsInRole("Administrador") &&
+                venta.UsuarioId != User.FindFirst(ClaimTypes.NameIdentifier)?.Value)
+                return Forbid();
 
             try
             {
@@ -270,7 +292,7 @@ namespace XpressMarket.Server.Controllers
             var stockBajoCount = stockBajo.Count(p => p.StockBajo);
 
             var lotesPorVencer = await _context.Lotes
-                .Where(l => l.Activo && l.FechaVencimiento.Date >= DateTime.Now.Date
+                .Where(l => l.Activo && l.CantidadActual > 0 && l.FechaVencimiento.Date >= DateTime.Now.Date
                        && l.FechaVencimiento.Date <= DateTime.Now.Date.AddDays(30))
                 .CountAsync();
 

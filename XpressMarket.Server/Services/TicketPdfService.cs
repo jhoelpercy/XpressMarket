@@ -9,25 +9,27 @@ namespace XpressMarket.Server.Services
     {
         public static byte[] Generar(Venta venta)
         {
-            // Calcular la altura dinámica según los productos
-            int itemsCount = venta.Detalles?.Count ?? 0;
-            float alturaMm = 70 + (itemsCount * 5);
+            var detalles = venta.Detalles ?? new List<DetalleVenta>();
+
+            // Página continua: el alto se ajusta al contenido (sin cortar ni paginar el ticket)
 
             var documento = Document.Create(container =>
             {
                 container.Page(page =>
                 {
-                    page.Size(80, alturaMm, Unit.Millimetre);
+                    page.ContinuousSize(80, Unit.Millimetre);
                     page.Margin(3, Unit.Millimetre);
                     page.DefaultTextStyle(x => x.FontSize(7).FontFamily("Lato"));
 
                     page.Content().Column(col =>
                     {
                         // Encabezado
-                        col.Item().AlignCenter().Text("XPRESSMARKET").Bold().FontSize(9);
-                        col.Item().AlignCenter().Text("Supermercado y Minimarket").FontSize(6.5f);
-                        col.Item().AlignCenter().Text("NIT: 1234567890123 - Sucursal N° 1").FontSize(6.5f);
-                        col.Item().AlignCenter().Text("La Paz, Bolivia").FontSize(6.5f);
+                        col.Item().AlignCenter().Text(DatosNegocio.Nombre.ToUpper()).Bold().FontSize(9);
+                        col.Item().AlignCenter().Text(DatosNegocio.Descripcion).FontSize(6.5f);
+                        col.Item().AlignCenter().Text(string.IsNullOrWhiteSpace(DatosNegocio.Nit)
+                            ? DatosNegocio.Sucursal
+                            : $"NIT: {DatosNegocio.Nit} - {DatosNegocio.Sucursal}").FontSize(6.5f);
+                        col.Item().AlignCenter().Text(DatosNegocio.Ciudad).FontSize(6.5f);
                         col.Item().AlignCenter().Text("------------------------------------------").FontSize(6.5f);
 
                         // Datos Generales
@@ -41,7 +43,7 @@ namespace XpressMarket.Server.Services
                         col.Item().Text("DETALLE DE PRODUCTOS").Bold().FontSize(7);
                         col.Item().AlignCenter().Text("------------------------------------------").FontSize(6.5f);
 
-                        foreach (var item in venta.Detalles)
+                        foreach (var item in detalles)
                         {
                             col.Item().Text($"{item.Cantidad}x {item.NombreProducto}").FontSize(7);
                             col.Item().AlignRight().Text($"Subtotal: Bs. {item.Subtotal:N2}").FontSize(7);
@@ -62,9 +64,8 @@ namespace XpressMarket.Server.Services
                         col.Item().AlignRight().Text($"TOTAL A PAGAR: Bs. {venta.Total:N2}").Bold().FontSize(8);
 
                         col.Item().AlignCenter().Text("------------------------------------------").FontSize(6.5f);
-                        col.Item().AlignCenter().Text("¡Gracias por su compra en XpressMarket!").FontSize(6.5f);
-                        col.Item().AlignCenter().Text("Conserve este ticket para cualquier cambio").FontSize(6);
-                        col.Item().AlignCenter().Text("o devolución dentro de los 5 días hábiles.").FontSize(6);
+                        col.Item().AlignCenter().Text($"¡Gracias por su compra en {DatosNegocio.Nombre}!").FontSize(6.5f);
+                        col.Item().AlignCenter().Text(DatosNegocio.MensajePie).FontSize(6);
                     });
                 });
             });

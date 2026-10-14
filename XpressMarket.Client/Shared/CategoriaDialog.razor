@@ -65,7 +65,7 @@
                 var creada = await CategoriaSvc.CrearAsync(Categoria);
                 if (creada == null)
                 {
-                    Snackbar.Add("No se pudo crear la categoría", Severity.Error);
+                    Snackbar.Add(CategoriaSvc.UltimoError ?? "No se pudo crear la categoría", Severity.Warning);
                     return;
                 }
                 Snackbar.Add("Categoría creada con éxito", Severity.Success);
@@ -75,7 +75,7 @@
                 var actualizada = await CategoriaSvc.ActualizarAsync(Categoria.Id, Categoria);
                 if (!actualizada)
                 {
-                    Snackbar.Add("No se pudo actualizar la categoría", Severity.Error);
+                    Snackbar.Add(CategoriaSvc.UltimoError ?? "No se pudo actualizar la categoría", Severity.Warning);
                     return;
                 }
                 Snackbar.Add("Categoría actualizada con éxito", Severity.Success);

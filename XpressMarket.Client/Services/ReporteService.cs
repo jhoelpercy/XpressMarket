@@ -10,6 +10,11 @@
             _http = http;
         }
 
+        public async Task<byte[]> ObtenerInformeGerencialPdfAsync(DateTime desde, DateTime hasta)
+        {
+            return await _http.GetByteArrayAsync(
+                $"api/reportes/informe-gerencial/pdf?desde={desde:yyyy-MM-dd}&hasta={hasta:yyyy-MM-dd}");
+        }
         public async Task<byte[]?> ObtenerMermasExcelAsync(DateTime? desde, DateTime? hasta)
         {
             var url = $"{RutaBase}/mermas/excel?desde={desde:yyyy-MM-dd}&hasta={hasta:yyyy-MM-dd}";

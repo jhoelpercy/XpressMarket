@@ -29,6 +29,13 @@
                           Margin="Margin.Dense"
                           Class="mb-3" />
 
+            @if (Categorias == null || Categorias.Count == 0)
+            {
+                <MudAlert Severity="Severity.Warning" Dense="true" Class="mb-3">
+                    No hay categorías activas. Crea una en Administración &rarr; Categorías antes de registrar productos.
+                </MudAlert>
+            }
+
             <MudGrid>
                 <MudItem xs="12" md="6">
                     <MudSelect T="int" Label="Categoría"
@@ -128,6 +135,12 @@
 
     private async Task Guardar()
     {
+        if (Producto.CategoriaId <= 0)
+        {
+            Snackbar.Add("Debe seleccionar una categoría.", Severity.Warning);
+            return;
+        }
+
         _guardando = true;
         try
         {
@@ -136,7 +149,7 @@
                 var creado = await ProductoSvc.CrearAsync(Producto);
                 if (creado == null)
                 {
-                    Snackbar.Add("No se pudo crear el producto", Severity.Error);
+                    Snackbar.Add(ProductoSvc.UltimoError ?? "No se pudo crear el producto", Severity.Warning);
                     return;
                 }
                 Snackbar.Add("Producto creado", Severity.Success);
@@ -146,7 +159,7 @@
                 var actualizado = await ProductoSvc.ActualizarAsync(Producto.Id, Producto);
                 if (!actualizado)
                 {
-                    Snackbar.Add("No se pudo actualizar el producto", Severity.Error);
+                    Snackbar.Add(ProductoSvc.UltimoError ?? "No se pudo actualizar el producto", Severity.Warning);
                     return;
                 }
                 Snackbar.Add("Producto actualizado", Severity.Success);

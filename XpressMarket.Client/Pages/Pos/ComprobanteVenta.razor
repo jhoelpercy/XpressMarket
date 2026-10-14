@@ -6,6 +6,7 @@
 @inject NavigationManager NavManager
 @inject IJSRuntime JS
 @inject HttpClient Http
+@inject ISnackbar Snackbar
 
 <PageTitle>XpressMarket - Comprobante de Venta</PageTitle>
 
@@ -18,9 +19,17 @@
             <MudText Typo="Typo.h5" Class="fw-bold" Style="color: #6b2181;">
                 <span style="color: #f38218;">Xpress</span>Market
             </MudText>
-            <MudText Typo="Typo.caption" Style="color: #666;">Supermercado y Minimarket</MudText>
-            <MudText Typo="Typo.caption" Display="Display.Block" Style="color: #666;">NIT: 1234567890123 - Sucursal N° 1</MudText>
-            <MudText Typo="Typo.caption" Display="Display.Block" Style="color: #666;">La Paz, Bolivia</MudText>
+          
+            <MudText Typo="Typo.caption" Class="d-block" Style="color: #666;">@DatosNegocio.Descripcion</MudText>
+            @if (!string.IsNullOrWhiteSpace(DatosNegocio.Nit))
+            {
+                <MudText Typo="Typo.caption" Class="d-block" Style="color: #666;">NIT: @DatosNegocio.Nit - @DatosNegocio.Sucursal</MudText>
+            }
+            else
+            {
+                <MudText Typo="Typo.caption" Class="d-block" Style="color: #666;">@DatosNegocio.Sucursal</MudText>
+            }
+            <MudText Typo="Typo.caption" Class="d-block" Style="color: #666;">@DatosNegocio.Ciudad</MudText>
         </div>
 
         <MudDivider Class="my-3" />
@@ -84,10 +93,8 @@
             </div>
 
             @* Pie de Página *@
-            <div class="text-center mt-4" style="font-size: 0.75rem; color: #777;">
-                <p class="mb-1">¡Gracias por su compra en XpressMarket!</p>
-                <p class="mb-0">"Conserve este ticket para cualquier cambio o devolución dentro de los 5 días hábiles."</p>
-            </div>
+            <p class="mb-1">¡Gracias por su compra en @(DatosNegocio.Nombre)!</p>
+            <p class="mb-0">@DatosNegocio.MensajePie</p>
 
             @* Botones de Acción *@
             <div class="d-flex gap-2 mt-6">
@@ -98,6 +105,10 @@
                     Nueva Venta
                 </MudButton>
             </div>
+        }
+        else if (error != null)
+        {
+            <MudAlert Severity="Severity.Warning" Dense="true">@error</MudAlert>
         }
         else
         {
@@ -111,6 +122,7 @@
 @code {
     [Parameter] public int VentaId { get; set; }
     private Venta? venta;
+    private string? error;
 
     protected override async Task OnInitializedAsync()
     {
@@ -118,10 +130,15 @@
         {
             venta = await VentaSvc.ObtenerPorIdAsync(VentaId);
         }
-        catch (Exception ex)
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Forbidden)
         {
-            Console.WriteLine($"Error al cargar el comprobante: {ex.Message}");
+            error = "No tienes permiso para ver esta venta.";
         }
+        catch (Exception ex)
+{
+    Console.WriteLine($"Error al cargar el comprobante: {ex.Message}");
+    error = "No se pudo cargar el comprobante.";
+}
     }
 
     private async Task Imprimir()
@@ -135,17 +152,16 @@
                 var pdfBytes = await response.Content.ReadAsByteArrayAsync();
                 var base64 = Convert.ToBase64String(pdfBytes);
 
-                // 👇 Ahora llamamos a la función que abre el diálogo de impresión
                 await JS.InvokeVoidAsync("imprimirPdfDesdeBase64", base64);
             }
             else
             {
-                Console.WriteLine("No se pudo generar el ticket en el servidor.");
+                Snackbar.Add("No se pudo generar el ticket en el servidor.", Severity.Error);
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error al imprimir: {ex.Message}");
+            Snackbar.Add($"Error al imprimir: {ex.Message}", Severity.Error);
         }
     }
 

@@ -23,7 +23,7 @@ namespace XpressMarket.Shared.Models
 
         [Required(ErrorMessage = "El precio de costo es obligatorio.")]
         [Column(TypeName = "decimal(18,2)")]
-        [Range(0.01, 999999.99, ErrorMessage = "El precio de costo debe ser mayor a 0.")]
+        [Range(0, 999999.99, ErrorMessage = "El precio de costo no puede ser negativo.")]
         public decimal PrecioCosto { get; set; }
 
         [Required]
@@ -46,10 +46,11 @@ namespace XpressMarket.Shared.Models
 
         // Clave foránea hacia Categoria
         [Required(ErrorMessage = "Debe seleccionar una categoría.")]
+        [Range(1, int.MaxValue, ErrorMessage = "Debe seleccionar una categoría.")]
         [ForeignKey(nameof(Categoria))]
         public int CategoriaId { get; set; }
 
-        [JsonIgnore]
+        
         public Categoria? Categoria { get; set; }
 
         // Propiedad calculada: indica si el stock actual está por debajo o igual al mínimo

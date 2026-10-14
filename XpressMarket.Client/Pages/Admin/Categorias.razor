@@ -229,7 +229,7 @@
                 }
                 else
                 {
-                    Snackbar.Add("No se pudo eliminar", Severity.Error);
+                    Snackbar.Add(CategoriaSvc.UltimoError ?? "No se puede eliminar la categoría: tiene productos activos. Reasígnalos o desactívalos primero", Severity.Warning);
                 }
             }
             catch (Exception ex)

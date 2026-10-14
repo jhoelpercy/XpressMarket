@@ -90,7 +90,7 @@
                     <MudTd DataLabel="Categoría">
                         <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined"
                                  Color="Color.Primary" Icon="@Icons.Material.Filled.Category">
-                            @(context.Categoria?.Nombre ?? "Sin categoría")
+                            @(context.Categoria?.Nombre ?? categorias?.FirstOrDefault(c => c.Id == context.CategoriaId)?.Nombre ?? "Sin categoría")
                         </MudChip>
                     </MudTd>
                     <MudTd DataLabel="Precio">
@@ -264,7 +264,7 @@
                 }
                 else
                 {
-                    Snackbar.Add("No se pudo eliminar el producto", Severity.Error);
+                    Snackbar.Add(ProductoSvc.UltimoError ?? "No se puede eliminar el producto: aún tiene unidades en lotes activos. Da de baja esos lotes primero (eliminarlos, o merma si están vencidos)", Severity.Warning);
                 }
             }
             catch (Exception ex)
