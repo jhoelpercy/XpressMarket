@@ -28,57 +28,60 @@ namespace XpressMarket.Server.Controllers
             var inicio = desde.Date;
             var fin = hasta.Date.AddDays(1).AddTicks(-1);
             var hoy = DateTime.Now.Date;
+            var limite = hoy.AddDays(31); // exclusivo: incluye todo el día 30
 
-            var ventas = await _context.Ventas
-                .Include(v => v.Detalles).ThenInclude(d => d.Producto)
-                .Where(v => v.Estado == EstadoVenta.Completada && v.FechaVenta >= inicio && v.FechaVenta <= fin)
-                .ToListAsync();
+            // Los totales, los rankings y las alertas se calculan en MySQL: no se cargan
+            // ventas, detalles ni lotes completos en memoria.
+            var ventas = _context.Ventas.AsNoTracking()
+                .Where(v => v.Estado == EstadoVenta.Completada && v.FechaVenta >= inicio && v.FechaVenta <= fin);
+            var detalles = _context.DetallesVenta.AsNoTracking()
+                .Where(d => d.Venta!.Estado == EstadoVenta.Completada && d.Venta.FechaVenta >= inicio && d.Venta.FechaVenta <= fin);
 
-            var costoTotal = ventas.Sum(v => v.Detalles.Sum(d => d.Cantidad * (d.Producto?.PrecioCosto ?? 0)));
-            var totalVentas = ventas.Sum(v => v.Total);
+            var cantidadVentas = await ventas.CountAsync();
+            var totalVentas = await ventas.SumAsync(v => (decimal?)v.Total) ?? 0m;
+            var costoTotal = await detalles.SumAsync(d => (decimal?)(d.Cantidad * d.Producto!.PrecioCosto)) ?? 0m;
 
-            var mermas = await _context.Lotes
+            var mermas = await _context.Lotes.AsNoTracking()
                 .Where(l => l.EsMerma && l.FechaMerma >= inicio && l.FechaMerma <= fin)
+                .Select(l => new { l.CantidadActual, l.PrecioCosto })
                 .ToListAsync();
 
-            var productos = await _context.Productos.Where(p => p.Activo).ToListAsync();
-
-            var lotesActivos = await _context.Lotes
-                .Include(l => l.Producto)
-                .Where(l => l.Activo && l.CantidadActual > 0)
+            var stockBajo = await _context.Productos.AsNoTracking()
+                .Where(p => p.Activo && p.StockActual <= p.StockMinimo)
+                .Select(p => new ProductoResumen { Nombre = p.Nombre, StockActual = p.StockActual, StockMinimo = p.StockMinimo })
                 .ToListAsync();
 
-            LoteResumen Resumir(Lote l) => new()
-            {
-                NumeroLote = l.NumeroLote,
-                Producto = l.Producto?.Nombre ?? "",
-                FechaVencimiento = l.FechaVencimiento,
-                Cantidad = l.CantidadActual
-            };
+            var lotesVencidos = await _context.Lotes.AsNoTracking()
+                .Where(l => l.Activo && l.CantidadActual > 0 && l.FechaVencimiento < hoy)
+                .Select(l => new LoteResumen { NumeroLote = l.NumeroLote, Producto = l.Producto!.Nombre, FechaVencimiento = l.FechaVencimiento, Cantidad = l.CantidadActual })
+                .ToListAsync();
+
+            var lotesPorVencer = await _context.Lotes.AsNoTracking()
+                .Where(l => l.Activo && l.CantidadActual > 0 && l.FechaVencimiento >= hoy && l.FechaVencimiento < limite)
+                .Select(l => new LoteResumen { NumeroLote = l.NumeroLote, Producto = l.Producto!.Nombre, FechaVencimiento = l.FechaVencimiento, Cantidad = l.CantidadActual })
+                .ToListAsync();
+
+            var topProductos = await detalles
+                .GroupBy(d => d.NombreProducto)
+                .Select(g => new ProductoMasVendido { NombreProducto = g.Key, CantidadVendida = g.Sum(d => d.Cantidad) })
+                .OrderByDescending(p => p.CantidadVendida)
+                .Take(5)
+                .ToListAsync();
 
             return new InformeGerencial
             {
                 Desde = desde,
                 Hasta = hasta,
-                CantidadVentas = ventas.Count,
+                CantidadVentas = cantidadVentas,
                 TotalVentas = totalVentas,
                 TotalCosto = costoTotal,
                 TotalUtilidad = totalVentas - costoTotal,
                 CantidadMermas = mermas.Sum(l => l.CantidadActual),
                 ValorMermas = mermas.Sum(l => l.CantidadActual * l.PrecioCosto),
-                ProductosStockBajo = productos.Where(p => p.StockBajo)
-                    .Select(p => new ProductoResumen { Nombre = p.Nombre, StockActual = p.StockActual, StockMinimo = p.StockMinimo })
-                    .ToList(),
-                LotesVencidos = lotesActivos.Where(l => l.FechaVencimiento.Date < hoy).Select(Resumir).ToList(),
-                LotesProximosAVencer = lotesActivos
-                    .Where(l => l.FechaVencimiento.Date >= hoy && l.FechaVencimiento.Date <= hoy.AddDays(30))
-                    .Select(Resumir).ToList(),
-                TopProductos = ventas.SelectMany(v => v.Detalles)
-                    .GroupBy(d => d.NombreProducto)
-                    .Select(g => new ProductoMasVendido { NombreProducto = g.Key, CantidadVendida = g.Sum(d => d.Cantidad) })
-                    .OrderByDescending(p => p.CantidadVendida)
-                    .Take(5)
-                    .ToList()
+                ProductosStockBajo = stockBajo,
+                LotesVencidos = lotesVencidos.OrderBy(l => l.FechaVencimiento).ToList(),
+                LotesProximosAVencer = lotesPorVencer.OrderBy(l => l.FechaVencimiento).ToList(),
+                TopProductos = topProductos
             };
         }
 
@@ -100,6 +103,7 @@ namespace XpressMarket.Server.Controllers
         private async Task<List<Lote>> ObtenerMermasAsync(DateTime? desde, DateTime? hasta)
         {
             var query = _context.Lotes
+                .AsNoTracking()
                 .Include(l => l.Producto)
                 .Where(l => l.EsMerma);
 
@@ -259,11 +263,12 @@ namespace XpressMarket.Server.Controllers
         // REPORTE DE UTILIDADES
         // ============================================================
 
-        private async Task<List<Venta>> ObtenerVentasAsync(DateTime? desde, DateTime? hasta)
+        // Fila liviana: el costo de la venta se suma en MySQL (no se cargan detalles ni productos).
+        private sealed record VentaResumen(int Id, DateTime FechaVenta, string NombreUsuario, decimal Total, decimal Costo);
+
+        private async Task<List<VentaResumen>> ObtenerVentasAsync(DateTime? desde, DateTime? hasta)
         {
-            var query = _context.Ventas
-                .Include(v => v.Detalles)
-                    .ThenInclude(d => d.Producto)
+            var query = _context.Ventas.AsNoTracking()
                 .Where(v => v.Estado == EstadoVenta.Completada);
 
             if (desde.HasValue)
@@ -271,7 +276,11 @@ namespace XpressMarket.Server.Controllers
             if (hasta.HasValue)
                 query = query.Where(v => v.FechaVenta <= hasta.Value.Date.AddDays(1).AddTicks(-1));
 
-            return await query.OrderByDescending(v => v.FechaVenta).ToListAsync();
+            return await query
+                .OrderByDescending(v => v.FechaVenta)
+                .Select(v => new VentaResumen(v.Id, v.FechaVenta, v.NombreUsuario, v.Total,
+                    v.Detalles.Sum(d => d.Cantidad * d.Producto!.PrecioCosto)))
+                .ToListAsync();
         }
 
         [HttpGet("utilidades/excel")]
@@ -295,7 +304,7 @@ namespace XpressMarket.Server.Controllers
             int fila = 2;
             foreach (var v in ventas)
             {
-                var costo = v.Detalles.Sum(d => d.Cantidad * (d.Producto?.PrecioCosto ?? 0));
+                var costo = v.Costo;
                 var utilidad = v.Total - costo;
                 var margen = v.Total > 0 ? (utilidad / v.Total) * 100 : 0;
 
@@ -342,7 +351,7 @@ namespace XpressMarket.Server.Controllers
             var ventas = await ObtenerVentasAsync(desde, hasta);
 
             var totalVentas = ventas.Sum(v => v.Total);
-            var totalCosto = ventas.Sum(v => v.Detalles.Sum(d => d.Cantidad * (d.Producto?.PrecioCosto ?? 0)));
+            var totalCosto = ventas.Sum(v => v.Costo);
             var totalUtilidad = totalVentas - totalCosto;
 
             var pdf = Document.Create(container =>
@@ -399,7 +408,7 @@ namespace XpressMarket.Server.Controllers
 
                             foreach (var v in ventas)
                             {
-                                var costo = v.Detalles.Sum(d => d.Cantidad * (d.Producto?.PrecioCosto ?? 0));
+                                var costo = v.Costo;
                                 var utilidad = v.Total - costo;
 
                                 table.Cell().BorderBottom(0.5f).BorderColor("#e0e0e0").Padding(4).Text(v.Id.ToString()).FontSize(8);

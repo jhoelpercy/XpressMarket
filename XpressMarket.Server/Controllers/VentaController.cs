@@ -30,6 +30,31 @@ namespace XpressMarket.Server.Controllers
                 .ToListAsync();
         }
 
+        // GET: api/ventas/paginado?pagina=1&tamano=20&desde=2026-10-01&hasta=2026-10-13&estado=1
+        // Historial paginado en MySQL. No incluye los detalles, que la tabla no necesita.
+        [HttpGet("paginado")]
+        [Authorize(Roles = "Administrador")]
+        public async Task<ActionResult<PagedResult<Venta>>> GetVentasPaginado(
+            [FromQuery] int pagina = 1, [FromQuery] int tamano = 20,
+            [FromQuery] DateTime? desde = null, [FromQuery] DateTime? hasta = null, [FromQuery] int? estado = null)
+        {
+            tamano = Math.Clamp(tamano, 1, 100);
+            pagina = Math.Max(1, pagina);
+
+            var query = _context.Ventas.AsNoTracking().AsQueryable();
+            if (desde.HasValue) query = query.Where(v => v.FechaVenta >= desde.Value.Date);
+            if (hasta.HasValue) query = query.Where(v => v.FechaVenta < hasta.Value.Date.AddDays(1));
+            if (estado.HasValue) query = query.Where(v => (int)v.Estado == estado.Value);
+
+            var total = await query.CountAsync();
+            var items = await query
+                .OrderByDescending(v => v.FechaVenta).ThenByDescending(v => v.Id)
+                .Skip((pagina - 1) * tamano).Take(tamano)
+                .ToListAsync();
+
+            return new PagedResult<Venta> { Items = items, Total = total, Pagina = pagina, Tamano = tamano };
+        }
+
         [HttpGet("{id}")]
         public async Task<ActionResult<Venta>> GetVenta(int id)
         {
@@ -228,9 +253,7 @@ namespace XpressMarket.Server.Controllers
         public async Task<ActionResult<IEnumerable<ResumenUtilidad>>> GetReporteUtilidades(
             [FromQuery] DateTime? desde, [FromQuery] DateTime? hasta)
         {
-            var query = _context.Ventas
-                .Include(v => v.Detalles)
-                    .ThenInclude(d => d.Producto)
+            var query = _context.Ventas.AsNoTracking()
                 .Where(v => v.Estado == EstadoVenta.Completada);
 
             if (desde.HasValue)
@@ -238,23 +261,19 @@ namespace XpressMarket.Server.Controllers
             if (hasta.HasValue)
                 query = query.Where(v => v.FechaVenta <= hasta.Value.Date.AddDays(1).AddTicks(-1));
 
-            var ventas = await query.OrderByDescending(v => v.FechaVenta).ToListAsync();
-
-            var resumen = ventas.Select(v =>
-            {
-                var costoTotal = v.Detalles.Sum(d => d.Cantidad * (d.Producto?.PrecioCosto ?? 0));
-                return new ResumenUtilidad
+            // El costo de cada venta se suma en MySQL; no se cargan ventas, detalles ni productos.
+            return await query
+                .OrderByDescending(v => v.FechaVenta)
+                .Select(v => new ResumenUtilidad
                 {
                     VentaId = v.Id,
                     FechaVenta = v.FechaVenta,
                     NombreUsuario = v.NombreUsuario,
                     TotalVenta = v.Total,
-                    CostoTotal = costoTotal,
-                    Utilidad = v.Total - costoTotal
-                };
-            }).ToList();
-
-            return resumen;
+                    CostoTotal = v.Detalles.Sum(d => d.Cantidad * d.Producto!.PrecioCosto),
+                    Utilidad = v.Total - v.Detalles.Sum(d => d.Cantidad * d.Producto!.PrecioCosto)
+                })
+                .ToListAsync();
         }
 
         [HttpGet("dashboard")]
@@ -262,44 +281,41 @@ namespace XpressMarket.Server.Controllers
         public async Task<ActionResult<DashboardResumen>> GetDashboard([FromQuery] int dias = 30)
         {
             var desde = DateTime.Now.Date.AddDays(-dias);
+            var hoy = DateTime.Now.Date;
 
-            var ventas = await _context.Ventas
-                .Include(v => v.Detalles)
-                .Where(v => v.Estado == EstadoVenta.Completada && v.FechaVenta >= desde)
-                .ToListAsync();
+            var ventas = _context.Ventas.AsNoTracking()
+                .Where(v => v.Estado == EstadoVenta.Completada && v.FechaVenta >= desde);
+            var detalles = _context.DetallesVenta.AsNoTracking()
+                .Where(d => d.Venta!.Estado == EstadoVenta.Completada && d.Venta.FechaVenta >= desde);
 
-            var productos = await _context.Productos.ToDictionaryAsync(p => p.Id, p => p.PrecioCosto);
+            // Todos los indicadores se calculan con agregaciones en MySQL.
+            var totalVentas = await ventas.SumAsync(v => (decimal?)v.Total) ?? 0m;
+            var costoTotal = await detalles.SumAsync(d => (decimal?)(d.Cantidad * d.Producto!.PrecioCosto)) ?? 0m;
 
-            var totalVentas = ventas.Sum(v => v.Total);
-            var totalUtilidad = ventas.Sum(v =>
-                v.Total - v.Detalles.Sum(d => d.Cantidad * (productos.GetValueOrDefault(d.ProductoId, 0))));
-
-            var ventasPorDia = ventas
+            var ventasPorDia = await ventas
                 .GroupBy(v => v.FechaVenta.Date)
                 .Select(g => new VentaPorDia { Fecha = g.Key, Total = g.Sum(v => v.Total) })
                 .OrderBy(v => v.Fecha)
-                .ToList();
+                .ToListAsync();
 
-            var topProductos = ventas
-                .SelectMany(v => v.Detalles)
+            var topProductos = await detalles
                 .GroupBy(d => d.NombreProducto)
                 .Select(g => new ProductoMasVendido { NombreProducto = g.Key, CantidadVendida = g.Sum(d => d.Cantidad) })
                 .OrderByDescending(p => p.CantidadVendida)
                 .Take(5)
-                .ToList();
+                .ToListAsync();
 
-            var stockBajo = await _context.Productos.Where(p => p.Activo).ToListAsync();
-            var stockBajoCount = stockBajo.Count(p => p.StockBajo);
+            var stockBajoCount = await _context.Productos
+                .CountAsync(p => p.Activo && p.StockActual <= p.StockMinimo);
 
             var lotesPorVencer = await _context.Lotes
-                .Where(l => l.Activo && l.CantidadActual > 0 && l.FechaVencimiento.Date >= DateTime.Now.Date
-                       && l.FechaVencimiento.Date <= DateTime.Now.Date.AddDays(30))
-                .CountAsync();
+                .CountAsync(l => l.Activo && l.CantidadActual > 0
+                       && l.FechaVencimiento >= hoy && l.FechaVencimiento < hoy.AddDays(31));
 
             return new DashboardResumen
             {
                 TotalVentasPeriodo = totalVentas,
-                TotalUtilidadPeriodo = totalUtilidad,
+                TotalUtilidadPeriodo = totalVentas - costoTotal,
                 ProductosStockBajo = stockBajoCount,
                 LotesPorVencer = lotesPorVencer,
                 VentasPorDia = ventasPorDia,
@@ -312,28 +328,34 @@ namespace XpressMarket.Server.Controllers
         public async Task<ActionResult<List<PeriodoResumen>>> GetReportePeriodo(
             [FromQuery] DateTime desde, [FromQuery] DateTime hasta, [FromQuery] string agrupacion = "dia")
         {
-            var ventas = await _context.Ventas
-                .Include(v => v.Detalles).ThenInclude(d => d.Producto)
-                .Where(v => v.Estado == EstadoVenta.Completada
-                       && v.FechaVenta.Date >= desde.Date
-                       && v.FechaVenta.Date <= hasta.Date)
+            var inicio = desde.Date;
+            var fin = hasta.Date.AddDays(1); // exclusivo
+
+            var ventas = await _context.Ventas.AsNoTracking()
+                .Where(v => v.Estado == EstadoVenta.Completada && v.FechaVenta >= inicio && v.FechaVenta < fin)
+                .Select(v => new
+                {
+                    v.FechaVenta,
+                    v.Total,
+                    Costo = v.Detalles.Sum(d => d.Cantidad * d.Producto!.PrecioCosto)
+                })
                 .ToListAsync();
 
             var cultura = CultureInfo.GetCultureInfo("es-ES");
 
-            (DateTime orden, string etiqueta) ClaveDe(Venta v) => agrupacion.ToLower() switch
+            (DateTime orden, string etiqueta) ClaveDe(DateTime fecha) => agrupacion.ToLower() switch
             {
-                "semana" => ObtenerClaveSemana(v.FechaVenta),
-                "mes" => (new DateTime(v.FechaVenta.Year, v.FechaVenta.Month, 1),
-                          Capitalizar(cultura.DateTimeFormat.GetMonthName(v.FechaVenta.Month)) + $" {v.FechaVenta.Year}"),
-                _ => (v.FechaVenta.Date, v.FechaVenta.ToString("dd/MM/yyyy"))
+                "semana" => ObtenerClaveSemana(fecha),
+                "mes" => (new DateTime(fecha.Year, fecha.Month, 1),
+                          Capitalizar(cultura.DateTimeFormat.GetMonthName(fecha.Month)) + $" {fecha.Year}"),
+                _ => (fecha.Date, fecha.ToString("dd/MM/yyyy"))
             };
 
             var resumen = ventas
-                .GroupBy(ClaveDe)
+                .GroupBy(v => ClaveDe(v.FechaVenta))
                 .Select(g =>
                 {
-                    var costoTotal = g.Sum(v => v.Detalles.Sum(d => d.Cantidad * (d.Producto?.PrecioCosto ?? 0)));
+                    var costoTotal = g.Sum(v => v.Costo);
                     var totalVentas = g.Sum(v => v.Total);
                     return new PeriodoResumen
                     {
