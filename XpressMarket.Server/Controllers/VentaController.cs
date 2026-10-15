@@ -270,8 +270,8 @@ namespace XpressMarket.Server.Controllers
                     FechaVenta = v.FechaVenta,
                     NombreUsuario = v.NombreUsuario,
                     TotalVenta = v.Total,
-                    CostoTotal = v.Detalles.Sum(d => d.Cantidad * d.Producto!.PrecioCosto),
-                    Utilidad = v.Total - v.Detalles.Sum(d => d.Cantidad * d.Producto!.PrecioCosto)
+                    CostoTotal = Math.Round(v.Detalles.Sum(d => d.Cantidad * d.Producto!.PrecioCosto), 2),
+                    Utilidad = Math.Round(v.Total - v.Detalles.Sum(d => d.Cantidad * d.Producto!.PrecioCosto), 2)
                 })
                 .ToListAsync();
         }
