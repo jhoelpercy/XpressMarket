@@ -24,10 +24,49 @@ namespace XpressMarket.Server.Controllers
         public async Task<ActionResult<IEnumerable<Lote>>> GetLotes()
         {
             return await _context.Lotes
+                .AsNoTracking()
                 .Include(l => l.Producto)
                 .Include(l => l.Proveedor)
                 .Where(l => l.Activo)
                 .ToListAsync();
+        }
+
+        // GET: api/lotes/paginado?pagina=1&tamano=20&q=leche&estado=vencidos
+        // estado: todos | vencidos | por-vencer | vigentes. El filtrado y el paginado ocurren en MySQL.
+        [HttpGet("paginado")]
+        public async Task<ActionResult<PagedResult<Lote>>> GetPaginado(
+            [FromQuery] int pagina = 1, [FromQuery] int tamano = 20,
+            [FromQuery] string? q = null, [FromQuery] string estado = "todos")
+        {
+            tamano = Math.Clamp(tamano, 1, 100);
+            pagina = Math.Max(1, pagina);
+            var hoy = DateTime.Now.Date;
+
+            var query = _context.Lotes.AsNoTracking().Where(l => l.Activo);
+
+            if (!string.IsNullOrWhiteSpace(q))
+            {
+                var t = q.Trim();
+                query = query.Where(l => l.NumeroLote.Contains(t) || l.Producto!.Nombre.Contains(t));
+            }
+
+            query = estado switch
+            {
+                "vencidos" => query.Where(l => l.FechaVencimiento < hoy),
+                "por-vencer" => query.Where(l => l.FechaVencimiento >= hoy && l.FechaVencimiento < hoy.AddDays(31)),
+                "vigentes" => query.Where(l => l.FechaVencimiento >= hoy.AddDays(31)),
+                _ => query
+            };
+
+            var total = await query.CountAsync();
+            var items = await query
+                .Include(l => l.Producto)
+                .Include(l => l.Proveedor)
+                .OrderBy(l => l.FechaVencimiento).ThenBy(l => l.Id)
+                .Skip((pagina - 1) * tamano).Take(tamano)
+                .ToListAsync();
+
+            return new PagedResult<Lote> { Items = items, Total = total, Pagina = pagina, Tamano = tamano };
         }
 
         [HttpGet("{id}")]
@@ -48,14 +87,18 @@ namespace XpressMarket.Server.Controllers
         [HttpGet("proximos-a-vencer")]
         public async Task<ActionResult<IEnumerable<Lote>>> GetProximosAVencer()
         {
-            var limite = DateTime.Now.Date.AddDays(30);
+            // Se compara contra límites de fecha ya calculados (sin .Date sobre la columna)
+            // para que MySQL pueda usar el índice de FechaVencimiento.
+            var hoy = DateTime.Now.Date;
+            var limite = hoy.AddDays(31); // exclusivo: incluye todo el día 30
 
             return await _context.Lotes
+                .AsNoTracking()
                 .Include(l => l.Producto)
                 .Where(l => l.Activo
                     && l.CantidadActual > 0 // CORRECCIÓN: Filtra lotes agotados
-                    && l.FechaVencimiento.Date >= DateTime.Now.Date
-                    && l.FechaVencimiento.Date <= limite)
+                    && l.FechaVencimiento >= hoy
+                    && l.FechaVencimiento < limite)
                 .OrderBy(l => l.FechaVencimiento)
                 .ToListAsync();
         }
@@ -64,11 +107,14 @@ namespace XpressMarket.Server.Controllers
         [HttpGet("vencidos")]
         public async Task<ActionResult<IEnumerable<Lote>>> GetVencidos()
         {
+            var hoy = DateTime.Now.Date;
+
             return await _context.Lotes
+                .AsNoTracking()
                 .Include(l => l.Producto)
                 .Where(l => l.Activo
                     && l.CantidadActual > 0 // CORRECCIÓN: Filtra lotes agotados
-                    && l.FechaVencimiento.Date < DateTime.Now.Date)
+                    && l.FechaVencimiento < hoy)
                 .OrderBy(l => l.FechaVencimiento)
                 .ToListAsync();
         }
@@ -205,7 +251,7 @@ namespace XpressMarket.Server.Controllers
         [HttpGet("reporte-mermas")]
         public async Task<ActionResult<IEnumerable<Lote>>> GetReporteMermas([FromQuery] DateTime? desde, [FromQuery] DateTime? hasta)
         {
-            var query = _context.Lotes.Include(l => l.Producto).Where(l => l.EsMerma);
+            var query = _context.Lotes.AsNoTracking().Include(l => l.Producto).Where(l => l.EsMerma);
 
             if (desde.HasValue)
                 query = query.Where(l => l.FechaMerma >= desde.Value);
@@ -220,10 +266,13 @@ namespace XpressMarket.Server.Controllers
         public async Task<ActionResult<List<PeriodoResumen>>> GetReporteMermasPeriodo(
             [FromQuery] DateTime desde, [FromQuery] DateTime hasta, [FromQuery] string agrupacion = "dia")
         {
+            var inicio = desde.Date;
+            var fin = hasta.Date.AddDays(1); // exclusivo
             var mermas = await _context.Lotes
+                .AsNoTracking()
                 .Where(l => l.EsMerma && l.FechaMerma.HasValue
-                         && l.FechaMerma.Value.Date >= desde.Date
-                         && l.FechaMerma.Value.Date <= hasta.Date)
+                         && l.FechaMerma.Value >= inicio
+                         && l.FechaMerma.Value < fin)
                 .ToListAsync();
 
             var cultura = CultureInfo.GetCultureInfo("es-ES");
