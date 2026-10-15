@@ -45,6 +45,9 @@
 @code {
     [Parameter] public EventCallback<Producto> OnProductoAgregado { get; set; }
 
+    // En el punto de venta no se puede agregar un producto sin stock; al registrar lotes sí debe poder elegirse.
+    [Parameter] public bool ValidarStock { get; set; }
+
     private MudAutocomplete<Producto>? _buscador;
     private Producto? productoSeleccionado;
     // La búsqueda se hace en el servidor y devuelve sólo las 20 mejores coincidencias,
@@ -70,7 +73,7 @@
     {
         if (producto == null) return;
 
-        if (producto.StockActual <= 0)
+        if (ValidarStock && producto.StockActual <= 0)
         {
             Snackbar.Add($"'{producto.Nombre}' no tiene stock disponible.", Severity.Warning);
         }
@@ -82,7 +85,14 @@
         productoSeleccionado = null;
 
         // Deja el cuadro de búsqueda vacío para el siguiente producto.
-        if (_buscador != null)
-            await _buscador.ClearAsync();
+        // (El contenedor puede haber retirado el buscador al recibir la selección.)
+        try
+        {
+            if (_buscador != null)
+                await _buscador.ClearAsync();
+        }
+        catch (Exception)
+        {
+        }
     }
 }
