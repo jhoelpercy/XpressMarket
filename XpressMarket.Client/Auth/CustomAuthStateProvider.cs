@@ -19,12 +19,24 @@ namespace XpressMarket.Client.Auth
 
         public override async Task<AuthenticationState> GetAuthenticationStateAsync()
         {
-            _token ??= await _js.InvokeAsync<string?>("localStorageGet", "authToken");
+            // Si el almacenamiento del navegador no responde o el token está dañado, se trata la sesión
+            // como cerrada en lugar de dejar la aplicación sin iniciar.
+            List<Claim> claims;
+            try
+            {
+                _token ??= await _js.InvokeAsync<string?>("localStorageGet", "authToken");
 
-            if (string.IsNullOrWhiteSpace(_token))
+                if (string.IsNullOrWhiteSpace(_token))
+                    return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
+
+                claims = ParsearClaims(_token);
+            }
+            catch (Exception)
+            {
+                _token = null;
+                try { await _js.InvokeVoidAsync("localStorageRemove", "authToken"); } catch (Exception) { }
                 return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
-
-            var claims = ParsearClaims(_token);
+            }
 
             // Verifica si el token ya expiró
             var expClaim = claims.FirstOrDefault(c => c.Type == "exp");
