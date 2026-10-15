@@ -76,6 +76,20 @@ namespace XpressMarket.Server.Data
             modelBuilder.Entity<Lote>()
                 .HasIndex(l => l.FechaVencimiento);
 
+            // Índices compuestos para las consultas frecuentes con bases de datos grandes:
+            // historial y reportes por estado/fecha, alertas de vencimiento y listado de productos por nombre.
+            modelBuilder.Entity<Venta>()
+                .HasIndex(v => v.FechaVenta);
+
+            modelBuilder.Entity<Venta>()
+                .HasIndex(v => new { v.Estado, v.FechaVenta });
+
+            modelBuilder.Entity<Lote>()
+                .HasIndex(l => new { l.Activo, l.FechaVencimiento });
+
+            modelBuilder.Entity<Producto>()
+                .HasIndex(p => new { p.Activo, p.Nombre });
+
             modelBuilder.Entity<Usuario>()
                 .HasIndex(u => u.NombreUsuario)
                 .IsUnique();

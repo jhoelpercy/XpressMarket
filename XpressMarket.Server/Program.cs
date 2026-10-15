@@ -23,6 +23,14 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 
 builder.Services.AddControllers();
+
+// Compresión de las respuestas (Brotli/gzip): las listas JSON se reducen de forma notable.
+builder.Services.AddResponseCompression(options =>
+{
+    options.EnableForHttps = true;
+    options.Providers.Add<Microsoft.AspNetCore.ResponseCompression.BrotliCompressionProvider>();
+    options.Providers.Add<Microsoft.AspNetCore.ResponseCompression.GzipCompressionProvider>();
+});
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
@@ -107,6 +115,8 @@ using (var scope = app.Services.CreateScope())
 
     db.SaveChanges();
 }
+
+app.UseResponseCompression();
 
 app.UseCors("PermitirClient");
 

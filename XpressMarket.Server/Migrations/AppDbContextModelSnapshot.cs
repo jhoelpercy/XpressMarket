@@ -170,6 +170,8 @@ namespace XpressMarket.Server.Migrations
 
                     b.HasIndex("ProveedorId");
 
+                    b.HasIndex("Activo", "FechaVencimiento");
+
                     b.ToTable("Lotes");
                 });
 
@@ -220,6 +222,8 @@ namespace XpressMarket.Server.Migrations
                     b.HasIndex("CategoriaId");
 
                     b.HasIndex("CodigoBarras");
+
+                    b.HasIndex("Activo", "Nombre");
 
                     b.ToTable("Productos");
                 });
@@ -340,6 +344,10 @@ namespace XpressMarket.Server.Migrations
                         .HasColumnType("longtext");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("FechaVenta");
+
+                    b.HasIndex("Estado", "FechaVenta");
 
                     b.ToTable("Ventas");
                 });
