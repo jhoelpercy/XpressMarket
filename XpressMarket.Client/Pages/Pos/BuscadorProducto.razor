@@ -12,7 +12,7 @@
                   AdornmentIcon="@Icons.Material.Filled.Search"
                   AdornmentColor="Color.Primary"
                   Placeholder="Buscar producto por nombre, descripción o código..."
-                  DebounceInterval="150"
+                  DebounceInterval="300"
                   FullWidth="true"
                   Dense="true">
     <ItemTemplate>
@@ -47,38 +47,23 @@
 
     private MudAutocomplete<Producto>? _buscador;
     private Producto? productoSeleccionado;
-    private List<Producto>? catalogo;
-
-    // El catálogo se descarga una sola vez; luego se filtra en memoria al escribir.
-    private async Task<List<Producto>> ObtenerCatalogoAsync()
+    // La búsqueda se hace en el servidor y devuelve sólo las 20 mejores coincidencias,
+    // de modo que el tiempo no depende del tamaño del catálogo.
+    private async Task<IEnumerable<Producto>> BuscarProductosAsync(string? valor, CancellationToken token)
     {
-        if (catalogo != null) return catalogo;
-
         try
         {
-            catalogo = (await ProductoSvc.ObtenerTodosAsync()).Where(p => p.Activo).ToList();
+            return await ProductoSvc.BuscarAsync(valor, 20, token);
+        }
+        catch (OperationCanceledException)
+        {
+            return Enumerable.Empty<Producto>();
         }
         catch (Exception ex)
         {
             Snackbar.Add($"No se pudieron cargar los productos: {ex.Message}", Severity.Error);
-            return new List<Producto>();
+            return Enumerable.Empty<Producto>();
         }
-        return catalogo;
-    }
-
-    private async Task<IEnumerable<Producto>> BuscarProductosAsync(string? valor, CancellationToken token)
-    {
-        var productos = await ObtenerCatalogoAsync();
-
-        if (string.IsNullOrWhiteSpace(valor))
-            return productos.Take(20);
-
-        valor = valor.Trim();
-        return productos.Where(p =>
-                p.Nombre.Contains(valor, StringComparison.OrdinalIgnoreCase) ||
-                (!string.IsNullOrEmpty(p.Descripcion) && p.Descripcion.Contains(valor, StringComparison.OrdinalIgnoreCase)) ||
-                (!string.IsNullOrEmpty(p.CodigoBarras) && p.CodigoBarras.Contains(valor, StringComparison.OrdinalIgnoreCase)))
-            .Take(20);
     }
 
     private async Task OnProductoSelected(Producto? producto)
@@ -92,8 +77,6 @@
         else
         {
             await OnProductoAgregado.InvokeAsync(producto);
-            // Tras vender, el stock local cambia: se recarga la próxima vez que se busque.
-            catalogo = null;
         }
 
         productoSeleccionado = null;
