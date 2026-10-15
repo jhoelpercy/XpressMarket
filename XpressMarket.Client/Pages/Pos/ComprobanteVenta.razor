@@ -6,6 +6,7 @@
 @inject NavigationManager NavManager
 @inject IJSRuntime JS
 @inject HttpClient Http
+@inject AuthenticationStateProvider AuthState
 @inject ISnackbar Snackbar
 
 <PageTitle>XpressMarket - Comprobante de Venta</PageTitle>
@@ -102,13 +103,16 @@
                     Imprimir Ticket (Térmico)
                 </MudButton>
                 <MudButton Variant="Variant.Filled" Style="background-color: #6b2181; color: white;" FullWidth="true" OnClick="Volver">
-                    Nueva Venta
+                    @(esAdmin ? "Volver al historial" : "Nueva Venta")
                 </MudButton>
             </div>
         }
         else if (error != null)
         {
             <MudAlert Severity="Severity.Warning" Dense="true">@error</MudAlert>
+            <MudButton Variant="Variant.Filled" Style="background-color: #6b2181; color: white;" FullWidth="true" Class="mt-4" OnClick="Volver">
+                @(esAdmin ? "Volver al historial" : "Volver")
+            </MudButton>
         }
         else
         {
@@ -123,11 +127,14 @@
     [Parameter] public int VentaId { get; set; }
     private Venta? venta;
     private string? error;
+    private bool esAdmin;
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
+            var estado = await AuthState.GetAuthenticationStateAsync();
+            esAdmin = estado.User.IsInRole("Administrador");
             venta = await VentaSvc.ObtenerPorIdAsync(VentaId);
         }
         catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Forbidden)
@@ -167,6 +174,7 @@
 
     private void Volver()
     {
-        NavManager.NavigateTo("/punto-venta");
+        // El punto de venta es sólo para el rol Cajero: el administrador regresa al historial de ventas.
+        NavManager.NavigateTo(esAdmin ? "/ventas" : "/punto-venta");
     }
 }
