@@ -324,17 +324,13 @@
 
             if (esAdministrador)
             {
-                var productosTask = ProductoSvc.ObtenerTodosAsync();
-                var stockBajoTask = ProductoSvc.ObtenerStockBajoAsync();
-                var porVencerTask = LoteSvc.ObtenerProximosAVencerAsync();
-                var vencidosTask = LoteSvc.ObtenerVencidosAsync();
+                // Los conteos se calculan en la base de datos (antes se descargaban cuatro listas completas).
+                var resumen = await ProductoSvc.ObtenerResumenInventarioAsync();
 
-                await Task.WhenAll(productosTask, stockBajoTask, porVencerTask, vencidosTask);
-
-                totalProductos = (await productosTask)?.Count ?? 0;
-                stockBajoCount = (await stockBajoTask)?.Count ?? 0;
-                porVencerCount = (await porVencerTask)?.Count ?? 0;
-                vencidosCount = (await vencidosTask)?.Count ?? 0;
+                totalProductos = resumen.TotalProductos;
+                stockBajoCount = resumen.StockBajo;
+                porVencerCount = resumen.LotesPorVencer;
+                vencidosCount = resumen.LotesVencidos;
             }
         }
         catch { }

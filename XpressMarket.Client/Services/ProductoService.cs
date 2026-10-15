@@ -23,6 +23,29 @@ namespace XpressMarket.Client.Services
             return await _http.GetFromJsonAsync<Producto>($"{RutaBase}/{id}");
         }
 
+        // Página de productos filtrada y ordenada en el servidor (administrador).
+        public async Task<PagedResult<Producto>> ObtenerPaginadoAsync(int pagina, int tamano, string? q = null, int? categoriaId = null)
+        {
+            var url = $"{RutaBase}/paginado?pagina={pagina}&tamano={tamano}";
+            if (!string.IsNullOrWhiteSpace(q)) url += $"&q={Uri.EscapeDataString(q.Trim())}";
+            if (categoriaId.HasValue) url += $"&categoriaId={categoriaId.Value}";
+            return await _http.GetFromJsonAsync<PagedResult<Producto>>(url) ?? new PagedResult<Producto>();
+        }
+
+        // Mejores coincidencias para el buscador del punto de venta (sólo trae unas pocas filas).
+        public async Task<List<Producto>> BuscarAsync(string? q, int max = 20, CancellationToken ct = default)
+        {
+            var url = $"{RutaBase}/buscar?max={max}";
+            if (!string.IsNullOrWhiteSpace(q)) url += $"&q={Uri.EscapeDataString(q.Trim())}";
+            return await _http.GetFromJsonAsync<List<Producto>>(url, ct) ?? new List<Producto>();
+        }
+
+        // Conteos del inicio del administrador, calculados en la base de datos.
+        public async Task<ResumenInventario> ObtenerResumenInventarioAsync()
+        {
+            return await _http.GetFromJsonAsync<ResumenInventario>($"{RutaBase}/resumen-inventario") ?? new ResumenInventario();
+        }
+
         public async Task<List<Producto>> ObtenerStockBajoAsync()
         {
             return await _http.GetFromJsonAsync<List<Producto>>($"{RutaBase}/stock-bajo") ?? new List<Producto>();

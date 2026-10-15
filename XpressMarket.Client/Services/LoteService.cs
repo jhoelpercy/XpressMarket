@@ -18,6 +18,14 @@ namespace XpressMarket.Client.Services
             return await _http.GetFromJsonAsync<List<Lote>>(RutaBase) ?? new List<Lote>();
         }
 
+        // Página de lotes filtrada y ordenada en el servidor. estado: todos | vencidos | por-vencer | vigentes.
+        public async Task<PagedResult<Lote>> ObtenerPaginadoAsync(int pagina, int tamano, string? q = null, string estado = "todos")
+        {
+            var url = $"{RutaBase}/paginado?pagina={pagina}&tamano={tamano}&estado={estado}";
+            if (!string.IsNullOrWhiteSpace(q)) url += $"&q={Uri.EscapeDataString(q.Trim())}";
+            return await _http.GetFromJsonAsync<PagedResult<Lote>>(url) ?? new PagedResult<Lote>();
+        }
+
         public async Task<Lote?> ObtenerPorIdAsync(int id)
         {
             return await _http.GetFromJsonAsync<Lote>($"{RutaBase}/{id}");

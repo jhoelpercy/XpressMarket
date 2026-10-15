@@ -84,28 +84,8 @@
     }
 
     @* ==================== CONTENIDO PRINCIPAL ==================== *@
-    @if (cargando)
-    {
-        <MudPaper Elevation="0" Class="pa-8 d-flex justify-center align-center rounded-xl" Style="background: #ffffff;">
-            <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
-        </MudPaper>
-    }
-    else if (ventas == null || !ventas.Any())
-    {
-        <MudPaper Elevation="0" Class="pa-8 d-flex flex-column justify-center align-center rounded-xl" Style="background: #ffffff;">
-            <MudIcon Icon="@Icons.Material.Filled.Receipt" Style="font-size: 4rem; color: #adb5bd;" />
-            <MudText Typo="Typo.h6" Class="fw-normal mt-3" Style="color: #6c757d;">
-                No se encontraron ventas registradas
-            </MudText>
-            <MudText Typo="Typo.body2" Style="color: #adb5bd;">
-                Las transacciones realizadas desde la caja aparecerán aquí.
-            </MudText>
-        </MudPaper>
-    }
-    else
-    {
         <MudPaper Elevation="2" Class="rounded-xl overflow-hidden">
-            <MudTable Items="@ventas" Hover="true" Dense="true" Elevation="0"
+            <MudTable @ref="_tabla" T="Venta" ServerData="CargarServidor" RowsPerPage="20" Hover="true" Dense="true" Elevation="0"
                       Breakpoint="Breakpoint.Sm">
                 <HeaderContent>
                     <MudTh><MudText Typo="Typo.subtitle2" Class="fw-bold">N° Venta</MudText></MudTh>
@@ -182,33 +162,41 @@
                         </MudStack>
                     </MudTd>
                 </RowTemplate>
+                            <NoRecordsContent>
+                    <MudText Typo="Typo.body1" Class="pa-6" Style="color: #6c757d;">No se encontraron ventas registradas.</MudText>
+                </NoRecordsContent>
+                <LoadingContent>
+                    <MudText Typo="Typo.body2" Class="pa-4">Cargando...</MudText>
+                </LoadingContent>
+                <PagerContent>
+                    <MudTablePager PageSizeOptions="@(new int[] { 10, 20, 50, 100 })" InfoFormat="{first_item}-{last_item} de {all_items}" RowsPerPageString="Filas" />
+                </PagerContent>
             </MudTable>
         </MudPaper>
-    }
 </div>
 
 @code {
-    private List<Venta> ventas = new();
-    private bool cargando = true;
+    private MudTable<Venta>? _tabla;
     private List<AdvertenciaAnulacion> advertenciasPendientes = new();
     private int? ventaIdParaAnular;
 
-    protected override async Task OnInitializedAsync() => await Cargar();
-
     private async Task Cargar()
     {
-        cargando = true;
+        if (_tabla != null) await _tabla.ReloadServerData();
+    }
+
+    // El servidor ordena y pagina el historial: sólo viaja la página que se está viendo.
+    private async Task<TableData<Venta>> CargarServidor(TableState state, CancellationToken ct)
+    {
         try
         {
-            ventas = await VentaSvc.ObtenerTodasAsync();
+            var r = await VentaSvc.ObtenerPaginadoAsync(state.Page + 1, state.PageSize);
+            return new TableData<Venta> { Items = r.Items, TotalItems = r.Total };
         }
         catch (Exception ex)
         {
             Snackbar.Add($"Error al cargar ventas: {ex.Message}", Severity.Error);
-        }
-        finally
-        {
-            cargando = false;
+            return new TableData<Venta> { Items = new List<Venta>(), TotalItems = 0 };
         }
     }
 

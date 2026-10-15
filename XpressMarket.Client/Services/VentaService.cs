@@ -18,6 +18,15 @@ namespace XpressMarket.Client.Services
             return await _http.GetFromJsonAsync<List<Venta>>(RutaBase) ?? new List<Venta>();
         }
 
+        // Historial paginado en el servidor (sin detalles de venta).
+        public async Task<PagedResult<Venta>> ObtenerPaginadoAsync(int pagina, int tamano, DateTime? desde = null, DateTime? hasta = null)
+        {
+            var url = $"{RutaBase}/paginado?pagina={pagina}&tamano={tamano}";
+            if (desde.HasValue) url += $"&desde={desde:yyyy-MM-dd}";
+            if (hasta.HasValue) url += $"&hasta={hasta:yyyy-MM-dd}";
+            return await _http.GetFromJsonAsync<PagedResult<Venta>>(url) ?? new PagedResult<Venta>();
+        }
+
         public async Task<(bool Exito, string? Error, Venta? Venta)> RegistrarVentaAsync(Venta venta)
         {
             var respuesta = await _http.PostAsJsonAsync(RutaBase, venta);

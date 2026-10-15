@@ -52,29 +52,27 @@
             </MudButton>
         </div>
 
-        @if (cargando)
-        {
-            <div class="d-flex justify-center pa-6">
-                <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
-            </div>
-        }
-        else if (productos == null || !productos.Any())
-        {
-            <div class="d-flex flex-column align-center pa-8">
-                <MudIcon Icon="@Icons.Material.Filled.Inventory2" Style="font-size: 4rem; color: #adb5bd;" />
-                <MudText Typo="Typo.h6" Class="fw-normal mt-3" Style="color: #6c757d;">
-                    No hay productos registrados
-                </MudText>
-                <MudButton Variant="Variant.Outlined" Color="Color.Primary" Class="mt-3"
-                           StartIcon="@Icons.Material.Filled.Add" OnClick="AbrirFormularioNuevo">
-                    Crear primer producto
-                </MudButton>
-            </div>
-        }
-        else
-        {
-            <MudTable Items="@productos" Hover="true" Dense="true" Elevation="0" Class="rounded-lg"
-                      Breakpoint="Breakpoint.Sm">
+        <div class="d-flex flex-column flex-md-row gap-3 mb-3">
+            <MudTextField T="string" Value="_busqueda" ValueChanged="OnBusquedaCambiada"
+                          Placeholder="Buscar por nombre, código o descripción..."
+                          Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true"
+                          Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search"
+                          Immediate="true" DebounceInterval="400" Class="flex-grow-1" />
+            <MudSelect T="int?" Label="Categoría" Value="_categoriaFiltro" ValueChanged="OnCategoriaCambiada"
+                       Variant="Variant.Outlined" Margin="Margin.Dense" Style="min-width: 220px;">
+                <MudSelectItem T="int?" Value="@((int?)null)">Todas</MudSelectItem>
+                @if (categorias != null)
+                {
+                    @foreach (var cat in categorias)
+                    {
+                        <MudSelectItem T="int?" Value="@((int?)cat.Id)">@cat.Nombre</MudSelectItem>
+                    }
+                }
+            </MudSelect>
+        </div>
+
+        <MudTable @ref="_tabla" T="Producto" ServerData="CargarServidor" RowsPerPage="20" Hover="true" Dense="true" Elevation="0" Class="rounded-lg"
+                  Breakpoint="Breakpoint.Sm">
                 <HeaderContent>
                     <MudTh><MudText Typo="Typo.subtitle2" Class="fw-bold">Nombre</MudText></MudTh>
                     <MudTh><MudText Typo="Typo.subtitle2" Class="fw-bold">Categoría</MudText></MudTh>
@@ -132,34 +130,72 @@
                         </MudStack>
                     </MudTd>
                 </RowTemplate>
-            </MudTable>
-        }
+                        <NoRecordsContent>
+                <MudText Typo="Typo.body1" Class="pa-6" Style="color: #6c757d;">No se encontraron productos.</MudText>
+            </NoRecordsContent>
+            <LoadingContent>
+                <MudText Typo="Typo.body2" Class="pa-4">Cargando...</MudText>
+            </LoadingContent>
+            <PagerContent>
+                <MudTablePager PageSizeOptions="@(new int[] { 10, 20, 50, 100 })" InfoFormat="{first_item}-{last_item} de {all_items}" RowsPerPageString="Filas" />
+            </PagerContent>
+        </MudTable>
     </MudPaper>
 </div>
 
 @code {
-    private List<Producto>? productos;
     private List<Categoria>? categorias;
-    private bool cargando = true;
+    private MudTable<Producto>? _tabla;
+    private string? _busqueda;
+    private int? _categoriaFiltro;
 
     protected override async Task OnInitializedAsync() => await CargarDatos();
 
     private async Task CargarDatos()
     {
-        cargando = true;
         try
         {
             categorias = await CategoriaSvc.ObtenerTodasAsync();
-            productos = await ProductoSvc.ObtenerTodosAsync();
         }
         catch (Exception ex)
         {
             Snackbar.Add($"Error al cargar: {ex.Message}", Severity.Error);
         }
-        finally
+        await Recargar();
+    }
+
+    // El servidor filtra, ordena y pagina: sólo viaja la página que se está viendo.
+    private async Task<TableData<Producto>> CargarServidor(TableState state, CancellationToken ct)
+    {
+        try
         {
-            cargando = false;
+            var r = await ProductoSvc.ObtenerPaginadoAsync(state.Page + 1, state.PageSize, _busqueda, _categoriaFiltro);
+            return new TableData<Producto> { Items = r.Items, TotalItems = r.Total };
         }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error al cargar: {ex.Message}", Severity.Error);
+            return new TableData<Producto> { Items = new List<Producto>(), TotalItems = 0 };
+        }
+    }
+
+    private async Task Recargar(bool volverAlInicio = false)
+    {
+        if (_tabla == null) return;
+        if (volverAlInicio && _tabla.CurrentPage != 0) _tabla.NavigateTo(0);
+        else await _tabla.ReloadServerData();
+    }
+
+    private async Task OnBusquedaCambiada(string? texto)
+    {
+        _busqueda = texto;
+        await Recargar(true);
+    }
+
+    private async Task OnCategoriaCambiada(int? categoriaId)
+    {
+        _categoriaFiltro = categoriaId;
+        await Recargar(true);
     }
 
     private async Task AbrirFormularioNuevo()

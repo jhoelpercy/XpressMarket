@@ -181,7 +181,7 @@
         else
         {
             <MudTable Items="@ventas" Dense="true" Hover="true" Elevation="0" Class="rounded-lg"
-                      Breakpoint="Breakpoint.Sm">
+                      Breakpoint="Breakpoint.Sm" RowsPerPage="25">
                 <HeaderContent>
                     <MudTh><MudText Typo="Typo.subtitle2" Class="fw-bold">N° Venta</MudText></MudTh>
                     <MudTh><MudText Typo="Typo.subtitle2" Class="fw-bold">Fecha</MudText></MudTh>
@@ -215,6 +215,9 @@
                         </strong>
                     </MudTd>
                 </FooterContent>
+                <PagerContent>
+                    <MudTablePager PageSizeOptions="@(new int[] { 10, 25, 50, 100 })" InfoFormat="{first_item}-{last_item} de {all_items}" RowsPerPageString="Filas" />
+                </PagerContent>
             </MudTable>
         }
     </MudPaper>
@@ -224,8 +227,9 @@
     private List<ResumenUtilidad> ventas = new();
     private bool cargando = true;
     private bool cargandoPeriodo = true;
-    private DateTime? fechaDesde;
-    private DateTime? fechaHasta;
+    // Por defecto se consultan los últimos 30 días (no todo el historial de ventas).
+    private DateTime? fechaDesde = DateTime.Now.Date.AddDays(-30);
+    private DateTime? fechaHasta = DateTime.Now.Date;
     private string agrupacionSeleccionada = "dia";
     private DateTime? periodoDesde = DateTime.Now.AddDays(-7);
     private DateTime? periodoHasta = DateTime.Now;
