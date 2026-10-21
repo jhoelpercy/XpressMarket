@@ -8,8 +8,8 @@
 
     <!-- Librerías de terceros -->
     <link rel="stylesheet" href="lib/bootstrap/dist/css/bootstrap.min.css" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="lib/bootstrap-icons/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="lib/fonts/fonts.css">
 
     <!-- Estilos de MudBlazor y Propios -->
     <link href="_content/MudBlazor/MudBlazor.min.css" rel="stylesheet" />
@@ -19,9 +19,6 @@
 
     <link rel="icon" type="image/png" href="favicon.png" />
 
-    <link href="manifest.webmanifest" rel="manifest" />
-    <link rel="apple-touch-icon" sizes="512x512" href="icon-512.png" />
-    <link rel="apple-touch-icon" sizes="192x192" href="icon-192.png" />
 
     <style>
         @keyframes spin {
@@ -55,6 +52,7 @@
          al iniciar (localStorageGet). Si se cargaban después, un retraso de red dejaba la aplicación sin iniciar. -->
     <script src="js/download.js"></script>
     <script src="js/storage.js"></script>
+    <script src="lib/chart.js/chart.umd.js"></script>
     <script src="js/charts.js"></script>
 
     <!-- Carga del framework de Blazor (única referencia) -->
@@ -62,8 +60,6 @@
 
     <!-- Librerías JS ejecutas tras Blazor -->
     <script src="_content/MudBlazor/MudBlazor.min.js"></script>
-    <!-- Chart.js se carga sin bloquear el arranque de la aplicación -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js" async></script>
 
     <script>
             // @ts-ignore
@@ -166,9 +162,13 @@
     </script>
 
     <script>
+        // El sistema ya no usa service worker: se eliminan los que hayan quedado instalados y sus cachés
+        // (evita pantallas en blanco o cargas infinitas por archivos viejos guardados en el navegador).
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('service-worker.js', { updateViaCache: 'none' })
-                .catch(err => console.warn('No se pudo registrar el service worker:', err));
+            navigator.serviceWorker.getRegistrations().then(function (rs) { rs.forEach(function (r) { r.unregister(); }); }).catch(function () { });
+        }
+        if (window.caches) {
+            caches.keys().then(function (ks) { ks.forEach(function (k) { caches.delete(k); }); }).catch(function () { });
         }
     </script>
 </body>
