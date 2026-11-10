@@ -142,8 +142,8 @@
         </MudStack>
 
         <MudGrid Spacing="3">
-            @*POS: solo visible para rol Cajero *@
-            <AuthorizeView Roles="Cajero">
+            @*POS: visible para Cajero y Administrador *@
+            <AuthorizeView Roles="Cajero,Administrador">
                 <Authorized>
                     <MudItem xs="12" sm="6" md="4" lg="3">
                         <MudPaper Elevation="2" Class="pa-4 rounded-lg pos-action-card h-100"

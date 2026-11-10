@@ -103,14 +103,20 @@
                     Imprimir Ticket (Térmico)
                 </MudButton>
                 <MudButton Variant="Variant.Filled" Style="background-color: #6b2181; color: white;" FullWidth="true" OnClick="Volver">
-                    @(esAdmin ? "Volver al historial" : "Nueva Venta")
+                    Nueva Venta
                 </MudButton>
             </div>
+            @if (esAdmin)
+            {
+                <MudButton Variant="Variant.Text" Color="Color.Primary" FullWidth="true" Class="mt-2" OnClick="VolverAlHistorial">
+                    Volver al historial
+                </MudButton>
+            }
         }
         else if (error != null)
         {
             <MudAlert Severity="Severity.Warning" Dense="true">@error</MudAlert>
-            <MudButton Variant="Variant.Filled" Style="background-color: #6b2181; color: white;" FullWidth="true" Class="mt-4" OnClick="Volver">
+            <MudButton Variant="Variant.Filled" Style="background-color: #6b2181; color: white;" FullWidth="true" Class="mt-4" OnClick="@(esAdmin ? VolverAlHistorial : Volver)">
                 @(esAdmin ? "Volver al historial" : "Volver")
             </MudButton>
         }
@@ -172,9 +178,8 @@
         }
     }
 
-    private void Volver()
-    {
-        // El punto de venta es sólo para el rol Cajero: el administrador regresa al historial de ventas.
-        NavManager.NavigateTo(esAdmin ? "/ventas" : "/punto-venta");
-    }
+    // El punto de venta lo usan el cajero y el administrador.
+    private void Volver() => NavManager.NavigateTo("/punto-venta");
+
+    private void VolverAlHistorial() => NavManager.NavigateTo("/ventas");
 }

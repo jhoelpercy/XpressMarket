@@ -1,6 +1,6 @@
 ﻿@page "/punto-venta"
 @using Microsoft.AspNetCore.Authorization
-@attribute [Authorize(Roles = "Cajero")]
+@attribute [Authorize(Roles = "Cajero,Administrador")]
 @inject VentaService VentaSvc
 @inject NavigationManager NavManager
 @inject ISnackbar Snackbar

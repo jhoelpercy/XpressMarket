@@ -22,8 +22,8 @@
         Inicio
     </MudNavLink>
 
-    @* Punto de Venta: solo visible para el rol Cajero *@
-    <AuthorizeView Roles="Cajero">
+    @* Punto de Venta: visible para el Cajero y para el Administrador *@
+    <AuthorizeView Roles="Cajero,Administrador">
         <Authorized>
             <MudNavLink Href="punto-venta" Icon="@Icons.Material.Filled.PointOfSale"
                         Style="color: #fbf2db; border-radius: 8px; margin: 4px 8px;"
