@@ -17,6 +17,9 @@ namespace XpressMarket.Shared.Models
         public int CantidadMermas { get; set; }
         public decimal ValorMermas { get; set; }
 
+        // Alertas que el administrador silenció y que por eso no aparecen en las listas siguientes.
+        public int AlertasSilenciadas { get; set; }
+
         public List<ProductoResumen> ProductosStockBajo { get; set; } = new();
         public List<LoteResumen> LotesVencidos { get; set; } = new();
         public List<LoteResumen> LotesProximosAVencer { get; set; } = new();

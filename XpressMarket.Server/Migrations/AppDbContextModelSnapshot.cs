@@ -87,6 +87,9 @@ namespace XpressMarket.Server.Migrations
                     b.Property<int>("Cantidad")
                         .HasColumnType("int");
 
+                    b.Property<decimal>("CostoUnitario")
+                        .HasColumnType("decimal(18,4)");
+
                     b.Property<decimal>("Descuento")
                         .HasColumnType("decimal(18,2)");
 
@@ -123,6 +126,9 @@ namespace XpressMarket.Server.Migrations
 
                     b.Property<bool>("Activo")
                         .HasColumnType("tinyint(1)");
+
+                    b.Property<DateTime?>("AlertaVencimientoSilenciadaHasta")
+                        .HasColumnType("datetime(6)");
 
                     b.Property<int>("CantidadActual")
                         .HasColumnType("int");
@@ -186,6 +192,9 @@ namespace XpressMarket.Server.Migrations
                     b.Property<bool>("Activo")
                         .HasColumnType("tinyint(1)");
 
+                    b.Property<DateTime?>("AlertaStockSilenciadaHasta")
+                        .HasColumnType("datetime(6)");
+
                     b.Property<int>("CategoriaId")
                         .HasColumnType("int");
 
@@ -221,7 +230,11 @@ namespace XpressMarket.Server.Migrations
 
                     b.HasIndex("CategoriaId");
 
-                    b.HasIndex("CodigoBarras");
+                    b.HasIndex("CodigoBarras")
+                        .IsUnique();
+
+                    b.HasIndex("Nombre")
+                        .IsUnique();
 
                     b.HasIndex("Activo", "Nombre");
 

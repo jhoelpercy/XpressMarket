@@ -41,28 +41,26 @@ namespace XpressMarket.Client.Services
             return await _http.GetFromJsonAsync<List<Lote>>($"{RutaBase}/vencidos") ?? new List<Lote>();
         }
 
-        public async Task<bool> CrearAsync(LoteCreateRequest request)
+        /// <summary>Motivo con el que el servidor rechazó la última operación (null si salió bien).</summary>
+        public string? UltimoError { get; private set; }
+
+        private async Task<bool> ProcesarAsync(HttpResponseMessage respuesta)
         {
-            var response = await _http.PostAsJsonAsync("api/lotes", request);
-            return response.IsSuccessStatusCode;
+            UltimoError = respuesta.IsSuccessStatusCode ? null : await HttpErrores.LeerAsync(respuesta);
+            return respuesta.IsSuccessStatusCode;
         }
+
+        public async Task<bool> CrearAsync(LoteCreateRequest request)
+            => await ProcesarAsync(await _http.PostAsJsonAsync("api/lotes", request));
 
         public async Task<bool> ActualizarAsync(int id, LoteUpdateRequest request)
-        {
-            var respuesta = await _http.PutAsJsonAsync($"{RutaBase}/{id}", request);
-            return respuesta.IsSuccessStatusCode;
-        }
+            => await ProcesarAsync(await _http.PutAsJsonAsync($"{RutaBase}/{id}", request));
 
         public async Task<bool> EliminarAsync(int id)
-        {
-            var respuesta = await _http.DeleteAsync($"{RutaBase}/{id}");
-            return respuesta.IsSuccessStatusCode;
-        }
+            => await ProcesarAsync(await _http.DeleteAsync($"{RutaBase}/{id}"));
+
         public async Task<bool> RegistrarMermaAsync(int id)
-        {
-            var respuesta = await _http.PutAsync($"{RutaBase}/{id}/registrar-merma", null);
-            return respuesta.IsSuccessStatusCode;
-        }
+            => await ProcesarAsync(await _http.PutAsync($"{RutaBase}/{id}/registrar-merma", null));
 
         public async Task<List<Lote>> ObtenerReporteMermasAsync(DateTime? desde = null, DateTime? hasta = null)
         {

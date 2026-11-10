@@ -43,6 +43,13 @@ namespace XpressMarket.Shared.Models
         [Range(0, 999999.99, ErrorMessage = "El descuento no puede ser negativo.")]
         public decimal Descuento { get; set; } = 0;
 
+        // Costo real de las unidades vendidas (promedio del costo de los lotes consumidos, FEFO).
+        // Se fija al registrar la venta, de modo que las utilidades históricas no cambian cuando
+        // después entra un lote con otro costo. No se envía al cliente: el cajero no debe ver costos.
+        [JsonIgnore]
+        [Column(TypeName = "decimal(18,4)")]
+        public decimal CostoUnitario { get; set; }
+
         // Propiedad calculada: (Cantidad * PrecioUnitario) - Descuento
         [NotMapped]
         public decimal Subtotal => (Cantidad * PrecioUnitario) - Descuento;

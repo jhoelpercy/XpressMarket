@@ -27,8 +27,8 @@ namespace XpressMarket.Server.Controllers
         {
             var inicio = desde.Date;
             var fin = hasta.Date.AddDays(1).AddTicks(-1);
-            var hoy = DateTime.Now.Date;
-            var limite = hoy.AddDays(31); // exclusivo: incluye todo el día 30
+            var ahora = DateTime.Now;
+            var hoy = ahora.Date;
 
             // Los totales, los rankings y las alertas se calculan en MySQL: no se cargan
             // ventas, detalles ni lotes completos en memoria.
@@ -39,27 +39,33 @@ namespace XpressMarket.Server.Controllers
 
             var cantidadVentas = await ventas.CountAsync();
             var totalVentas = await ventas.SumAsync(v => (decimal?)v.Total) ?? 0m;
-            var costoTotal = await detalles.SumAsync(d => (decimal?)(d.Cantidad * d.Producto!.PrecioCosto)) ?? 0m;
+            var costoTotal = await detalles.SumAsync(d => (decimal?)(d.Cantidad * d.CostoUnitario)) ?? 0m;
 
             var mermas = await _context.Lotes.AsNoTracking()
                 .Where(l => l.EsMerma && l.FechaMerma >= inicio && l.FechaMerma <= fin)
                 .Select(l => new { l.CantidadActual, l.PrecioCosto })
                 .ToListAsync();
 
+            // Sólo alertas vigentes: las que el administrador silenció desde el panel de alertas no se arrastran al informe.
             var stockBajo = await _context.Productos.AsNoTracking()
-                .Where(p => p.Activo && p.StockActual <= p.StockMinimo)
+                .ConAlertaStockVigente(ahora)
+                .OrderBy(p => p.StockActual).ThenBy(p => p.Nombre)
                 .Select(p => new ProductoResumen { Nombre = p.Nombre, StockActual = p.StockActual, StockMinimo = p.StockMinimo })
                 .ToListAsync();
 
             var lotesVencidos = await _context.Lotes.AsNoTracking()
-                .Where(l => l.Activo && l.CantidadActual > 0 && l.FechaVencimiento < hoy)
+                .Vencidos(hoy)
                 .Select(l => new LoteResumen { NumeroLote = l.NumeroLote, Producto = l.Producto!.Nombre, FechaVencimiento = l.FechaVencimiento, Cantidad = l.CantidadActual })
                 .ToListAsync();
 
             var lotesPorVencer = await _context.Lotes.AsNoTracking()
-                .Where(l => l.Activo && l.CantidadActual > 0 && l.FechaVencimiento >= hoy && l.FechaVencimiento < limite)
+                .PorVencerVigentes(hoy, ahora)
                 .Select(l => new LoteResumen { NumeroLote = l.NumeroLote, Producto = l.Producto!.Nombre, FechaVencimiento = l.FechaVencimiento, Cantidad = l.CantidadActual })
                 .ToListAsync();
+
+            var alertasSilenciadas =
+                await _context.Productos.ConAlertaStockSilenciada(ahora).CountAsync() +
+                await _context.Lotes.PorVencerSilenciados(hoy, ahora).CountAsync();
 
             var topProductos = await detalles
                 .GroupBy(d => d.NombreProducto)
@@ -78,6 +84,7 @@ namespace XpressMarket.Server.Controllers
                 TotalUtilidad = totalVentas - costoTotal,
                 CantidadMermas = mermas.Sum(l => l.CantidadActual),
                 ValorMermas = mermas.Sum(l => l.CantidadActual * l.PrecioCosto),
+                AlertasSilenciadas = alertasSilenciadas,
                 ProductosStockBajo = stockBajo,
                 LotesVencidos = lotesVencidos.OrderBy(l => l.FechaVencimiento).ToList(),
                 LotesProximosAVencer = lotesPorVencer.OrderBy(l => l.FechaVencimiento).ToList(),
@@ -279,7 +286,7 @@ namespace XpressMarket.Server.Controllers
             return await query
                 .OrderByDescending(v => v.FechaVenta)
                 .Select(v => new VentaResumen(v.Id, v.FechaVenta, v.NombreUsuario, v.Total,
-                    v.Detalles.Sum(d => d.Cantidad * d.Producto!.PrecioCosto)))
+                    v.Detalles.Sum(d => d.Cantidad * d.CostoUnitario)))
                 .ToListAsync();
         }
 

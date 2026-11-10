@@ -65,6 +65,9 @@ namespace XpressMarket.Shared.Models
 
         [NotMapped]
         public bool ProximoAVencer => !Vencido && DiasParaVencer <= 30;
+        // Si no es nulo y es futuro, la alerta de "próximo a vencer" de este lote está silenciada hasta esa fecha.
+        public DateTime? AlertaVencimientoSilenciadaHasta { get; set; }
+
         public int? RegistradoPorUsuarioId { get; set; }
         public string? RegistradoPorNombre { get; set; }
 

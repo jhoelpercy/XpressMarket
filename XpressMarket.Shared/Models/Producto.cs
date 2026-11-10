@@ -44,6 +44,10 @@ namespace XpressMarket.Shared.Models
         [DataType(DataType.Date)]
         public DateTime FechaRegistro { get; set; } = DateTime.Now;
 
+        // Si no es nulo y es futuro, la alerta de stock bajo del producto está silenciada hasta esa fecha
+        // (9999-12-31 = hasta que se registre un nuevo lote). Se gestiona sólo desde el panel de alertas.
+        public DateTime? AlertaStockSilenciadaHasta { get; set; }
+
         // Clave foránea hacia Categoria
         [Required(ErrorMessage = "Debe seleccionar una categoría.")]
         [Range(1, int.MaxValue, ErrorMessage = "Debe seleccionar una categoría.")]

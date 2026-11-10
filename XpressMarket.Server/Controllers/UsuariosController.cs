@@ -12,6 +12,8 @@ namespace XpressMarket.Server.Controllers
     [Authorize(Roles = "Administrador")]
     public class UsuariosController : ControllerBase
     {
+        private static readonly string[] RolesValidos = { "Administrador", "Cajero" };
+
         private readonly AppDbContext _context;
 
         public UsuariosController(AppDbContext context)
@@ -58,6 +60,9 @@ namespace XpressMarket.Server.Controllers
         [HttpPost]
         public async Task<ActionResult<UsuarioResponse>> PostUsuario(UsuarioCreateRequest request)
         {
+            if (!RolesValidos.Contains(request.Rol))
+                return BadRequest("El rol debe ser Administrador o Cajero.");
+
             // Normalizar a minúsculas o trim para evitar duplicados como "Admin" y "admin "
             var nombreUsuarioNormalizado = request.NombreUsuario.Trim();
 
@@ -90,9 +95,11 @@ namespace XpressMarket.Server.Controllers
         }
 
         [HttpPut("{id}")]
-        [Authorize(Roles = "Administrador")]
         public async Task<IActionResult> PutUsuario(int id, UsuarioUpdateRequest request)
         {
+            if (!RolesValidos.Contains(request.Rol))
+                return BadRequest("El rol debe ser Administrador o Cajero.");
+
             var usuario = await _context.Usuarios.FindAsync(id);
             if (usuario == null)
                 return NotFound();

@@ -80,6 +80,27 @@ builder.Services.AddAuthentication(options =>
     // Diagnóstico de 403: deja en consola quién fue rechazado, con qué rol y en qué ruta.
     options.Events = new Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerEvents
     {
+        // El token no basta: el usuario debe seguir activo y conservar el rol del token. Así, desactivar a un
+        // usuario o cambiarle el rol surte efecto de inmediato y no recién cuando vence el token (8 horas).
+        OnTokenValidated = async ctx =>
+        {
+            var idTexto = ctx.Principal?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            var rolToken = ctx.Principal?.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
+            if (!int.TryParse(idTexto, out var idUsuario))
+            {
+                ctx.Fail("Token sin identificador de usuario.");
+                return;
+            }
+
+            var db = ctx.HttpContext.RequestServices.GetRequiredService<AppDbContext>();
+            var actual = await db.Usuarios.AsNoTracking()
+                .Where(u => u.Id == idUsuario)
+                .Select(u => new { u.Activo, u.Rol })
+                .FirstOrDefaultAsync();
+
+            if (actual == null || !actual.Activo || actual.Rol != rolToken)
+                ctx.Fail("La sesión ya no es válida: el usuario fue desactivado o cambió de rol.");
+        },
         OnForbidden = ctx =>
         {
             var roles = string.Join(",", ctx.HttpContext.User.FindAll(System.Security.Claims.ClaimTypes.Role).Select(c => c.Value));

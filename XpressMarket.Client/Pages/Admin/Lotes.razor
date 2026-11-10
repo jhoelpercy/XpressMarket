@@ -298,7 +298,7 @@
                 }
                 else
                 {
-                    Snackbar.Add("No se pudo eliminar el lote", Severity.Error);
+                    Snackbar.Add(LoteSvc.UltimoError ?? "No se pudo eliminar el lote", Severity.Error);
                 }
             }
             catch (Exception ex)

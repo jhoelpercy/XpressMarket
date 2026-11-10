@@ -85,6 +85,7 @@
                                    @bind-Date="FechaVencimientoNullable"
                                    Variant="Variant.Outlined"
                                    Margin="Margin.Dense"
+                                   HelperText="@(YaVencido ? "Ya está vencido: no se podrá vender; deberá registrarse como merma." : null)"
                                    Class="mb-3" />
                 </MudItem>
             </MudGrid>
@@ -220,19 +221,22 @@
         set => Lote.FechaIngreso = value ?? DateTime.Now;
     }
 
+    // Sin fecha elegida el selector queda vacío (antes se rellenaba con "hoy" y se saltaba la validación).
     private DateTime? FechaVencimientoNullable
     {
-        get => Lote.FechaVencimiento;
-        set => Lote.FechaVencimiento = value ?? DateTime.Now;
+        get => Lote.FechaVencimiento.Year < 2000 ? null : Lote.FechaVencimiento;
+        set => Lote.FechaVencimiento = value ?? default;
     }
+
+    private bool YaVencido => Lote.FechaVencimiento.Year >= 2000 && Lote.FechaVencimiento.Date < DateTime.Now.Date;
 
     protected override async Task OnInitializedAsync()
     {
         Proveedores = await ProveedorSvc.ObtenerTodosAsync();
 
-        if (!EsNuevo && Lote.ProductoId > 0)
+        if (Lote.ProductoId > 0)
         {
-            // Cargar nombre del producto si es edición
+            // Cargar el producto: al editar, o al abrir el formulario ya con un producto (por ejemplo, desde una alerta)
             var prod = await ProductoSvc.ObtenerPorIdAsync(Lote.ProductoId);
             if (prod != null)
             {
@@ -275,6 +279,12 @@
 
     private async Task Guardar()
     {
+        if (Lote.FechaVencimiento.Year < 2000)
+        {
+            Snackbar.Add("Indica la fecha de vencimiento del lote.", Severity.Warning);
+            return;
+        }
+
         if (Lote.Id == 0)
             Lote.CantidadActual = Lote.CantidadInicial;
 
@@ -301,7 +311,11 @@
                     ActualizarCostoProducto = actualizarPrecios,
                     NuevoPrecioVenta = actualizarPrecios ? NuevoPrecioVentaSugerido : null
                 };
-                await LoteSvc.CrearAsync(request);
+                if (!await LoteSvc.CrearAsync(request))
+                {
+                    Snackbar.Add(LoteSvc.UltimoError ?? "No se pudo crear el lote", Severity.Warning);
+                    return;
+                }
                 Snackbar.Add("Lote creado", Severity.Success);
             }
             else
@@ -312,7 +326,11 @@
                     ActualizarCostoProducto = actualizarPrecios,
                     NuevoPrecioVenta = actualizarPrecios ? NuevoPrecioVentaSugerido : null
                 };
-                await LoteSvc.ActualizarAsync(Lote.Id, request);
+                if (!await LoteSvc.ActualizarAsync(Lote.Id, request))
+                {
+                    Snackbar.Add(LoteSvc.UltimoError ?? "No se pudo actualizar el lote", Severity.Warning);
+                    return;
+                }
                 Snackbar.Add("Lote actualizado", Severity.Success);
             }
 

@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Globalization;
 using System.Security.Claims;
 using XpressMarket.Server.Data;
+using XpressMarket.Server.Services;
 using XpressMarket.Shared.Models;
 
 namespace XpressMarket.Server.Controllers
@@ -52,8 +53,8 @@ namespace XpressMarket.Server.Controllers
 
             query = estado switch
             {
-                "vencidos" => query.Where(l => l.FechaVencimiento < hoy),
-                "por-vencer" => query.Where(l => l.FechaVencimiento >= hoy && l.FechaVencimiento < hoy.AddDays(31)),
+                "vencidos" => query.Where(l => l.CantidadActual > 0 && l.FechaVencimiento < hoy),
+                "por-vencer" => query.Where(l => l.CantidadActual > 0 && l.FechaVencimiento >= hoy && l.FechaVencimiento < hoy.AddDays(31)),
                 "vigentes" => query.Where(l => l.FechaVencimiento >= hoy.AddDays(31)),
                 _ => query
             };
@@ -84,21 +85,15 @@ namespace XpressMarket.Server.Controllers
         }
 
         // GET: api/lotes/proximos-a-vencer
+        // Alertas vigentes: no incluye los lotes que el administrador silenció (se ven en el panel de alertas).
         [HttpGet("proximos-a-vencer")]
         public async Task<ActionResult<IEnumerable<Lote>>> GetProximosAVencer()
         {
-            // Se compara contra límites de fecha ya calculados (sin .Date sobre la columna)
-            // para que MySQL pueda usar el índice de FechaVencimiento.
-            var hoy = DateTime.Now.Date;
-            var limite = hoy.AddDays(31); // exclusivo: incluye todo el día 30
-
+            var ahora = DateTime.Now;
             return await _context.Lotes
                 .AsNoTracking()
                 .Include(l => l.Producto)
-                .Where(l => l.Activo
-                    && l.CantidadActual > 0 // CORRECCIÓN: Filtra lotes agotados
-                    && l.FechaVencimiento >= hoy
-                    && l.FechaVencimiento < limite)
+                .PorVencerVigentes(ahora.Date, ahora)
                 .OrderBy(l => l.FechaVencimiento)
                 .ToListAsync();
         }
@@ -107,14 +102,10 @@ namespace XpressMarket.Server.Controllers
         [HttpGet("vencidos")]
         public async Task<ActionResult<IEnumerable<Lote>>> GetVencidos()
         {
-            var hoy = DateTime.Now.Date;
-
             return await _context.Lotes
                 .AsNoTracking()
                 .Include(l => l.Producto)
-                .Where(l => l.Activo
-                    && l.CantidadActual > 0 // CORRECCIÓN: Filtra lotes agotados
-                    && l.FechaVencimiento < hoy)
+                .Vencidos(DateTime.Now.Date)
                 .OrderBy(l => l.FechaVencimiento)
                 .ToListAsync();
         }
@@ -124,19 +115,36 @@ namespace XpressMarket.Server.Controllers
         {
             var lote = request.Lote;
 
-            var producto = await _context.Productos.FindAsync(lote.ProductoId);
-            if (producto == null)
-                return BadRequest("El producto especificado no existe.");
-
+            // Un lote nuevo siempre nace activo, sin merma, con todas sus unidades disponibles.
+            lote.Id = 0;
+            lote.Producto = null;
+            lote.Proveedor = null;
+            lote.NumeroLote = lote.NumeroLote.Trim();
+            lote.CantidadActual = lote.CantidadInicial;
+            lote.Activo = true;
+            lote.EsMerma = false;
+            lote.FechaMerma = null;
+            lote.AlertaVencimientoSilenciadaHasta = null;
             lote.FechaIngreso = DateTime.Now;
-            if (lote.CantidadActual == 0)
-                lote.CantidadActual = lote.CantidadInicial;
+
+            if (lote.ProveedorId.HasValue && !await _context.Proveedores.AnyAsync(p => p.Id == lote.ProveedorId.Value && p.Activo))
+                return BadRequest("El proveedor especificado no existe o está desactivado.");
 
             lote.RegistradoPorUsuarioId = int.TryParse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var uid) ? uid : null;
             lote.RegistradoPorNombre = User.FindFirst(ClaimTypes.Name)?.Value;
 
+            using var transaccion = await _context.Database.BeginTransactionAsync();
+            await BloqueoStock.BloquearAsync(_context, new[] { lote.ProductoId });
+
+            var producto = await _context.Productos.FindAsync(lote.ProductoId);
+            if (producto == null || !producto.Activo)
+                return BadRequest("El producto especificado no existe o está desactivado.");
+
             // El stock físico del producto crece con cada lote que entra al inventario.
             producto.StockActual += lote.CantidadActual;
+
+            // Una reposición cierra el silencio de la alerta de stock bajo: si vuelve a bajar, avisa de nuevo.
+            producto.AlertaStockSilenciadaHasta = null;
 
             if (request.ActualizarCostoProducto || producto.PrecioCosto == 0)
                 producto.PrecioCosto = lote.PrecioCosto;
@@ -146,6 +154,7 @@ namespace XpressMarket.Server.Controllers
 
             _context.Lotes.Add(lote);
             await _context.SaveChangesAsync();
+            await transaccion.CommitAsync();
 
             return CreatedAtAction(nameof(GetLote), new { id = lote.Id }, lote);
         }
@@ -157,17 +166,40 @@ namespace XpressMarket.Server.Controllers
             if (id != loteNuevo.Id)
                 return BadRequest("El ID de la ruta no coincide con el del lote.");
 
+            var productoId = await _context.Lotes.AsNoTracking()
+                .Where(l => l.Id == id).Select(l => (int?)l.ProductoId).FirstOrDefaultAsync();
+            if (productoId == null)
+                return NotFound();
+
+            using var transaccion = await _context.Database.BeginTransactionAsync();
+            await BloqueoStock.BloquearAsync(_context, new[] { productoId.Value });
+
             var loteExistente = await _context.Lotes.FindAsync(id);
             if (loteExistente == null)
                 return NotFound();
+
+            if (loteExistente.EsMerma)
+                return BadRequest("Este lote fue registrado como merma y ya no puede modificarse.");
 
             var producto = await _context.Productos.FindAsync(loteExistente.ProductoId);
             if (producto == null)
                 return BadRequest("El producto asociado no existe.");
 
-            // Ajusta el stock del producto por la diferencia entre la cantidad vieja y la nueva
-            var deltaCantidad = loteNuevo.CantidadActual - loteExistente.CantidadActual;
-            producto.StockActual += deltaCantidad;
+            // La cantidad inicial es un dato histórico: no se modifica. La actual sólo corrige conteos físicos.
+            if (loteNuevo.CantidadActual > loteExistente.CantidadInicial)
+                return BadRequest($"La cantidad actual no puede superar la cantidad inicial del lote ({loteExistente.CantidadInicial}).");
+
+            if (loteNuevo.ProveedorId.HasValue && !await _context.Proveedores.AnyAsync(p => p.Id == loteNuevo.ProveedorId.Value))
+                return BadRequest("El proveedor especificado no existe.");
+
+            // Sólo un lote activo aporta unidades al stock del producto: se ajusta por la diferencia de aporte
+            // (cubre cambios de cantidad y también la activación o desactivación del lote).
+            int aporteAnterior = loteExistente.Activo ? loteExistente.CantidadActual : 0;
+            int aporteNuevo = loteNuevo.Activo ? loteNuevo.CantidadActual : 0;
+            var nuevoStock = producto.StockActual + (aporteNuevo - aporteAnterior);
+            if (nuevoStock < 0)
+                return BadRequest("El cambio dejaría el stock del producto en negativo.");
+            producto.StockActual = nuevoStock;
 
             if (request.ActualizarCostoProducto)
                 producto.PrecioCosto = loteNuevo.PrecioCosto;
@@ -175,24 +207,19 @@ namespace XpressMarket.Server.Controllers
             if (request.NuevoPrecioVenta.HasValue && request.NuevoPrecioVenta.Value > 0)
                 producto.PrecioVenta = request.NuevoPrecioVenta.Value;
 
-            loteExistente.NumeroLote = loteNuevo.NumeroLote;
+            // Si cambia la fecha de vencimiento, el silencio anterior de la alerta ya no corresponde.
+            if (loteExistente.FechaVencimiento.Date != loteNuevo.FechaVencimiento.Date)
+                loteExistente.AlertaVencimientoSilenciadaHasta = null;
+
+            loteExistente.NumeroLote = loteNuevo.NumeroLote.Trim();
             loteExistente.ProveedorId = loteNuevo.ProveedorId;
             loteExistente.FechaVencimiento = loteNuevo.FechaVencimiento;
-            loteExistente.CantidadInicial = loteNuevo.CantidadInicial;
             loteExistente.CantidadActual = loteNuevo.CantidadActual;
             loteExistente.PrecioCosto = loteNuevo.PrecioCosto;
             loteExistente.Activo = loteNuevo.Activo;
 
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!await _context.Lotes.AnyAsync(l => l.Id == id))
-                    return NotFound();
-                throw;
-            }
+            await _context.SaveChangesAsync();
+            await transaccion.CommitAsync();
 
             return NoContent();
         }
@@ -200,6 +227,14 @@ namespace XpressMarket.Server.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteLote(int id)
         {
+            var productoId = await _context.Lotes.AsNoTracking()
+                .Where(l => l.Id == id).Select(l => (int?)l.ProductoId).FirstOrDefaultAsync();
+            if (productoId == null)
+                return NotFound();
+
+            using var transaccion = await _context.Database.BeginTransactionAsync();
+            await BloqueoStock.BloquearAsync(_context, new[] { productoId.Value });
+
             var lote = await _context.Lotes.FindAsync(id);
             if (lote == null)
                 return NotFound();
@@ -208,20 +243,28 @@ namespace XpressMarket.Server.Controllers
             {
                 var producto = await _context.Productos.FindAsync(lote.ProductoId);
                 if (producto != null)
-                    producto.StockActual -= lote.CantidadActual;
+                    producto.StockActual = Math.Max(0, producto.StockActual - lote.CantidadActual);
             }
 
             lote.Activo = false;
             await _context.SaveChangesAsync();
+            await transaccion.CommitAsync();
 
             return NoContent();
         }
 
         // PUT: api/lotes/5/registrar-merma
         [HttpPut("{id}/registrar-merma")]
-        [Authorize(Roles = "Administrador")]
         public async Task<IActionResult> RegistrarMerma(int id)
         {
+            var productoId = await _context.Lotes.AsNoTracking()
+                .Where(l => l.Id == id).Select(l => (int?)l.ProductoId).FirstOrDefaultAsync();
+            if (productoId == null)
+                return NotFound();
+
+            using var transaccion = await _context.Database.BeginTransactionAsync();
+            await BloqueoStock.BloquearAsync(_context, new[] { productoId.Value });
+
             var lote = await _context.Lotes.FindAsync(id);
             if (lote == null)
                 return NotFound();
@@ -232,18 +275,21 @@ namespace XpressMarket.Server.Controllers
             if (lote.EsMerma)
                 return BadRequest("Este lote ya fue registrado como merma.");
 
-            if (lote.CantidadActual > 0)
+            // Un lote ya dado de baja no vuelve a descontar del stock (ya salió del inventario).
+            if (lote.Activo && lote.CantidadActual > 0)
             {
                 var producto = await _context.Productos.FindAsync(lote.ProductoId);
                 if (producto != null)
-                    producto.StockActual -= lote.CantidadActual;
+                    producto.StockActual = Math.Max(0, producto.StockActual - lote.CantidadActual);
             }
 
             lote.EsMerma = true;
             lote.FechaMerma = DateTime.Now;
             lote.Activo = false;
+            lote.AlertaVencimientoSilenciadaHasta = null;
 
             await _context.SaveChangesAsync();
+            await transaccion.CommitAsync();
             return NoContent();
         }
 

@@ -42,6 +42,8 @@ namespace XpressMarket.Server.Services
                         col.Item().Text($"Unidades perdidas: {informe.CantidadMermas}    Valor perdido: Bs {informe.ValorMermas:N2}");
 
                         col.Item().PaddingTop(15).Text("Productos con Stock Bajo").Bold().FontSize(13).FontColor("#62266B");
+                        if (informe.AlertasSilenciadas > 0)
+                            col.Item().Text($"Se omiten {informe.AlertasSilenciadas} alerta(s) silenciada(s) por el administrador.").FontSize(8).Italic().FontColor(Colors.Grey.Darken1);
                         if (!informe.ProductosStockBajo.Any())
                         {
                             col.Item().Text("Ninguno.").Italic();
@@ -49,7 +51,7 @@ namespace XpressMarket.Server.Services
                         else
                         {
                             foreach (var p in informe.ProductosStockBajo)
-                                col.Item().Text($"• {p.Nombre} — Stock: {p.StockActual} / Mínimo: {p.StockMinimo}");
+                                col.Item().Text($"• {p.Nombre} — {(p.StockActual <= 0 ? "AGOTADO" : $"Stock: {p.StockActual}")} / Mínimo: {p.StockMinimo}");
                         }
 
                         col.Item().PaddingTop(15).Text("Lotes Vencidos (pendientes de dar de baja)").Bold().FontSize(13).FontColor("#62266B");

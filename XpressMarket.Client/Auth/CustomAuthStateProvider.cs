@@ -63,6 +63,13 @@ namespace XpressMarket.Client.Auth
             NotifyAuthenticationStateChanged(Task.FromResult(new AuthenticationState(usuario)));
         }
 
+        /// <summary>Cierra la sesión local (borra el token guardado) cuando el servidor deja de aceptarlo.</summary>
+        public async Task CerrarSesionAsync()
+        {
+            try { await _js.InvokeVoidAsync("localStorageRemove", "authToken"); } catch (Exception) { }
+            MarcarComoDesconectado();
+        }
+
         public void MarcarComoDesconectado()
         {
             _token = null;

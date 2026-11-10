@@ -48,9 +48,15 @@ namespace XpressMarket.Server.Data
                 .OnDelete(DeleteBehavior.Restrict);
 
             // Índices útiles
+            // El código de barras identifica al producto: no puede repetirse (los productos sin código no cuentan)
             modelBuilder.Entity<Producto>()
                 .HasIndex(p => p.CodigoBarras)
-                .IsUnique(false);
+                .IsUnique();
+
+            // El nombre del producto tampoco puede repetirse (evita dos fichas del mismo artículo)
+            modelBuilder.Entity<Producto>()
+                .HasIndex(p => p.Nombre)
+                .IsUnique();
 
             modelBuilder.Entity<Categoria>()
                 .HasIndex(c => c.Nombre)

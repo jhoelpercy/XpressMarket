@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using XpressMarket.Server.Data;
+using XpressMarket.Server.Services;
 using XpressMarket.Shared.Models;
 using Microsoft.AspNetCore.Authorization;
 
@@ -39,8 +40,23 @@ namespace XpressMarket.Server.Controllers
         [HttpPost]
         public async Task<ActionResult<Categoria>> PostCategoria(Categoria categoria)
         {
-            _context.Categorias.Add(categoria);
-            await _context.SaveChangesAsync();
+            categoria.Id = 0;
+            categoria.Activo = true;
+            categoria.Nombre = (categoria.Nombre ?? string.Empty).Trim();
+
+            var error = await MensajeNombreDuplicadoAsync(categoria.Nombre, null);
+            if (error != null)
+                return BadRequest(error);
+
+            try
+            {
+                _context.Categorias.Add(categoria);
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateException ex) when (ErroresBaseDeDatos.EsDuplicado(ex))
+            {
+                return BadRequest($"Ya existe una categoría llamada '{categoria.Nombre}'.");
+            }
 
             return CreatedAtAction(nameof(GetCategoria), new { id = categoria.Id }, categoria);
         }
@@ -51,7 +67,15 @@ namespace XpressMarket.Server.Controllers
             if (id != categoria.Id)
                 return BadRequest("El ID de la ruta no coincide con el de la categoría.");
 
+            categoria.Nombre = (categoria.Nombre ?? string.Empty).Trim();
+
+            var error = await MensajeNombreDuplicadoAsync(categoria.Nombre, id);
+            if (error != null)
+                return BadRequest(error);
+
             _context.Entry(categoria).State = EntityState.Modified;
+            // La baja se hace sólo con DELETE, que verifica que no queden productos activos en la categoría.
+            _context.Entry(categoria).Property(c => c.Activo).IsModified = false;
 
             try
             {
@@ -63,8 +87,31 @@ namespace XpressMarket.Server.Controllers
                     return NotFound();
                 throw;
             }
+            catch (DbUpdateException ex) when (ErroresBaseDeDatos.EsDuplicado(ex))
+            {
+                return BadRequest($"Ya existe una categoría llamada '{categoria.Nombre}'.");
+            }
 
             return NoContent();
+        }
+
+        /// <summary>El nombre de la categoría es único (sin distinguir mayúsculas); devuelve el mensaje si ya existe.</summary>
+        private async Task<string?> MensajeNombreDuplicadoAsync(string nombre, int? idActual)
+        {
+            if (nombre.Length < 2)
+                return "El nombre debe tener entre 2 y 100 caracteres.";
+
+            var otra = await _context.Categorias.AsNoTracking()
+                .Where(c => c.Nombre == nombre && (idActual == null || c.Id != idActual))
+                .Select(c => new { c.Activo })
+                .FirstOrDefaultAsync();
+
+            if (otra == null)
+                return null;
+
+            return otra.Activo
+                ? $"Ya existe una categoría llamada '{nombre}'."
+                : $"Ya existe una categoría desactivada llamada '{nombre}'. Usa otro nombre.";
         }
 
         [HttpDelete("{id}")]

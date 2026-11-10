@@ -44,6 +44,7 @@ builder.Services.AddMudServices();
 builder.Services.AddScoped<ProductoService>();
 builder.Services.AddScoped<ProveedorService>();
 builder.Services.AddScoped<LoteService>();
+builder.Services.AddScoped<AlertaService>();
 builder.Services.AddScoped<CategoriaService>();
 builder.Services.AddScoped<VentaService>();
 builder.Services.AddScoped<UsuarioService>();

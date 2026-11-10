@@ -16,6 +16,7 @@
             <ValidationSummary class="alert alert-danger p-2 small mb-3" />
 
             <MudTextField Label="Nombre"
+                          HelperText="Debe ser único: no puede haber dos productos con el mismo nombre"
                           @bind-Value="Producto.Nombre"
                           For="@(() => Producto.Nombre)"
                           Variant="Variant.Outlined"
@@ -57,6 +58,7 @@
                 <MudItem xs="12" md="6">
                     <MudTextField Label="Código de Barras"
                                   @bind-Value="Producto.CodigoBarras"
+                                  HelperText="Debe ser único: no se puede repetir en otro producto"
                                   Variant="Variant.Outlined"
                                   Margin="Margin.Dense"
                                   Class="mb-3" />

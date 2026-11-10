@@ -21,7 +21,14 @@ namespace XpressMarket.Client.Auth
             if (!string.IsNullOrWhiteSpace(_authStateProvider.Token))
                 request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _authStateProvider.Token);
 
-            return await base.SendAsync(request, cancellationToken);
+            var respuesta = await base.SendAsync(request, cancellationToken);
+
+            // Token vencido, usuario desactivado o rol cambiado: el servidor responde 401 y la sesión se cierra,
+            // con lo que la aplicación vuelve a la pantalla de ingreso en lugar de mostrar errores sueltos.
+            if (respuesta.StatusCode == System.Net.HttpStatusCode.Unauthorized && request.Headers.Authorization != null)
+                await _authStateProvider.CerrarSesionAsync();
+
+            return respuesta;
         }
     }
 }

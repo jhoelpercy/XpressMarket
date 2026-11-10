@@ -99,10 +99,14 @@
     private decimal total;
     private bool procesando = false;
 
+    // Stock conocido de cada producto del carrito, para no dejar escribir una cantidad mayor a la disponible.
+    private readonly Dictionary<int, int> stockPorProducto = new();
+
     private void AgregarAlCarrito(Producto producto)
     {
         if (producto == null) return;
 
+        stockPorProducto[producto.Id] = producto.StockActual;
         var existente = carrito.FirstOrDefault(i => i.ProductoId == producto.Id);
         int cantidadActual = existente?.Cantidad ?? 0;
 
@@ -140,6 +144,18 @@
 
     private void RecalcularTotales()
     {
+        foreach (var item in carrito)
+        {
+            if (item.Cantidad < 1)
+                item.Cantidad = 1;
+
+            if (stockPorProducto.TryGetValue(item.ProductoId, out var stock) && item.Cantidad > stock)
+            {
+                item.Cantidad = Math.Max(1, stock);
+                Snackbar.Add($"Solo hay {stock} unidad(es) de '{item.NombreProducto}' en stock.", Severity.Warning);
+            }
+        }
+
         subtotal = carrito.Sum(i => i.Cantidad * i.PrecioUnitario);
         descuentoTotal = carrito.Sum(i => i.Descuento);
         total = carrito.Sum(i => i.Subtotal);

@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Globalization;
 using System.Security.Claims;
 using XpressMarket.Server.Data;
+using XpressMarket.Server.Services;
 using XpressMarket.Shared.Models;
 
 namespace XpressMarket.Server.Controllers
@@ -73,6 +74,11 @@ namespace XpressMarket.Server.Controllers
             if (!esAdmin && venta.UsuarioId != idActual)
                 return Forbid();
 
+            // El cajero ve su comprobante, pero no el costo de compra de los productos.
+            if (!esAdmin)
+                foreach (var d in venta.Detalles)
+                    if (d.Producto != null) d.Producto.PrecioCosto = 0;
+
             return venta;
         }
 
@@ -80,6 +86,7 @@ namespace XpressMarket.Server.Controllers
         [Authorize(Roles = "Cajero,Administrador")]
         public async Task<ActionResult<Venta>> PostVenta(Venta venta)
         {
+            venta.Id = 0;
             venta.UsuarioId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0";
             venta.NombreUsuario = User.FindFirst(ClaimTypes.Name)?.Value ?? "Desconocido";
             venta.Descuento = 0;
@@ -87,36 +94,56 @@ namespace XpressMarket.Server.Controllers
             if (venta.Detalles == null || !venta.Detalles.Any())
                 return BadRequest("La venta debe tener al menos un detalle.");
 
+            // Lo que llega del cliente nunca decide identificadores, costos ni productos anidados.
+            foreach (var d in venta.Detalles)
+            {
+                d.Id = 0;
+                d.VentaId = 0;
+                d.Producto = null;
+                d.CostoUnitario = 0;
+            }
+
             using var transaccion = await _context.Database.BeginTransactionAsync();
 
             try
             {
+                // Se bloquean las filas de los productos vendidos: si dos cajeros venden la última unidad
+                // al mismo tiempo, el segundo espera y recibe "stock insuficiente" en lugar de dejar el stock negativo.
+                await BloqueoStock.BloquearAsync(_context, venta.Detalles.Select(d => d.ProductoId));
+
+                var hoy = DateTime.Now.Date;
                 decimal subtotalVenta = 0;
                 var consumosNuevos = new List<ConsumoLote>();
 
                 foreach (var detalle in venta.Detalles)
                 {
                     var producto = await _context.Productos.FindAsync(detalle.ProductoId);
-                    if (producto == null)
-                        return BadRequest($"El producto con ID {detalle.ProductoId} no existe.");
+                    if (producto == null || !producto.Activo)
+                        return BadRequest($"El producto con ID {detalle.ProductoId} no existe o está desactivado.");
 
-                    if (producto.StockActual < detalle.Cantidad)
-                        return BadRequest($"Stock insuficiente para '{producto.Nombre}'. Disponible: {producto.StockActual}, solicitado: {detalle.Cantidad}.");
+                    // FEFO: primero el lote que vence antes. Los lotes vencidos NO se venden: deben darse de baja como merma.
+                    var lotesDisponibles = await _context.Lotes
+                        .Where(l => l.ProductoId == detalle.ProductoId && l.Activo && l.CantidadActual > 0
+                                    && l.FechaVencimiento >= hoy)
+                        .OrderBy(l => l.FechaVencimiento).ThenBy(l => l.Id)
+                        .ToListAsync();
 
-                    // Asignación unificada de valores reales desde la base de datos
+                    var vendible = lotesDisponibles.Sum(l => l.CantidadActual);
+                    if (vendible < detalle.Cantidad)
+                    {
+                        var vencidas = Math.Max(0, producto.StockActual - vendible);
+                        return BadRequest(vencidas > 0 && producto.StockActual >= detalle.Cantidad
+                            ? $"'{producto.Nombre}' tiene {vendible} unidad(es) vendible(s); otras {vencidas} están vencidas y no pueden venderse (regístralas como merma). Solicitado: {detalle.Cantidad}."
+                            : $"Stock insuficiente para '{producto.Nombre}'. Disponible: {vendible}, solicitado: {detalle.Cantidad}.");
+                    }
+
+                    // Valores reales desde la base de datos
                     detalle.NombreProducto = producto.Nombre;
                     detalle.PrecioUnitario = producto.PrecioVenta;
                     detalle.Descuento = 0;
 
-                    subtotalVenta += detalle.Cantidad * detalle.PrecioUnitario;
-                    producto.StockActual -= detalle.Cantidad;
-
-                    // Descuento de Lotes FIFO
                     int cantidadPorDescontar = detalle.Cantidad;
-                    var lotesDisponibles = await _context.Lotes
-                        .Where(l => l.ProductoId == detalle.ProductoId && l.Activo && l.CantidadActual > 0)
-                        .OrderBy(l => l.FechaVencimiento)
-                        .ToListAsync();
+                    decimal costoConsumido = 0;
 
                     foreach (var lote in lotesDisponibles)
                     {
@@ -125,6 +152,7 @@ namespace XpressMarket.Server.Controllers
                         int descontarDeEsteLote = Math.Min(lote.CantidadActual, cantidadPorDescontar);
                         lote.CantidadActual -= descontarDeEsteLote;
                         cantidadPorDescontar -= descontarDeEsteLote;
+                        costoConsumido += descontarDeEsteLote * lote.PrecioCosto;
 
                         consumosNuevos.Add(new ConsumoLote
                         {
@@ -134,10 +162,10 @@ namespace XpressMarket.Server.Controllers
                         });
                     }
 
-                    if (cantidadPorDescontar > 0)
-                    {
-                        return BadRequest($"No hay suficientes lotes activos para cubrir la cantidad solicitada de '{producto.Nombre}'.");
-                    }
+                    // Costo real de esta venta (promedio de los lotes consumidos): las utilidades históricas no cambian después.
+                    detalle.CostoUnitario = Math.Round(costoConsumido / detalle.Cantidad, 4);
+                    producto.StockActual -= detalle.Cantidad;
+                    subtotalVenta += detalle.Cantidad * detalle.PrecioUnitario;
                 }
 
                 venta.Subtotal = subtotalVenta;
@@ -149,6 +177,10 @@ namespace XpressMarket.Server.Controllers
                 _context.Consumos.AddRange(consumosNuevos);
                 await _context.SaveChangesAsync();
                 await transaccion.CommitAsync();
+
+                // La respuesta no incluye los productos (llevarían el costo de compra al cajero).
+                foreach (var d in venta.Detalles)
+                    d.Producto = null;
 
                 return CreatedAtAction(nameof(GetVenta), new { id = venta.Id }, venta);
             }
@@ -163,48 +195,66 @@ namespace XpressMarket.Server.Controllers
         [Authorize(Roles = "Administrador")]
         public async Task<IActionResult> AnularVenta(int id, [FromQuery] bool forzar = false)
         {
-            var venta = await _context.Ventas.Include(v => v.Detalles).ThenInclude(d => d.Producto)
-                .FirstOrDefaultAsync(v => v.Id == id);
-            if (venta == null)
-                return NotFound();
-
-            if (venta.Estado == EstadoVenta.Anulada)
-                return BadRequest("La venta ya está anulada.");
-
-            var detalleIds = venta.Detalles.Select(d => d.Id).ToList();
-            var consumos = await _context.Consumos
-                .Include(c => c.Lote)
-                .Where(c => detalleIds.Contains(c.DetalleVentaId))
-                .ToListAsync();
-
-            var advertencias = consumos
-                .Where(c => c.Lote != null && !c.Lote.Activo)
-                .Select(c => new AdvertenciaAnulacion
-                {
-                    NombreProducto = venta.Detalles.First(d => d.Id == c.DetalleVentaId).NombreProducto,
-                    NumeroLote = c.Lote!.NumeroLote,
-                    Cantidad = c.Cantidad,
-                    Motivo = c.Lote.EsMerma
-                        ? "Este lote ya fue registrado como merma (se dio por perdido)."
-                        : "Este lote ya fue eliminado del inventario."
-                })
-                .ToList();
-
-            if (advertencias.Any() && !forzar)
-                return StatusCode(409, advertencias);
+            var idsProductos = await _context.DetallesVenta.AsNoTracking()
+                .Where(d => d.VentaId == id).Select(d => d.ProductoId).Distinct().ToListAsync();
 
             using var transaccion = await _context.Database.BeginTransactionAsync();
             try
             {
-                foreach (var consumo in consumos.Where(c => c.Lote != null && c.Lote.Activo))
-                {
-                    consumo.Lote!.CantidadActual += consumo.Cantidad;
-                }
+                // Mismos bloqueos que al vender: una anulación y una venta simultáneas no se pisan el stock,
+                // y dos anulaciones de la misma venta no pueden devolver las unidades dos veces.
+                await BloqueoStock.BloquearAsync(_context, idsProductos);
+                await _context.Database.ExecuteSqlInterpolatedAsync($"SELECT Id FROM Ventas WHERE Id = {id} FOR UPDATE");
 
+                var venta = await _context.Ventas.Include(v => v.Detalles).ThenInclude(d => d.Producto)
+                    .FirstOrDefaultAsync(v => v.Id == id);
+                if (venta == null)
+                    return NotFound();
+
+                if (venta.Estado == EstadoVenta.Anulada)
+                    return BadRequest("La venta ya está anulada.");
+
+                var detalleIds = venta.Detalles.Select(d => d.Id).ToList();
+                var consumos = await _context.Consumos
+                    .Include(c => c.Lote)
+                    .Where(c => detalleIds.Contains(c.DetalleVentaId))
+                    .ToListAsync();
+
+                var advertencias = consumos
+                    .Where(c => c.Lote != null && !c.Lote.Activo)
+                    .Select(c => new AdvertenciaAnulacion
+                    {
+                        NombreProducto = venta.Detalles.First(d => d.Id == c.DetalleVentaId).NombreProducto,
+                        NumeroLote = c.Lote!.NumeroLote,
+                        Cantidad = c.Cantidad,
+                        Motivo = c.Lote.EsMerma
+                            ? "Este lote ya fue registrado como merma (se dio por perdido)."
+                            : "Este lote ya fue eliminado del inventario."
+                    })
+                    .ToList();
+
+                if (advertencias.Any() && !forzar)
+                    return StatusCode(409, advertencias);
+
+                // Sólo vuelven al stock las unidades que regresan a un lote activo. Las de un lote dado de baja
+                // o en merma ya salieron del inventario y no se reponen (si no, el stock quedaría mayor que la suma de lotes).
                 foreach (var detalle in venta.Detalles)
                 {
+                    var consumosDetalle = consumos.Where(c => c.DetalleVentaId == detalle.Id).ToList();
+                    int devueltas = 0;
+
+                    foreach (var consumo in consumosDetalle.Where(c => c.Lote != null && c.Lote.Activo))
+                    {
+                        consumo.Lote!.CantidadActual += consumo.Cantidad;
+                        devueltas += consumo.Cantidad;
+                    }
+
+                    // Ventas anteriores al registro de consumos: se devuelve la cantidad completa al producto.
+                    if (!consumosDetalle.Any())
+                        devueltas = detalle.Cantidad;
+
                     if (detalle.Producto != null)
-                        detalle.Producto.StockActual += detalle.Cantidad;
+                        detalle.Producto.StockActual += devueltas;
                 }
 
                 venta.Estado = EstadoVenta.Anulada;
@@ -270,8 +320,8 @@ namespace XpressMarket.Server.Controllers
                     FechaVenta = v.FechaVenta,
                     NombreUsuario = v.NombreUsuario,
                     TotalVenta = v.Total,
-                    CostoTotal = Math.Round(v.Detalles.Sum(d => d.Cantidad * d.Producto!.PrecioCosto), 2),
-                    Utilidad = Math.Round(v.Total - v.Detalles.Sum(d => d.Cantidad * d.Producto!.PrecioCosto), 2)
+                    CostoTotal = Math.Round(v.Detalles.Sum(d => d.Cantidad * d.CostoUnitario), 2),
+                    Utilidad = Math.Round(v.Total - v.Detalles.Sum(d => d.Cantidad * d.CostoUnitario), 2)
                 })
                 .ToListAsync();
         }
@@ -290,7 +340,7 @@ namespace XpressMarket.Server.Controllers
 
             // Todos los indicadores se calculan con agregaciones en MySQL.
             var totalVentas = await ventas.SumAsync(v => (decimal?)v.Total) ?? 0m;
-            var costoTotal = await detalles.SumAsync(d => (decimal?)(d.Cantidad * d.Producto!.PrecioCosto)) ?? 0m;
+            var costoTotal = await detalles.SumAsync(d => (decimal?)(d.Cantidad * d.CostoUnitario)) ?? 0m;
 
             var ventasPorDia = await ventas
                 .GroupBy(v => v.FechaVenta.Date)
@@ -305,12 +355,10 @@ namespace XpressMarket.Server.Controllers
                 .Take(5)
                 .ToListAsync();
 
-            var stockBajoCount = await _context.Productos
-                .CountAsync(p => p.Activo && p.StockActual <= p.StockMinimo);
-
-            var lotesPorVencer = await _context.Lotes
-                .CountAsync(l => l.Activo && l.CantidadActual > 0
-                       && l.FechaVencimiento >= hoy && l.FechaVencimiento < hoy.AddDays(31));
+            // Sólo se cuentan las alertas vigentes: las que el administrador silenció no inflan el indicador.
+            var ahora = DateTime.Now;
+            var stockBajoCount = await _context.Productos.ConAlertaStockVigente(ahora).CountAsync();
+            var lotesPorVencer = await _context.Lotes.PorVencerVigentes(hoy, ahora).CountAsync();
 
             return new DashboardResumen
             {
@@ -337,7 +385,7 @@ namespace XpressMarket.Server.Controllers
                 {
                     v.FechaVenta,
                     v.Total,
-                    Costo = v.Detalles.Sum(d => d.Cantidad * d.Producto!.PrecioCosto)
+                    Costo = v.Detalles.Sum(d => d.Cantidad * d.CostoUnitario)
                 })
                 .ToListAsync();
 
